@@ -48,7 +48,7 @@ import utils from '../../../utils/utils';
 import { PropConfirmOKCancel, PropModal } from '../../../utils/PropParentToChild';
 import SoQuyServices from '../../../services/so_quy/SoQuyServices';
 import HoaDonService from '../../../services/ban_hang/HoaDonService';
-import { LoaiChungTu, TrangThaiCheckin } from '../../../lib/appconst';
+import AppConsts, { LoaiChungTu, TrangThaiCheckin } from '../../../lib/appconst';
 import nhatKyHoatDongService from '../../../services/nhat_ky_hoat_dong/nhatKyHoatDongService';
 import { CreateNhatKyThaoTacDto } from '../../../services/nhat_ky_hoat_dong/dto/CreateNhatKyThaoTacDto';
 import { format } from 'date-fns';
@@ -88,6 +88,9 @@ import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import { Box } from '@mui/system';
 import MenuWithDataFromPhone from '../../../components/Menu/MenuWithData_formPhone';
 import { IListPhone } from '../../../services/dto/IListPhone';
+import Utils from '../../../utils/utils';
+import { PagedResultDto } from '../../../services/dto/pagedResultDto';
+import ModalHangHoaDienThoai from '../../dien_thoai/ModalPhone';
 
 export type IPropsPageThuNgan = {
     txtSearch: string;
@@ -145,7 +148,21 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
     const [newCus, setNewCus] = useState<CreateOrEditKhachHangDto>({} as CreateOrEditKhachHangDto);
     const [customerChosed, setCustomerChosed] = useState<CreateOrEditKhachHangDto>({} as CreateOrEditKhachHangDto);
     const [phoneChosed, setPhoneChosed] = useState<ModelHangHoaDienThoaiDto>({} as ModelHangHoaDienThoaiDto);
+    const [triggerModalProduct, setTriggerModalProduct] = useState<PropModal>(new PropModal({ isShow: false }));
+    const [pageDataProduct, setPageDataProduct] = useState<PagedResultDto<ModelHangHoaDto>>({
+        totalCount: 0,
+        totalPage: 0,
+        items: []
+    });
 
+    const [filterPageProduct, setFilterPageProduct] = useState<PagedProductSearchDto>({
+        idNhomHangHoas: [],
+        textSearch: '',
+        currentPage: 1,
+        pageSize: AppConsts.pageOption[0].value,
+        columnSort: '',
+        typeSort: ''
+    });
     const [hoaDonChiTiet, setHoaDonChiTiet] = useState<PageHoaDonChiTietDto[]>([]);
     const [idCTHDChosing, setIdCTHDChosing] = useState('');
     const [hoadon, setHoaDon] = useState<PageHoaDonDto>(
@@ -680,11 +697,13 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
             ...phoneChosed,
             id: item?.id,
             tenHangHoa: item?.tenMay ?? '',
+            tenNhomHang: item?.tenNhomHang ?? '',
             dungLuong: item?.dungLuong ?? '',
             mau: item?.mau ?? '',
             tenChu: item?.chuMay ?? '',
             noiDung: item?.noiDung ?? '',
             loi: item?.loi ?? '',
+            pin: item?.pin ?? '',
             imel: item?.imel ?? '',
             isShow: true
         });
@@ -1418,9 +1437,50 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
     const handleDialogSubmit = (dataSave: any, type: number) => {
         handleCloseDialog();
     };
+    function showModalAddProduct(action?: number, id = '') {
+        setTriggerModalProduct((old) => {
+            return {
+                ...old,
+                isShow: true,
+                isNew: Utils.checkNull(id),
+                id: id
+            };
+        });
+    }
+    function saveProduct(objNew: ModelHangHoaDto, type = 1) {
+        // 1.insert, 2.update, 3.delete, 4.khoiphuc
+        const sLoai = objNew.tenLoaiHangHoa?.toLocaleLowerCase();
+        switch (type) {
+            case 1:
+                setPageDataProduct((olds) => {
+                    return {
+                        ...olds,
+                        totalCount: olds.totalCount + 1,
+                        totalPage: Utils.getTotalPage(olds.totalCount + 1, filterPageProduct.pageSize),
+                        items: [objNew, ...olds.items]
+                    };
+                });
+                setObjAlert({ show: true, type: 1, mes: 'Thêm ' + sLoai + ' thành công' });
+                break;
+            case 2:
+                GetListHangHoa();
+                setObjAlert({ show: true, type: 1, mes: 'Sửa ' + sLoai + ' thành công' });
+                break;
+        }
+    }
+
+    const GetListHangHoa = async () => {
+        const list = await ProductService.Get_DMHangHoaDienThoai(filterPageProduct);
+        setPageDataProduct({
+            totalCount: list.totalCount,
+            totalPage: Utils.getTotalPage(list.totalCount, filterPageProduct.pageSize),
+            items: list.items
+        });
+    };
 
     return (
         <>
+            <ModalHangHoaDienThoai trigger={triggerModalProduct} handleSave={saveProduct}></ModalHangHoaDienThoai>
             <ConfirmDelete
                 isShow={confirmDialog.show}
                 title={confirmDialog.title}
@@ -1727,112 +1787,123 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                                 }}
                             />
 
-                            <Stack direction={'row'} paddingBottom={2} maxHeight={48} justifyContent={'space-between'}>
-                                <Stack>
-                                    <Stack direction={'row'} spacing={0.5} alignItems={'center'}>
-                                        <Avatar sx={{ width: 40, height: 40 }}>
-                                            <PhoneIphoneIcon sx={{ fontSize: 28 }} />
-                                        </Avatar>{' '}
-                                        <Stack
-                                            spacing={1}
-                                            onClick={(event) => {
-                                                setAnchorDropdownPhone(event.currentTarget);
-                                            }}>
-                                            <Stack
-                                                direction={'row'}
-                                                spacing={3}
-                                                alignItems={'center'}
-                                                title="Thay đổi máy"
-                                                sx={{ cursor: 'pointer' }}>
-                                                {/* Cột 1: Tên khách hàng, Nhóm khách hàng & Icon */}
-                                                <Stack direction="row" alignItems="center" spacing={1} maxWidth={250}>
-                                                    <Stack direction="column">
-                                                        <Typography
-                                                            variant="body2"
-                                                            fontWeight={500}
-                                                            className="lableOverflow">
-                                                            {phoneChosed?.tenHangHoa ?? 'Chưa chọn máy'}
-                                                        </Typography>
-                                                        {phoneChosed?.isShow ? (
+                            <Stack
+                                direction={'row'}
+                                paddingBottom={2}
+                                maxHeight={48}
+                                justifyContent={'space-between'}
+                                sx={{ mt: 1, mx: 1 }}>
+                                <Stack direction={'row'} spacing={0.5} alignItems={'center'} width="100%">
+                                    <Avatar sx={{ width: 40, height: 40 }}>
+                                        <PhoneIphoneIcon sx={{ fontSize: 28 }} />
+                                    </Avatar>
+
+                                    <Stack
+                                        spacing={1}
+                                        onClick={(event) => {
+                                            setAnchorDropdownPhone(event.currentTarget);
+                                        }}
+                                        sx={{ flexGrow: 1, cursor: 'pointer' }}>
+                                        <Stack direction="row" spacing={3} alignItems="center" title="Thay đổi máy">
+                                            {/* Cột thông tin máy */}
+                                            <Stack direction="row" alignItems="center" spacing={1} maxWidth={250}>
+                                                <Stack direction="column">
+                                                    <Typography
+                                                        variant="body2"
+                                                        fontWeight={500}
+                                                        className="lableOverflow">
+                                                        {phoneChosed?.tenHangHoa
+                                                            ? `${phoneChosed?.tenHangHoa}${
+                                                                  phoneChosed?.dungLuong
+                                                                      ? ` | ${phoneChosed?.dungLuong}`
+                                                                      : ''
+                                                              }${phoneChosed?.mau ? ` | ${phoneChosed?.mau}` : ''}`
+                                                            : 'Chưa chọn máy'}
+                                                    </Typography>
+
+                                                    {phoneChosed?.isShow && (
+                                                        <>
                                                             <Typography
                                                                 variant="body2"
                                                                 fontWeight={300}
                                                                 className="lableOverflow"
                                                                 sx={{ textTransform: 'none', color: '#555' }}>
-                                                                Nhóm: {phoneChosed?.tenChu}
+                                                                Nội dung: {phoneChosed?.noiDung}
                                                             </Typography>
-                                                        ) : null}
-                                                    </Stack>
-
-                                                    {/* Icon Xóa hoặc Thêm khách hàng (chỉ hiển thị 1 trong 2) */}
-                                                    {phoneChosed?.isShow ? (
-                                                        <CloseOutlinedIcon
-                                                            color="error"
-                                                            titleAccess="Bỏ chọn khách"
-                                                            sx={{ width: 20, cursor: 'pointer' }}
-                                                            onClick={(event) => {
-                                                                event.stopPropagation();
-                                                                RemovePhone();
-                                                            }}
-                                                        />
-                                                    ) : (
-                                                        <IconButton
-                                                            aria-label="add-customer"
-                                                            color="primary"
-                                                            title="Thêm khách máy mới"
-                                                            onClick={(event) => {
-                                                                event.stopPropagation();
-                                                                showModalAddCustomer();
-                                                            }}>
-                                                            <AddOutlinedIcon color="info" sx={{ width: 20 }} />
-                                                        </IconButton>
+                                                            <Typography
+                                                                variant="body2"
+                                                                fontWeight={300}
+                                                                className="lableOverflow"
+                                                                sx={{ textTransform: 'none', color: '#555' }}>
+                                                                Lỗi: {phoneChosed?.loi}
+                                                            </Typography>
+                                                        </>
                                                     )}
                                                 </Stack>
-
-                                                {/* Cột 2: Còn nợ & Số điện thoại (chỉ hiển thị nếu isShow = true) */}
-                                                {phoneChosed?.isShow && (
-                                                    <Stack direction="column" maxWidth={250}>
-                                                        {phoneChosed?.pin != null &&
-                                                            phoneChosed?.soPhutThucHien != 0 && (
-                                                                <Typography
-                                                                    color={'#000000'}
-                                                                    variant="caption"
-                                                                    sx={{ fontWeight: 'bold' }}>
-                                                                    Còn nợ:{' '}
-                                                                    {new Intl.NumberFormat('vi-VN').format(
-                                                                        phoneChosed?.giaBan ?? 0
-                                                                    )}{' '}
-                                                                    đ
-                                                                </Typography>
-                                                            )}
-                                                        <Typography color={'#000000'} variant="caption">
-                                                            Điện thoại: {phoneChosed?.noiDung}
-                                                        </Typography>
-                                                    </Stack>
-                                                )}
                                             </Stack>
+
+                                            {/* Cột còn nợ, pin, imel */}
+                                            {phoneChosed?.isShow && (
+                                                <Stack direction="column" maxWidth={250}>
+                                                    <Typography color={'#000000'} variant="caption" fontWeight="bold">
+                                                        Pass: 000000
+                                                    </Typography>
+                                                    <Typography color={'#000000'} variant="caption">
+                                                        Pin: {phoneChosed?.pin}%
+                                                    </Typography>
+                                                    <Typography color={'#000000'} variant="caption">
+                                                        Imel: {phoneChosed?.imel}
+                                                    </Typography>
+                                                </Stack>
+                                            )}
                                         </Stack>
-                                        {/* Icon mở modal Sử dụng dịch vụ (Chỉ hiển thị nếu isShow = true) */}
-                                        {phoneChosed?.isShow && (
-                                            <EditOutlinedIcon
-                                                color="secondary"
-                                                sx={{ marginLeft: 1, cursor: 'pointer' }}
-                                                onClick={(event) => {
-                                                    event.stopPropagation();
-                                                    showModalSuDungGDV();
-                                                }}
-                                            />
-                                        )}
                                     </Stack>
 
-                                    <MenuWithDataFromPhone
-                                        typeSearch={TypeSearchfromDB.CUSTOMER}
-                                        open={expandSearchCusPhone}
-                                        anchorEl={anchorDropdownPhone}
-                                        handleClose={() => setAnchorDropdownPhone(null)}
-                                        handleChoseItem={changePhone}
-                                    />
+                                    {/* Icon Thêm hoặc Sửa (ở bên trái, thay phiên nhau) */}
+                                    {phoneChosed?.isShow ? (
+                                        <EditOutlinedIcon
+                                            color="secondary"
+                                            sx={{ marginLeft: 1, cursor: 'pointer' }}
+                                            onClick={(event) => {
+                                                event.stopPropagation();
+                                                showModalSuDungGDV();
+                                            }}
+                                        />
+                                    ) : (
+                                        <IconButton
+                                            aria-label="add-customer"
+                                            color="primary"
+                                            title="Thêm máy mới"
+                                            onClick={(event) => {
+                                                event.stopPropagation();
+                                                showModalAddProduct();
+                                            }}>
+                                            <AddOutlinedIcon color="info" sx={{ width: 20 }} />
+                                        </IconButton>
+                                    )}
+
+                                    {/* Icon Xóa (luôn cố định ở bên phải) */}
+                                    {phoneChosed?.isShow && (
+                                        <CloseOutlinedIcon
+                                            color="error"
+                                            titleAccess="Bỏ chọn máy"
+                                            sx={{ width: 20, marginLeft: 1, cursor: 'pointer' }}
+                                            onClick={(event) => {
+                                                event.stopPropagation();
+                                                RemovePhone();
+                                            }}
+                                        />
+                                    )}
                                 </Stack>
+
+                                {/* Menu chọn máy */}
+                                <MenuWithDataFromPhone
+                                    typeSearch={TypeSearchfromDB.CUSTOMER}
+                                    open={expandSearchCusPhone}
+                                    anchorEl={anchorDropdownPhone}
+                                    handleClose={() => setAnchorDropdownPhone(null)}
+                                    handleChoseItem={changePhone}
+                                />
                             </Stack>
 
                             <Stack overflow={'auto'} maxHeight={'calc(84vh - 280px)!important'} zIndex={3}>

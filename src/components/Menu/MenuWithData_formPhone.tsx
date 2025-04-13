@@ -44,13 +44,15 @@ export default function MenuWithDataFromPhone({
                     const arrProduct = data?.items?.map((x: any) => {
                         return {
                             id: x.id.toString(),
-                            tenMay: x.tenHangHoa, // Tên máy
-                            text2: x.imel, // IMEI
+                            tenMay: x.tenHangHoa,
+                            tenNhomHang: x.tenNhomHang, // Tên máy
+                            imel: x.imel, // IMEI
                             dungLuong: x.dungLuong,
                             mau: x.mau,
                             chuMay: x.tenChu,
                             noiDung: x.noiDung,
-                            loi: x.loi
+                            loi: x.loi,
+                            pin: x.pin
                         } as IListPhone;
                     });
 
