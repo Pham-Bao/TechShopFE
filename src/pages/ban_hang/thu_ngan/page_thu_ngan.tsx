@@ -24,6 +24,7 @@ import { useEffect, useRef, useState } from 'react';
 import GroupProductService from '../../../services/product/GroupProductService';
 import {
     IHangHoaGroupTheoNhomDto,
+    ModelHangHoaDienThoaiDto,
     ModelHangHoaDto,
     ModelNhomHangHoa,
     PagedProductSearchDto
@@ -82,6 +83,11 @@ import { ParamSearchSoQuyDto } from '../../../services/so_quy/Dto/ParamSearchSoQ
 import Cookies from 'js-cookie';
 import { lastDayOfMonth } from 'date-fns';
 import customer from '../../customer';
+import PhoneIphoneIcon from '@mui/icons-material/PhoneIphone';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import { Box } from '@mui/system';
+import MenuWithDataFromPhone from '../../../components/Menu/MenuWithData_formPhone';
+import { IListPhone } from '../../../services/dto/IListPhone';
 
 export type IPropsPageThuNgan = {
     txtSearch: string;
@@ -114,7 +120,10 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
     const firstLoad_changeLoaiHD = useRef(true);
     const firstLoad_changeIdInvoiceWaiting = useRef(true);
     const [anchorDropdownCustomer, setAnchorDropdownCustomer] = useState<null | HTMLElement>(null);
+    const [anchorDropdownPhone, setAnchorDropdownPhone] = useState<null | HTMLElement>(null);
     const expandSearchCus = Boolean(anchorDropdownCustomer);
+    const expandSearchCusPhone = Boolean(anchorDropdownPhone);
+
     const [anchorGiamGiaHD, setAnchorGiamGiaHD] = useState<null | HTMLElement | SVGElement>(null);
     const isShowPopoverGiamGia = Boolean(anchorGiamGiaHD);
 
@@ -135,6 +144,8 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
     const [isShowModalAddCus, setIsShowModalAddCus] = useState(false);
     const [newCus, setNewCus] = useState<CreateOrEditKhachHangDto>({} as CreateOrEditKhachHangDto);
     const [customerChosed, setCustomerChosed] = useState<CreateOrEditKhachHangDto>({} as CreateOrEditKhachHangDto);
+    const [phoneChosed, setPhoneChosed] = useState<ModelHangHoaDienThoaiDto>({} as ModelHangHoaDienThoaiDto);
+
     const [hoaDonChiTiet, setHoaDonChiTiet] = useState<PageHoaDonChiTietDto[]>([]);
     const [idCTHDChosing, setIdCTHDChosing] = useState('');
     const [hoadon, setHoaDon] = useState<PageHoaDonDto>(
@@ -194,7 +205,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
     }, [arrIdNhomHangFilter]);
 
     const GetInforCustomer_byId = async (cusId: string) => {
-        console.log('test');
+        console.log('test ok ở đây');
         const customer = await khachHangService.getKhachHang(cusId);
         setCustomerChosed(customer);
     };
@@ -663,6 +674,36 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
         await CheckCustomer_hasGDV(item?.id ?? '');
     };
 
+    const changePhone = async (item: IListPhone) => {
+        setAnchorDropdownPhone(null);
+        setPhoneChosed({
+            ...phoneChosed,
+            id: item?.id,
+            tenHangHoa: item?.tenMay ?? '',
+            dungLuong: item?.dungLuong ?? '',
+            mau: item?.mau ?? '',
+            tenChu: item?.chuMay ?? '',
+            noiDung: item?.noiDung ?? '',
+            loi: item?.loi ?? '',
+            imel: item?.imel ?? '',
+            isShow: true
+        });
+
+        //const idCheckin = await InsertCustomer_toCheckIn(item?.id ?? Guid.EMPTY);
+        //setHoaDon({ ...hoadon, idKhachHang: item?.id, idCheckIn: idCheckin });
+
+        // await AddHD_toCache_IfNotExists();
+        // await dbDexie.hoaDon.update(hoadon?.id, {
+        //     idCheckIn: idCheckin,
+        //     idKhachHang: item?.id,
+        //     tenKhachHang: item?.text,
+        //     maKhachHang: item?.text, // todo maKhachHang
+        //     soDienThoai: item?.text2
+        // });
+
+        // await CheckCustomer_hasGDV(item?.id ?? '');
+    };
+
     const CheckCustomer_hasGDV = async (customerId: string) => {
         const existGDV = await HoaDonService.CheckCustomer_hasGDV(customerId);
         setCustomerHasGDV(existGDV);
@@ -720,6 +761,31 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
             .modify((o: PageHoaDonDto) => (o.idKhachHang = null));
     };
 
+    const AgreeRemovePhone = async () => {
+        // const idCheckinDelete = hoadon?.idCheckIn ?? Guid.EMPTY;
+        // await CheckinService.UpdateTrangThaiCheckin(idCheckinDelete, TrangThaiCheckin.DELETED);
+        // await CheckinService.UpdateTrangThaiBooking_byIdCheckIn(idCheckinDelete, TrangThaiBooking.Confirm);
+        // setCustomerHasGDV(false);
+        // setConfirmDialog({ ...confirmDialog, show: false });
+        // setHoaDon({ ...hoadon, idKhachHang: null });
+        setPhoneChosed({
+            ...phoneChosed,
+            id: Guid.EMPTY,
+            tenHangHoa: 'Chưa chọn máy',
+            dungLuong: '',
+            mau: '',
+            tenChu: '',
+            noiDung: '',
+            loi: '',
+            imel: '',
+            isShow: false
+        });
+        // await dbDexie.hoaDon
+        //     .where('id')
+        //     .equals(hoadon?.id)
+        //     .modify((o: PageHoaDonDto) => (o.idKhachHang = null));
+    };
+
     const CheckDangSuDungGDV = (type: number) => {
         const ctSuDung = hoaDonChiTiet?.filter((x) => !utils.checkNull_OrEmpty(x.idChiTietHoaDon));
         if (ctSuDung?.length > 0) {
@@ -741,6 +807,14 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
             return;
         }
         await AgreeRemoveCustomer();
+    };
+
+    const RemovePhone = async () => {
+        const check = CheckDangSuDungGDV(1);
+        if (!check) {
+            return;
+        }
+        await AgreeRemovePhone();
     };
 
     const showModalAddCustomer = () => {
@@ -1640,6 +1714,123 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                                     <DatePickerCustom
                                         defaultVal={hoadon?.ngayLapHoaDon}
                                         handleChangeDate={changeNgayLapHoaDon}
+                                    />
+                                </Stack>
+                            </Stack>
+                            <Box
+                                sx={{
+                                    height: '1px',
+                                    width: '89%',
+                                    backgroundColor: '#ccc',
+                                    my: 1,
+                                    mx: 'auto'
+                                }}
+                            />
+
+                            <Stack direction={'row'} paddingBottom={2} maxHeight={48} justifyContent={'space-between'}>
+                                <Stack>
+                                    <Stack direction={'row'} spacing={0.5} alignItems={'center'}>
+                                        <Avatar sx={{ width: 40, height: 40 }}>
+                                            <PhoneIphoneIcon sx={{ fontSize: 28 }} />
+                                        </Avatar>{' '}
+                                        <Stack
+                                            spacing={1}
+                                            onClick={(event) => {
+                                                setAnchorDropdownPhone(event.currentTarget);
+                                            }}>
+                                            <Stack
+                                                direction={'row'}
+                                                spacing={3}
+                                                alignItems={'center'}
+                                                title="Thay đổi máy"
+                                                sx={{ cursor: 'pointer' }}>
+                                                {/* Cột 1: Tên khách hàng, Nhóm khách hàng & Icon */}
+                                                <Stack direction="row" alignItems="center" spacing={1} maxWidth={250}>
+                                                    <Stack direction="column">
+                                                        <Typography
+                                                            variant="body2"
+                                                            fontWeight={500}
+                                                            className="lableOverflow">
+                                                            {phoneChosed?.tenHangHoa ?? 'Chưa chọn máy'}
+                                                        </Typography>
+                                                        {phoneChosed?.isShow ? (
+                                                            <Typography
+                                                                variant="body2"
+                                                                fontWeight={300}
+                                                                className="lableOverflow"
+                                                                sx={{ textTransform: 'none', color: '#555' }}>
+                                                                Nhóm: {phoneChosed?.tenChu}
+                                                            </Typography>
+                                                        ) : null}
+                                                    </Stack>
+
+                                                    {/* Icon Xóa hoặc Thêm khách hàng (chỉ hiển thị 1 trong 2) */}
+                                                    {phoneChosed?.isShow ? (
+                                                        <CloseOutlinedIcon
+                                                            color="error"
+                                                            titleAccess="Bỏ chọn khách"
+                                                            sx={{ width: 20, cursor: 'pointer' }}
+                                                            onClick={(event) => {
+                                                                event.stopPropagation();
+                                                                RemovePhone();
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <IconButton
+                                                            aria-label="add-customer"
+                                                            color="primary"
+                                                            title="Thêm khách máy mới"
+                                                            onClick={(event) => {
+                                                                event.stopPropagation();
+                                                                showModalAddCustomer();
+                                                            }}>
+                                                            <AddOutlinedIcon color="info" sx={{ width: 20 }} />
+                                                        </IconButton>
+                                                    )}
+                                                </Stack>
+
+                                                {/* Cột 2: Còn nợ & Số điện thoại (chỉ hiển thị nếu isShow = true) */}
+                                                {phoneChosed?.isShow && (
+                                                    <Stack direction="column" maxWidth={250}>
+                                                        {phoneChosed?.pin != null &&
+                                                            phoneChosed?.soPhutThucHien != 0 && (
+                                                                <Typography
+                                                                    color={'#000000'}
+                                                                    variant="caption"
+                                                                    sx={{ fontWeight: 'bold' }}>
+                                                                    Còn nợ:{' '}
+                                                                    {new Intl.NumberFormat('vi-VN').format(
+                                                                        phoneChosed?.giaBan ?? 0
+                                                                    )}{' '}
+                                                                    đ
+                                                                </Typography>
+                                                            )}
+                                                        <Typography color={'#000000'} variant="caption">
+                                                            Điện thoại: {phoneChosed?.noiDung}
+                                                        </Typography>
+                                                    </Stack>
+                                                )}
+                                            </Stack>
+                                        </Stack>
+                                        {/* Icon mở modal Sử dụng dịch vụ (Chỉ hiển thị nếu isShow = true) */}
+                                        {phoneChosed?.isShow && (
+                                            <EditOutlinedIcon
+                                                color="secondary"
+                                                sx={{ marginLeft: 1, cursor: 'pointer' }}
+                                                onClick={(event) => {
+                                                    event.stopPropagation();
+                                                    showModalSuDungGDV();
+                                                }}
+                                            />
+                                        )}
+                                    </Stack>
+
+                                    <MenuWithDataFromPhone
+                                        typeSearch={TypeSearchfromDB.CUSTOMER}
+                                        open={expandSearchCusPhone}
+                                        anchorEl={anchorDropdownPhone}
+                                        handleClose={() => setAnchorDropdownPhone(null)}
+                                        handleChoseItem={changePhone}
                                     />
                                 </Stack>
                             </Stack>

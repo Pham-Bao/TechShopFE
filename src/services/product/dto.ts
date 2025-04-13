@@ -73,6 +73,8 @@ export class ModelHangHoaDienThoaiDto {
     matKhau?: string = '';
     loi?: string = '';
     ghiChu?: string = '';
+    tenChu?: string = '';
+    isShow?: boolean;
     tenHangHoa_KhongDau?: string = '';
     idNhomHangHoa?: string | null = '';
     idLoaiHangHoa?: number = 4;
