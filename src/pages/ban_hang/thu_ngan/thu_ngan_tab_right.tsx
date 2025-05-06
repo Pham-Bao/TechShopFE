@@ -529,6 +529,7 @@ const ThuNganTabRight: FC<{
         const objCheckInNew: KHCheckInDto = {
             id: Guid.EMPTY,
             idKhachHang: customerId,
+            idHangHoa: customerId,
             dateTimeCheckIn: hoadon?.ngayLapHoaDon,
             idChiNhanh: idChiNhanhChosed,
             trangThai: TrangThaiCheckin.DOING,

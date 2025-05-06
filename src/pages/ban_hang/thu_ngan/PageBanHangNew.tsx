@@ -1167,6 +1167,7 @@ const PageBanHang = ({ customerChosed, horizontalLayout }: any) => {
             const inputCheckIn: KHCheckInDto = {
                 id: idCheckInUpdate,
                 idKhachHang: hoadon?.idKhachHang as unknown as string,
+                idHangHoa: '',
                 dateTimeCheckIn: hoadon?.ngayLapHoaDon,
                 idChiNhanh: hoadon?.idChiNhanh as unknown as string,
                 trangThai: trangThai,
@@ -2066,12 +2067,6 @@ const PageBanHang = ({ customerChosed, horizontalLayout }: any) => {
                                                 badgeContent={allInvoiceWaiting?.length ?? 0}
                                                 color="secondary"
                                                 sx={{ position: 'relative' }}>
-                                                <ShoppingCartIcon
-                                                    sx={{ color: '#1976d2' }}
-                                                    titleAccess="Hóa đơn chờ"
-                                                    onClick={showAllInvoiceWaiting}
-                                                />
-
                                                 <Stack
                                                     width={190}
                                                     spacing={1}

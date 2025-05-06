@@ -9,5 +9,6 @@ export interface IListPhone {
     loi?: string;
     imel?: string;
     pin?: string;
+    idChuSoHuu?: string;
     isShow?: boolean;
 }

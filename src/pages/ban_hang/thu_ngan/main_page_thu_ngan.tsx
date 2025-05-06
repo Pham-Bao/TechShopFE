@@ -372,7 +372,7 @@ export default function MainPageThuNgan() {
 
     const [idChiNhanhChosed, setIdChiNhanhChosed] = useState<string>(Cookies.get('IdChiNhanh') ?? '');
     const [customerIdChosed, setCustomerIdChosed] = useState<string>('');
-
+    const [phoneIdChosed, setPhoneIdChosed] = useState<string>('');
     const [pageThuNgan_idChecking, setPageThuNgan_idChecking] = useState<string>(Guid.EMPTY);
     const [pageThuNgan_LoaiHoaDon, setPageThuNgan_LoaiHoaDon] = useState(LoaiChungTu.HOA_DON_BAN_LE);
     const [pageThuNgan_IdInvoiceWaiting, setPageThuNgan_IdInvoiceWaiting] = useState('');
@@ -433,12 +433,14 @@ export default function MainPageThuNgan() {
     //         return maxNumber.toString();
     //     }
     // };
-
-    const onClickAddHoaDon = (customerId: string, idCheckIn?: string) => {
+    const onClickAddHoaDon = (customerId: string, idCheckIn?: string, idPhone?: string) => {
+        console.log('Truyền vào:', idPhone);
+        setPhoneIdChosed(idPhone ?? '');
         setTabMainActive(TabMain.THU_NGAN);
         setCustomerIdChosed(customerId);
         setPageThuNgan_idChecking(idCheckIn ?? '');
     };
+
     return (
         <Grid container className="main_page_thu_ngan" padding={2} position={'relative'}>
             <ModalFilterNhomHangHoa
@@ -607,6 +609,7 @@ export default function MainPageThuNgan() {
                         loaiHoaDon={pageThuNgan_LoaiHoaDon}
                         idChiNhanhChosed={idChiNhanhChosed}
                         customerIdChosed={customerIdChosed}
+                        phoneIdChosed={phoneIdChosed}
                         idCheckIn={pageThuNgan_idChecking}
                         idInvoiceWaiting={pageThuNgan_IdInvoiceWaiting}
                         arrIdNhomHangFilter={arrIdNhomHangFilter}

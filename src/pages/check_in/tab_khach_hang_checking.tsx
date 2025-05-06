@@ -20,7 +20,7 @@ export type IPropsTabKhachHangCheckIn = {
     txtSearch: string;
     idChiNhanhChosed: string;
     isShowModalAddCheckin: boolean;
-    onClickAddHoaDon: (customerId: string, idCheckIn?: string) => void;
+    onClickAddHoaDon: (customerId: string, idCheckIn?: string, idPhone?: string) => void;
     onCloseModalAddCheckin: () => void;
 };
 
@@ -76,7 +76,7 @@ export default function TabKhachHangChecking(props: IPropsTabKhachHangCheckIn) {
     }, [txtSearch]);
 
     const addHoaDon = async (cusItem: PageKhachHangCheckInDto) => {
-        onClickAddHoaDon(cusItem?.idKhachHang ?? '', cusItem?.idCheckIn);
+        onClickAddHoaDon(cusItem?.idKhachHang ?? '', cusItem?.idCheckIn ?? '', cusItem?.idHangHoa ?? '');
     };
 
     const onRemoveCustomerChecking = (item: PageKhachHangCheckInDto) => {
@@ -135,6 +135,21 @@ export default function TabKhachHangChecking(props: IPropsTabKhachHangCheckIn) {
     if (isLoadingData) {
         return <Loading />;
     }
+    const getColorByTrangThai = (trangThaiCheckIn?: number): string => {
+        console.log(trangThaiCheckIn);
+        switch (trangThaiCheckIn) {
+            case 1:
+                return '#d0f0c0'; // Xanh nhạt
+            case 2:
+                return '#fff3cd'; // Vàng nhạt
+            case 3:
+                return '#d1ecf1'; // Xanh dương
+            case 4:
+                return '#f8d7da'; // Đỏ nhạt
+            default:
+                return '#ffffff'; // Mặc định
+        }
+    };
 
     return (
         <>
@@ -170,7 +185,7 @@ export default function TabKhachHangChecking(props: IPropsTabKhachHangCheckIn) {
                                 borderRadius={1}
                                 sx={{
                                     boxShadow: '0px 2px 5px 0px #c6bdd1',
-                                    backgroundColor: '#fff',
+                                    backgroundColor: getColorByTrangThai(cusItem.trangThaiCheckIn ?? 0),
                                     '&:hover': {
                                         borderColor: 'var(--color-main)',
                                         cursor: 'pointer'
@@ -184,55 +199,73 @@ export default function TabKhachHangChecking(props: IPropsTabKhachHangCheckIn) {
                                     justifyContent={'space-between'}
                                     spacing={1.5}
                                     onClick={() => addHoaDon(cusItem)}>
-                                    <Stack minHeight={50} direction={'row'} justifyContent={'space-between'}>
-                                        <Stack spacing={2} direction={'row'}>
-                                            <Stack>
-                                                <Avatar src={cusItem?.avatar} />
-                                            </Stack>
-                                            <Stack spacing={1}>
+                                    <Stack minHeight={50} direction="row" justifyContent="space-between">
+                                        <Stack spacing={2} direction="row">
+                                            <Avatar src={cusItem?.avatar} />
+                                            <Stack spacing={0.5}>
                                                 <Typography
                                                     variant="body2"
                                                     fontWeight={500}
                                                     maxWidth={260}
                                                     className="lableOverflow"
                                                     title={cusItem?.tenKhachHang}>
-                                                    {cusItem?.tenKhachHang}
+                                                    {cusItem?.tenKhachHang}{' '}
+                                                    <span style={{ color: 'var(--color-text-blur)' }}>
+                                                        ({cusItem?.soDienThoai})
+                                                    </span>
                                                 </Typography>
-                                                <Typography variant="caption" color={'var( --color-text-blur)'}>
-                                                    {cusItem?.soDienThoai}
+
+                                                <Typography
+                                                    variant="body2"
+                                                    fontWeight={500}
+                                                    maxWidth={260}
+                                                    className="lableOverflow"
+                                                    title={cusItem?.tenHangHoa}>
+                                                    {cusItem?.tenHangHoa}{' '}
+                                                    <span style={{ color: 'var(--color-text-blur)' }}>
+                                                        ({cusItem?.noiDung})
+                                                    </span>
                                                 </Typography>
                                             </Stack>
                                         </Stack>
                                     </Stack>
 
-                                    <Stack direction={'row'} alignItems={'center'} justifyContent={'space-between'}>
-                                        {cusItem?.loaiHoaDon !== LoaiChungTu.GOI_DICH_VU ? (
-                                            <Typography
-                                                sx={{
-                                                    color: '#1976d2',
-                                                    '&:hover': {
-                                                        color: '#3c9977',
-                                                        cursor: 'pointer'
-                                                    }
-                                                }}>
-                                                Hóa đơn
+                                    <Stack direction="row" alignItems="center" justifyContent="space-between">
+                                        <Stack direction="column" spacing={0.2}>
+                                            {cusItem?.loaiHoaDon !== LoaiChungTu.GOI_DICH_VU ? (
+                                                <Typography
+                                                    sx={{
+                                                        color: '#1976d2',
+                                                        '&:hover': {
+                                                            color: '#3c9977',
+                                                            cursor: 'pointer'
+                                                        }
+                                                    }}>
+                                                    Hóa đơn sửa
+                                                </Typography>
+                                            ) : (
+                                                <Typography
+                                                    sx={{
+                                                        color: 'var(--color-second)',
+                                                        '&:hover': {
+                                                            color: '#c32b2b',
+                                                            cursor: 'pointer'
+                                                        }
+                                                    }}>
+                                                    Gói dịch vụ
+                                                </Typography>
+                                            )}
+
+                                            <Typography variant="body2" fontStyle="italic" color="GrayText">
+                                                {cusItem?.txtTrangThaiCheckIn}
                                             </Typography>
-                                        ) : (
-                                            <Typography
-                                                sx={{
-                                                    color: 'var(--color-second)',
-                                                    '&:hover': {
-                                                        color: '#c32b2b',
-                                                        cursor: 'pointer'
-                                                    }
-                                                }}>
-                                                Gói dịch vụ
-                                            </Typography>
-                                        )}
-                                        <Typography variant="body2" color={'var(--color-text-secondary)'}>
+                                        </Stack>
+
+                                        <Typography variant="body2" color="var(--color-text-secondary)">
                                             {cusItem?.dateCheckIn}
                                         </Typography>
                                     </Stack>
+
                                     <Stack alignItems={'center'} direction={'row'} spacing={1}>
                                         <Typography variant="body2">Tổng mua:</Typography>
                                         <Typography variant="body2" fontWeight={500}>

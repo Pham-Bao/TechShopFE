@@ -16,7 +16,9 @@ import {
     Link,
     FormGroup,
     FormControlLabel,
-    Checkbox
+    Checkbox,
+    Avatar,
+    IconButton
 } from '@mui/material';
 import { ReactComponent as CloseIcon } from '../../images/close-square.svg';
 import { Add } from '@mui/icons-material';
@@ -45,6 +47,15 @@ import DialogButtonClose from '../../components/Dialog/ButtonClose';
 import { AppContext } from '../../services/chi_nhanh/ChiNhanhContext';
 import { CreateNhatKyThaoTacDto } from '../../services/nhat_ky_hoat_dong/dto/CreateNhatKyThaoTacDto';
 import nhatKyHoatDongService from '../../services/nhat_ky_hoat_dong/nhatKyHoatDongService';
+import MenuWithDataFromDB from '../../components/Menu/MenuWithData_fromDB';
+
+import AutoStoriesOutlinedIcon from '@mui/icons-material/AutoStoriesOutlined';
+import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import { CreateOrEditKhachHangDto } from '../../services/khach-hang/dto/CreateOrEditKhachHangDto';
+import { IList } from '../../services/dto/IList';
+import { TypeSearchfromDB } from '../../enum/TypeSearch_fromDB';
+import khachHangService from '../../services/khach-hang/khachHangService';
 
 const ModalHangHoaDienThoai = ({ handleSave, trigger }: any) => {
     const appContext = useContext(AppContext);
@@ -72,6 +83,9 @@ const ModalHangHoaDienThoai = ({ handleSave, trigger }: any) => {
     );
     const [triggerModalNhomHang, setTriggerModalNhomHang] = useState<PropModal>(new PropModal({ isShow: false }));
     const [objAlert, setObjAlert] = useState({ show: false, type: 1, mes: '' });
+    const [customerChosed, setCustomerChosed] = useState<CreateOrEditKhachHangDto>({} as CreateOrEditKhachHangDto);
+    const [anchorDropdownCustomer, setAnchorDropdownCustomer] = useState<null | HTMLElement>(null);
+    const expandSearchCus = Boolean(anchorDropdownCustomer);
 
     const showModal = async (id: string) => {
         if (id) {
@@ -100,6 +114,18 @@ const ModalHangHoaDienThoai = ({ handleSave, trigger }: any) => {
 
             const imgData = await ImgurAPI.GetFile_fromId(imgur_image?.id ?? '');
             setProductImage(imgData?.link ?? '');
+            //get inford CuttommerCuttommer
+            const data = await khachHangService.getDetailCustomerById(obj.idChuSoHuu ?? '');
+            setCustomerChosed({
+                ...customerChosed,
+                id: data?.id?.toString() ?? '',
+                maKhachHang: data?.maKhachHang ?? '',
+                tenKhachHang: data?.tenKhachHang ?? 'Khách lẻ',
+                soDienThoai: data?.soDienThoai ?? '',
+                conNo: data?.conNo,
+                tenNhomKhach: data.tenNhomKhach,
+                isShow: true
+            });
         } else {
             setProductPhone(new ModelHangHoaDienThoaiDto());
             setProductImage('');
@@ -320,6 +346,8 @@ const ModalHangHoaDienThoai = ({ handleSave, trigger }: any) => {
         objNew.imel = productPhone.imel;
         objNew.loi = productPhone.loi;
         objNew.matKhau = productPhone.matKhau;
+        objNew.idChuSoHuu = customerChosed.id;
+        objNew.idLoaiHangHoa = 4;
 
         objNew.donViQuiDois = [
             {
@@ -332,7 +360,6 @@ const ModalHangHoaDienThoai = ({ handleSave, trigger }: any) => {
                 laDonViTinhChuan: objNew.laDonViTinhChuan
             }
         ];
-
         const data = await ProductService.CreateOrEditProductPhone(objNew);
         objNew.id = data.id;
         objNew.idHangHoa = data.id;
@@ -367,6 +394,65 @@ const ModalHangHoaDienThoai = ({ handleSave, trigger }: any) => {
         });
         // todgo get again treeNhomHang
     };
+
+    const changeCustomer = async (item: IList) => {
+        setAnchorDropdownCustomer(null);
+        setCustomerChosed({
+            ...customerChosed,
+            id: item?.id,
+            maKhachHang: item?.maKhachHang ?? '',
+            tenKhachHang: item?.text ?? 'Khách lẻ',
+            soDienThoai: item?.text2 ?? '',
+            conNo: item?.conNo,
+            tenNhomKhach: item.nhomKhach,
+            isShow: true
+        });
+        //const idCheckin = await InsertCustomer_toCheckIn(item?.id ?? Guid.EMPTY);
+        // setHoaDon({ ...hoadon, idKhachHang: item?.id, idCheckIn: idCheckin });
+
+        // wait AddHD_toCache_IfNotExists();
+        // await dbDexie.hoaDon.update(hoadon?.id, {
+        //     idCheckIn: idCheckin,
+        //     idKhachHang: item?.id,
+        //     tenKhachHang: item?.text,
+        //     maKhachHang: item?.maKhachHang, // todo maKhachHang
+        //     soDienThoai: item?.text2,
+        //     idHangHoa: 'iwhgfuiwheiuhdqsi'
+        // });
+
+        // await CheckCustomer_hasGDV(item?.id ?? '');
+    };
+
+    const RemoveCustomer = async () => {
+        // const check = CheckDangSuDungGDV(1);
+        // if (!check) {
+        //     return;
+        // }
+        await AgreeRemoveCustomer();
+    };
+
+    const AgreeRemoveCustomer = async () => {
+        // const idCheckinDelete = hoadon?.idCheckIn ?? Guid.EMPTY;
+        // await CheckinService.UpdateTrangThaiCheckin(idCheckinDelete, TrangThaiCheckin.DELETED);
+        // await CheckinService.UpdateTrangThaiBooking_byIdCheckIn(idCheckinDelete, TrangThaiBooking.Confirm);
+        // setCustomerHasGDV(false);
+        // setConfirmDialog({ ...confirmDialog, show: false });
+        // setHoaDon({ ...hoadon, idKhachHang: null });
+        setCustomerChosed({
+            ...customerChosed,
+            id: Guid.EMPTY,
+            maKhachHang: 'KL', // todo makhachhang
+            tenKhachHang: 'Khách lẻ',
+            soDienThoai: '',
+            conNo: 0,
+            tenNhomKhach: '',
+            isShow: false
+        });
+        // await dbDexie.hoaDon
+        //     .where('id')
+        //     .equals(hoadon?.id)
+        //     .modify((o: PageHoaDonDto) => (o.idKhachHang = null));
+    };
     return (
         <>
             <ConfirmDelete
@@ -387,7 +473,94 @@ const ModalHangHoaDienThoai = ({ handleSave, trigger }: any) => {
                     {isNew ? 'Thêm ' : 'Cập nhật '}
                     {productPhone.tenLoaiHangHoa?.toLocaleLowerCase()}
                 </DialogTitle>
+
                 <DialogContent>
+                    <Stack>
+                        <Stack direction={'row'} spacing={1} alignItems={'center'}>
+                            <Avatar />
+                            <Stack
+                                spacing={1}
+                                onClick={(event) => {
+                                    setAnchorDropdownCustomer(event.currentTarget);
+                                }}>
+                                <Stack
+                                    direction={'row'}
+                                    spacing={3}
+                                    alignItems={'center'}
+                                    title="Thay đổi khách hàng"
+                                    sx={{ cursor: 'pointer' }}>
+                                    {/* Cột 1: Tên khách hàng, Nhóm khách hàng & Icon */}
+                                    <Stack direction="row" alignItems="center" spacing={1} maxWidth={250}>
+                                        <Stack direction="column">
+                                            <Typography variant="body2" fontWeight={500} className="lableOverflow">
+                                                {customerChosed?.tenKhachHang ?? 'Chưa chọn khách hàng'}
+                                            </Typography>
+                                            {customerChosed?.isShow && ( // Chỉ hiển thị nhóm khách hàng nếu isShow = true
+                                                <Typography
+                                                    variant="body2"
+                                                    fontWeight={300}
+                                                    className="lableOverflow"
+                                                    sx={{ textTransform: 'none', color: '#555' }}>
+                                                    Nhóm: {customerChosed?.tenNhomKhach}
+                                                </Typography>
+                                            )}
+                                        </Stack>
+
+                                        {/* Icon Xóa hoặc Thêm khách hàng (chỉ hiển thị 1 trong 2) */}
+                                        {customerChosed?.isShow ? (
+                                            <CloseOutlinedIcon
+                                                color="error"
+                                                titleAccess="Bỏ chọn khách hàng"
+                                                sx={{ width: 20, cursor: 'pointer' }}
+                                                onClick={(event) => {
+                                                    event.stopPropagation();
+                                                    RemoveCustomer();
+                                                }}
+                                            />
+                                        ) : (
+                                            <IconButton
+                                                aria-label="add-customer"
+                                                color="primary"
+                                                title="Thêm khách hàng mới"
+                                                onClick={(event) => {
+                                                    event.stopPropagation();
+                                                    // showModalAddCustomer();
+                                                }}>
+                                                <AddOutlinedIcon color="info" sx={{ width: 20 }} />
+                                            </IconButton>
+                                        )}
+                                    </Stack>
+
+                                    {/* Cột 2: Còn nợ & Số điện thoại (chỉ hiển thị nếu isShow = true) */}
+                                    {customerChosed?.isShow && (
+                                        <Stack direction="column" maxWidth={250}>
+                                            {customerChosed?.conNo != null && customerChosed?.conNo != 0 && (
+                                                <Typography
+                                                    color={'#000000'}
+                                                    variant="caption"
+                                                    sx={{ fontWeight: 'bold' }}>
+                                                    Còn nợ:{' '}
+                                                    {new Intl.NumberFormat('vi-VN').format(customerChosed?.conNo ?? 0)}{' '}
+                                                    đ
+                                                </Typography>
+                                            )}
+                                            <Typography color={'#000000'} variant="caption">
+                                                Điện thoại: {customerChosed?.soDienThoai}
+                                            </Typography>
+                                        </Stack>
+                                    )}
+                                </Stack>
+                            </Stack>
+                        </Stack>
+
+                        <MenuWithDataFromDB
+                            typeSearch={TypeSearchfromDB.CUSTOMER}
+                            open={expandSearchCus}
+                            anchorEl={anchorDropdownCustomer}
+                            handleClose={() => setAnchorDropdownCustomer(null)}
+                            handleChoseItem={changeCustomer}
+                        />
+                    </Stack>
                     <Grid container spacing={2} paddingTop={2}>
                         <Grid item xs={12} sm={4} md={4} lg={4}>
                             <Box
@@ -594,7 +767,7 @@ const ModalHangHoaDienThoai = ({ handleSave, trigger }: any) => {
                                         }
                                     />
                                 </Stack>
-                                <Stack direction="row" spacing={2}>
+                                {/* <Stack direction="row" spacing={2}>
                                     <NumericFormat
                                         size="small"
                                         fullWidth
@@ -615,7 +788,7 @@ const ModalHangHoaDienThoai = ({ handleSave, trigger }: any) => {
                                         customInput={TextField}
                                         onChange={(event) => editGiaVon(event)}
                                     />
-                                </Stack>
+                                </Stack> */}
                             </Stack>
                         </Grid>
                     </Grid>

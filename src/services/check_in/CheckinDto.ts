@@ -7,6 +7,7 @@ export class KHCheckInDto {
     id = '';
     idKhachHang = '';
     idChiNhanh = '';
+    idHangHoa: string | null = null;
     dateTimeCheckIn = format(new Date(), 'yyyy-MM-dd HH:mm:ss.SSS');
     ghiChu = '';
     trangThai = TrangThaiCheckin.WAITING; // default
@@ -33,11 +34,14 @@ export interface ICheckInHoaDonto {
 
 export class PageKhachHangCheckInDto {
     idKhachHang: string | null = null;
+    idHangHoa: string | null = null;
     idChiNhanh: string | null = null;
     idCheckIn = Guid.EMPTY;
     maKhachHang: string | null = null;
     tenKhachHang = '';
     soDienThoai = '';
+    tenHangHoa = '';
+    noiDung = '';
     avatar? = '';
     tongTichDiem? = 0;
     dateTimeCheckIn = format(new Date(), 'yyyy-MM-dd');
@@ -53,6 +57,7 @@ export class PageKhachHangCheckInDto {
 
     constructor({
         idKhachHang = Guid.EMPTY,
+        idHangHoa = Guid.EMPTY,
         idChiNhanh = null,
         idCheckIn = Guid.EMPTY,
         dateTimeCheckIn = format(new Date(), 'yyyy-MM-dd'),
@@ -64,6 +69,7 @@ export class PageKhachHangCheckInDto {
         txtTrangThaiCheckIn = 'Đang chờ'
     }) {
         this.idKhachHang = idKhachHang;
+        this.idHangHoa = idHangHoa;
         this.idChiNhanh = idChiNhanh;
         this.idCheckIn = idCheckIn;
         this.maKhachHang = maKhachHang;

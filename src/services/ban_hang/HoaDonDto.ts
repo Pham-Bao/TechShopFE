@@ -6,6 +6,7 @@ import { LoaiChungTu } from '../../lib/appconst';
 export default class HoaDonDto {
     id = Guid.create().toString();
     idKhachHang: string | null = null;
+    idHangHoa: string | null = null;
     idChiNhanh?: string;
     idNhanVien? = null;
     idLoaiChungTu = LoaiChungTu.HOA_DON_BAN_LE;
@@ -33,6 +34,7 @@ export default class HoaDonDto {
         id = Guid.create().toString(),
         idLoaiChungTu = 1,
         idKhachHang = null,
+        idHangHoa = null,
         idChiNhanh = '',
         idNhanVien = null,
         maHoaDon = '',
@@ -52,6 +54,7 @@ export default class HoaDonDto {
         this.id = id;
         this.idLoaiChungTu = idLoaiChungTu;
         this.idKhachHang = idKhachHang;
+        this.idHangHoa = idHangHoa;
         this.idChiNhanh = idChiNhanh;
         this.idNhanVien = idNhanVien;
         this.maHoaDon = maHoaDon;

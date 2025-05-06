@@ -28,9 +28,18 @@ class ProductService {
         });
         return data;
     };
-    GetDetailProductPhone = async (id: string): Promise<ModelHangHoaDto> => {
+    GetDetailProductPhone = async (id: string): Promise<ModelHangHoaDienThoaiDto> => {
         const data = await http
             .get(`api/services/app/HangHoa/GetDetailProductPhone?idDonViQuyDoi=${id}`)
+            .then((res) => {
+                return res.data.result;
+            });
+        return data;
+    };
+
+    GetDetailProductPhone_byId = async (id: string): Promise<ModelHangHoaDienThoaiDto> => {
+        const data = await http
+            .get(`api/services/app/HangHoa/GetDetailProductPhone_byId?idDonViQuyDoi=${id}`)
             .then((res) => {
                 return res.data.result;
             });

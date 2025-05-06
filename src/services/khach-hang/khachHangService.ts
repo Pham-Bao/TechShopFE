@@ -83,6 +83,32 @@ class KhachHangService {
         const result = await http.post(`api/services/app/KhachHang/JqAutoCustomer`, input);
         return result.data.result;
     };
+    getDetailCustomerById = async (idKhachHang: string): Promise<KhachHangItemDto> => {
+        if (utils.checkNull(idKhachHang) || idKhachHang === Guid.EMPTY.toString()) {
+            return {
+                id: Guid.createEmpty(),
+                maKhachHang: 'KL',
+                tenKhachHang: 'Khách lẻ',
+                ngaySinh: new Date(),
+                avatar: '',
+                soDienThoai: '',
+                diaChi: '',
+                tenNhomKhach: '',
+                gioiTinh: '',
+                tongChiTieu: 0,
+                conNo: 0,
+                theGiaTri: 0,
+                cuocHenGanNhat: new Date(),
+                tongTichDiem: 0,
+                soLanCheckIn: 0,
+                trangThaiCheckIn: 0,
+                zoaUserId: ''
+            };
+        }
+        const result = await http.get(`api/services/app/KhachHang/getDetailCustomerById?idKhachHang=${idKhachHang}`);
+        return result.data.result;
+    };
+
     async checkExistSoDienThoai(phone: string, id: string | null = null) {
         if (Utils.checkNull(id)) {
             id = Guid.EMPTY;

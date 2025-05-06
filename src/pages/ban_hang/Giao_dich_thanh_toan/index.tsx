@@ -344,7 +344,7 @@ const GiaoDichThanhToan: React.FC = () => {
         },
         {
             field: 'ngayLapHoaDon',
-            headerName: 'Ngày bán',
+            headerName: 'Ngày tạo',
             headerAlign: 'center',
             align: 'center',
             minWidth: 130,
@@ -356,30 +356,30 @@ const GiaoDichThanhToan: React.FC = () => {
                 </Box>
             )
         },
-        {
-            field: 'maKhachHang',
-            headerName: 'Mã khách hàng',
-            minWidth: 100,
-            flex: 0.8,
-            renderHeader: (params: any) => <Box title={params.value}>{params.colDef.headerName}</Box>,
-            renderCell: (params: any) => (
-                <Box component="span" title={params.value}>
-                    {params.value}
-                </Box>
-            )
-        },
-        {
-            field: 'soDienThoai',
-            headerName: 'Điện thoại',
-            minWidth: 80,
-            flex: 1.5,
-            renderHeader: (params: any) => <Box title={params.value}>{params.colDef.headerName}</Box>,
-            renderCell: (params: any) => (
-                <Box title={params.value} component="span" textOverflow={'ellipsis'}>
-                    {params.value}
-                </Box>
-            )
-        },
+        // {
+        //     field: 'maKhachHang',
+        //     headerName: 'Mã khách hàng',
+        //     minWidth: 100,
+        //     flex: 0.8,
+        //     renderHeader: (params: any) => <Box title={params.value}>{params.colDef.headerName}</Box>,
+        //     renderCell: (params: any) => (
+        //         <Box component="span" title={params.value}>
+        //             {params.value}
+        //         </Box>
+        //     )
+        // },
+        // {
+        //     field: 'soDienThoai',
+        //     headerName: 'Điện thoại',
+        //     minWidth: 80,
+        //     flex: 1.5,
+        //     renderHeader: (params: any) => <Box title={params.value}>{params.colDef.headerName}</Box>,
+        //     renderCell: (params: any) => (
+        //         <Box title={params.value} component="span" textOverflow={'ellipsis'}>
+        //             {params.value}
+        //         </Box>
+        //     )
+        // },
         {
             field: 'tenKhachHang',
             headerName: 'Tên khách hàng',

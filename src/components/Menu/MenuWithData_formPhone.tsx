@@ -52,7 +52,8 @@ export default function MenuWithDataFromPhone({
                             chuMay: x.tenChu,
                             noiDung: x.noiDung,
                             loi: x.loi,
-                            pin: x.pin
+                            pin: x.pin,
+                            idChuSoHuu: x.idChuSoHuu
                         } as IListPhone;
                     });
 

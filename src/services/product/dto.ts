@@ -71,6 +71,8 @@ export class ModelHangHoaDienThoaiDto {
     pin?: string = '';
     imel?: string = '';
     matKhau?: string = '';
+    idChuSoHuu?: string = '';
+    //nhomKhach?: string = '';
     loi?: string = '';
     ghiChu?: string = '';
     tenChu?: string = '';
@@ -96,6 +98,13 @@ export class ModelHangHoaDienThoaiDto {
     laHangHoa?: boolean;
     image? = '';
 
+    khachHang?: {
+        id: string;
+        tenKhach: string;
+        nhomKhach?: string;
+        conNo: string;
+        sdt: string;
+    };
     donViQuiDois?:
         | any[]
         | {
