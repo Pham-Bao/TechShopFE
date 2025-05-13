@@ -382,7 +382,31 @@ const GiaoDichThanhToan: React.FC = () => {
         // },
         {
             field: 'tenKhachHang',
-            headerName: 'Tên khách hàng',
+            headerName: 'Tên khách',
+            minWidth: 120,
+            flex: 0.8,
+            renderHeader: (params: any) => <Box title={params.value}>{params.colDef.headerName}</Box>,
+            renderCell: (params: any) => (
+                <Box title={params.value} component="span" textOverflow={'ellipsis'}>
+                    {params.value}
+                </Box>
+            )
+        },
+        {
+            field: 'tenHangHoa',
+            headerName: 'Tên Máy',
+            minWidth: 120,
+            flex: 0.5,
+            renderHeader: (params: any) => <Box title={params.value}>{params.colDef.headerName}</Box>,
+            renderCell: (params: any) => (
+                <Box title={params.value} component="span" textOverflow={'ellipsis'}>
+                    {params.value}
+                </Box>
+            )
+        },
+        {
+            field: 'noiDung',
+            headerName: 'Nội dung',
             minWidth: 140,
             flex: 1.5,
             renderHeader: (params: any) => <Box title={params.value}>{params.colDef.headerName}</Box>,
@@ -392,18 +416,18 @@ const GiaoDichThanhToan: React.FC = () => {
                 </Box>
             )
         },
-        {
-            field: 'tongTienHang',
-            headerName: 'Tổng tiền hàng',
-            headerAlign: 'right',
-            align: 'right',
-            minWidth: 118,
-            flex: 1,
-            renderHeader: (params: any) => <Box title={params.value}>{params.colDef.headerName}</Box>,
-            renderCell: (params: any) => (
-                <Box title={params.value}>{new Intl.NumberFormat('vi-VN').format(params.value)}</Box>
-            )
-        },
+        // {
+        //     field: 'tongTienHang',
+        //     headerName: 'Tổng tiền hàng',
+        //     headerAlign: 'right',
+        //     align: 'right',
+        //     minWidth: 118,
+        //     flex: 1,
+        //     renderHeader: (params: any) => <Box title={params.value}>{params.colDef.headerName}</Box>,
+        //     renderCell: (params: any) => (
+        //         <Box title={params.value}>{new Intl.NumberFormat('vi-VN').format(params.value)}</Box>
+        //     )
+        // },
         // {
         //     field: 'tongGiamGiaHD',
         //     headerName: 'Tổng giảm giá', // bỏ bớt cột cho gọn

@@ -270,7 +270,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
             setHoaDonChiTiet([...(hdCache[0]?.hoaDonChiTiet ?? [])]);
 
             await GetInforCustomer_byId(hdCache[0]?.idKhachHang ?? Guid.EMPTY);
-            await CheckCustomer_hasGDV(hdCache[0]?.idKhachHang ?? Guid.EMPTY);
+            //await CheckCustomer_hasGDV(hdCache[0]?.idKhachHang ?? Guid.EMPTY);
 
             onSetActiveTabLoaiHoaDon(hdCache[0]?.idLoaiChungTu ?? LoaiChungTu.HOA_DON_BAN_LE);
         } else {
@@ -305,6 +305,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
             setHoaDon({
                 ...hoadon,
                 idKhachHang: customerIdChosed,
+                idHangHoa: phoneIdChosed,
                 idChiNhanh: idChiNhanhChosed,
                 idLoaiChungTu: LoaiChungTu.HOA_DON_BAN_LE,
                 idCheckIn: idCheckInNew
@@ -352,7 +353,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
         // firstload: auto set loaiHoadon = HOA_DON_BAN_LE
 
         InitData_forHoaDon();
-    }, [idChiNhanhChosed, idCheckIn, customerIdChosed]);
+    }, [idChiNhanhChosed, idCheckIn, customerIdChosed, phoneIdChosed]);
 
     useEffect(() => {
         // update loaiHoaDon if change tab
@@ -376,7 +377,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
         if (customerIdChosed && phoneIdChosed) {
             GetInforCustomer_byId(customerIdChosed);
             GetInforPhone_byId(phoneIdChosed);
-            CheckCustomer_hasGDV(customerIdChosed);
+            //CheckCustomer_hasGDV(customerIdChosed);
         }
     }, [customerIdChosed, phoneIdChosed]);
 
@@ -757,10 +758,15 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
             isShow: true
         });
 
-        const idCheckin = await InsertCustomer_toCheckIn(item?.id ?? Guid.EMPTY.toString(), data?.id?.toString() ?? '');
+        const idCheckin = await InsertCustomer_toCheckIn(item?.id ?? Guid.EMPTY, data?.id?.toString());
 
         //const idCheckin = await InsertCustomer_toCheckIn(item?.id ?? Guid.EMPTY);
-        //setHoaDon({ ...hoadon, idKhachHang: item?.id, idCheckIn: idCheckin });
+        setHoaDon({
+            ...hoadon,
+            idKhachHang: data?.id?.toString() ?? '',
+            idCheckIn: idCheckin?.toString() ?? '',
+            idHangHoa: item?.id?.toString() ?? ''
+        });
 
         // await AddHD_toCache_IfNotExists();
         // await dbDexie.hoaDon.update(hoadon?.id, {
@@ -774,10 +780,10 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
         // await CheckCustomer_hasGDV(item?.id ?? '');
     };
 
-    const CheckCustomer_hasGDV = async (customerId: string) => {
-        const existGDV = await HoaDonService.CheckCustomer_hasGDV(customerId);
-        setCustomerHasGDV(existGDV);
-    };
+    // const CheckCustomer_hasGDV = async (customerId: string) => {
+    //     const existGDV = await HoaDonService.CheckCustomer_hasGDV(customerId);
+    //     setCustomerHasGDV(existGDV);
+    // };
 
     const ResetCTHD_ifUsingGDV = async () => {
         // reset cthd (if using GDV)
@@ -1132,6 +1138,8 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
             id: Guid.create().toString(),
             idLoaiChungTu: hoadon.idLoaiChungTu,
             idKhachHang: customerIdChosed as unknown as undefined,
+            idHangHoa: phoneIdChosed as unknown as undefined,
+
             idChiNhanh: idChiNhanhChosed,
             tenKhachHang: 'Chưa chọn khách'
         });
@@ -1233,7 +1241,6 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
             setIsSavingHoaDon(false);
             return;
         }
-
         const dataSave = { ...hoadon };
         dataSave.hoaDonChiTiet = hoaDonChiTiet;
         dataSave?.hoaDonChiTiet?.map((x: PageHoaDonChiTietDto, index: number) => {

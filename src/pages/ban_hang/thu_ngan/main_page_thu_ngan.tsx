@@ -434,7 +434,7 @@ export default function MainPageThuNgan() {
     //     }
     // };
     const onClickAddHoaDon = (customerId: string, idCheckIn?: string, idPhone?: string) => {
-        console.log('Truyền vào:', idPhone);
+        //console.log('Truyền vào:', idPhone);
         setPhoneIdChosed(idPhone ?? '');
         setTabMainActive(TabMain.THU_NGAN);
         setCustomerIdChosed(customerId);
@@ -538,7 +538,7 @@ export default function MainPageThuNgan() {
                                         onChange={changeTabHoaDon}
                                         aria-label="nav tabs example">
                                         <Tab
-                                            label="Hóa đơn"
+                                            label="Hóa đơn sửa"
                                             value={LoaiChungTu.HOA_DON_BAN_LE}
                                             sx={{
                                                 display: abpCustom.isGrandPermission('Pages.HoaDon.Create')
@@ -547,7 +547,7 @@ export default function MainPageThuNgan() {
                                             }}
                                         />
                                         <Tab
-                                            label="Gói dịch vụ"
+                                            label="Hóa đơn bán"
                                             value={LoaiChungTu.GOI_DICH_VU}
                                             sx={{
                                                 display:
