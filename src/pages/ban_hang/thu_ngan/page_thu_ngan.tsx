@@ -1516,25 +1516,57 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
             };
         });
     }
-    function saveProduct(objNew: ModelHangHoaDto, type = 1) {
+    async function saveProduct(objNew: ModelHangHoaDienThoaiDto, type = 1) {
         // 1.insert, 2.update, 3.delete, 4.khoiphuc
         const sLoai = objNew.tenLoaiHangHoa?.toLocaleLowerCase();
         switch (type) {
-            case 1:
-                setPageDataProduct((olds) => {
-                    return {
-                        ...olds,
-                        totalCount: olds.totalCount + 1,
-                        totalPage: Utils.getTotalPage(olds.totalCount + 1, filterPageProduct.pageSize),
-                        items: [objNew, ...olds.items]
-                    };
+            case 1: {
+                setPhoneChosed({
+                    ...phoneChosed,
+                    id: objNew?.id,
+                    tenHangHoa: objNew?.tenHangHoa ?? '',
+                    tenNhomHang: objNew?.tenNhomHang ?? '',
+                    dungLuong: objNew?.dungLuong ?? '',
+                    mau: objNew?.mau ?? '',
+                    tenChu: objNew?.idChuSoHuu ?? '',
+                    noiDung: objNew?.noiDung ?? '',
+                    loi: objNew?.loi ?? '',
+                    pin: objNew?.pin ?? '',
+                    imel: objNew?.imel ?? '',
+                    idChuSoHuu: objNew?.idChuSoHuu ?? '',
+                    isShow: true
                 });
+
+                const data = await khachHangService.getDetailCustomerById(objNew.idChuSoHuu ?? '');
+
+                setCustomerChosed({
+                    ...customerChosed,
+                    id: data?.id?.toString() ?? '',
+                    maKhachHang: data?.maKhachHang ?? '',
+                    tenKhachHang: data?.tenKhachHang ?? 'Khách lẻ',
+                    soDienThoai: data?.soDienThoai ?? '',
+                    conNo: data?.conNo,
+                    tenNhomKhach: data.tenNhomKhach,
+                    isShow: true
+                });
+
+                const idCheckin = await InsertCustomer_toCheckIn(objNew?.id ?? Guid.EMPTY, data?.id?.toString());
+
+                setHoaDon({
+                    ...hoadon,
+                    idKhachHang: data?.id?.toString() ?? '',
+                    idCheckIn: idCheckin?.toString() ?? '',
+                    idHangHoa: objNew?.id?.toString() ?? ''
+                });
+
                 setObjAlert({ show: true, type: 1, mes: 'Thêm ' + sLoai + ' thành công' });
                 break;
-            case 2:
+            }
+            case 2: {
                 GetListHangHoa();
                 setObjAlert({ show: true, type: 1, mes: 'Sửa ' + sLoai + ' thành công' });
                 break;
+            }
         }
     }
 
@@ -1832,7 +1864,6 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                                         />
                                     )}
                                 </Stack>
-
                                 <MenuWithDataFromPhone
                                     typeSearch={TypeSearchfromDB.CUSTOMER}
                                     open={expandSearchCusPhone}

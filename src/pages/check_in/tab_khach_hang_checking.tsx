@@ -76,6 +76,7 @@ export default function TabKhachHangChecking(props: IPropsTabKhachHangCheckIn) {
     }, [txtSearch]);
 
     const addHoaDon = async (cusItem: PageKhachHangCheckInDto) => {
+        console.log(cusItem?.idHangHoa);
         onClickAddHoaDon(cusItem?.idKhachHang ?? '', cusItem?.idCheckIn ?? '', cusItem?.idHangHoa ?? '');
     };
 

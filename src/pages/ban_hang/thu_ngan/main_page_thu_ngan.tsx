@@ -434,7 +434,7 @@ export default function MainPageThuNgan() {
     //     }
     // };
     const onClickAddHoaDon = (customerId: string, idCheckIn?: string, idPhone?: string) => {
-        //console.log('Truyền vào:', idPhone);
+        console.log('Truyền vào:', idPhone);
         setPhoneIdChosed(idPhone ?? '');
         setTabMainActive(TabMain.THU_NGAN);
         setCustomerIdChosed(customerId);
