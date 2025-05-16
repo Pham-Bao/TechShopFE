@@ -91,6 +91,7 @@ import { IListPhone } from '../../../services/dto/IListPhone';
 import Utils from '../../../utils/utils';
 import { PagedResultDto } from '../../../services/dto/pagedResultDto';
 import ModalHangHoaDienThoai from '../../dien_thoai/ModalPhone';
+import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
 
 export type IPropsPageThuNgan = {
     txtSearch: string;
@@ -1284,6 +1285,47 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
         }
     };
 
+    const handleBaoGia = async () => {
+        try {
+            if (!hoadon || !hoaDonChiTiet || hoaDonChiTiet.length === 0) {
+                setObjAlert({
+                    show: true,
+                    type: 2,
+                    mes: 'Không có thông tin để in báo giá'
+                });
+                return;
+            }
+
+            // Tạo mã báo giá giả lập
+            const fakeMaHoaDon = 'BG-' + new Date().getTime();
+            const ngayLap = format(new Date(), 'yyyy-MM-dd HH:mm:ss.SSS');
+
+            // Tạo đối tượng QuyHoaDonDto tạm để in báo giá
+            const dataQuyHD = new QuyHoaDonDto({
+                idChiNhanh: idChiNhanhChosed,
+                idNhanVien: null,
+                idLoaiChungTu: LoaiChungTu.KHAC,
+                maHoaDon: fakeMaHoaDon,
+                ngayLapHoaDon: ngayLap,
+                tongTienThu: hoadon?.tongThanhToan ?? 0,
+                noiDungThu: 'Báo giá dịch vụ',
+                //idDoiTuongNopTien: 'ok nhá',
+                //tenNguoiNop: customerChosed?.tenKhachHang ?? '',
+                hinhThucThanhToan: 1
+            });
+
+            // Gọi hàm in
+            await InHoaDon(fakeMaHoaDon, ngayLap, dataQuyHD);
+        } catch (error) {
+            console.error('Lỗi khi in báo giá:', error);
+            setObjAlert({
+                show: true,
+                type: 3,
+                mes: 'Đã xảy ra lỗi khi in báo giá'
+            });
+        }
+    };
+
     const getInforChiNhanh_byID = async (idChiNhanh: string) => {
         const data = await chiNhanhService.GetDetail(idChiNhanh ?? '');
         return data;
@@ -2194,40 +2236,71 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                                     }}
                                 />
 
-                                {isSavingHoaDon ? (
+                                <Stack direction="row" spacing={2}>
+                                    {/* Nút In Báo Giá - nhỏ gọn */}
                                     <Stack
                                         sx={{
-                                            backgroundColor: isThanhToanTienMat ? '#1976d2' : '#e5ebed',
+                                            backgroundColor: '#6c757d',
                                             borderRadius: '8px',
                                             justifyContent: 'center',
                                             alignItems: 'center',
-                                            color: 'white'
+                                            color: 'white',
+                                            px: 2,
+                                            py: 1,
+                                            cursor: 'pointer',
+                                            whiteSpace: 'nowrap'
                                         }}
-                                        direction={'row'}
+                                        direction="row"
+                                        onClick={handleBaoGia}
                                         spacing={1}>
-                                        <CircularProgress />
-                                        <Typography fontSize={'16px'} padding={2} fontWeight={500}>
-                                            ĐANG LƯU
+                                        <PrintOutlinedIcon fontSize="small" />
+                                        <Typography fontSize="14px" fontWeight={500}>
+                                            IN BÁO GIÁ
                                         </Typography>
                                     </Stack>
-                                ) : (
-                                    <Stack
-                                        sx={{
-                                            backgroundColor: isThanhToanTienMat ? '#1976d2' : '#e5ebed',
-                                            borderRadius: '8px',
-                                            justifyContent: 'center',
-                                            alignItems: 'center',
-                                            color: 'white'
-                                        }}
-                                        direction={'row'}
-                                        spacing={1}
-                                        onClick={saveHoaDon}>
-                                        <CheckOutlinedIcon />
-                                        <Typography fontSize={'16px'} padding={2} fontWeight={500}>
-                                            THANH TOÁN
-                                        </Typography>
-                                    </Stack>
-                                )}
+
+                                    {isSavingHoaDon ? (
+                                        <Stack
+                                            sx={{
+                                                backgroundColor: isThanhToanTienMat ? '#1976d2' : '#e5ebed',
+                                                borderRadius: '8px',
+                                                justifyContent: 'center',
+                                                alignItems: 'center',
+                                                color: 'white',
+                                                px: 2,
+                                                py: 1,
+                                                flex: 1
+                                            }}
+                                            direction="row"
+                                            spacing={1}>
+                                            <CircularProgress size={20} color="inherit" />
+                                            <Typography fontSize="16px" padding={1}>
+                                                ĐANG LƯU
+                                            </Typography>
+                                        </Stack>
+                                    ) : (
+                                        <Stack
+                                            sx={{
+                                                backgroundColor: isThanhToanTienMat ? '#1976d2' : '#e5ebed',
+                                                borderRadius: '8px',
+                                                justifyContent: 'center',
+                                                alignItems: 'center',
+                                                color: 'white',
+                                                px: 2,
+                                                py: 1,
+                                                cursor: 'pointer',
+                                                flex: 1
+                                            }}
+                                            direction="row"
+                                            spacing={1}
+                                            onClick={saveHoaDon}>
+                                            <CheckOutlinedIcon />
+                                            <Typography fontSize="16px" padding={1} fontWeight={500}>
+                                                THANH TOÁN
+                                            </Typography>
+                                        </Stack>
+                                    )}
+                                </Stack>
                             </Stack>
                         </Stack>
                     </Stack>

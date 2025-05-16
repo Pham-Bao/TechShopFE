@@ -1,4 +1,17 @@
-import { Avatar, Badge, Button, debounce, Grid, InputLabel, Stack, TextField, Typography } from '@mui/material';
+import {
+    Avatar,
+    Badge,
+    Button,
+    debounce,
+    Grid,
+    IconButton,
+    InputLabel,
+    Menu,
+    MenuItem,
+    Stack,
+    TextField,
+    Typography
+} from '@mui/material';
 import GroupAddOutlinedIcon from '@mui/icons-material/GroupAddOutlined';
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined';
 import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
@@ -15,6 +28,7 @@ import TrangThaiBooking from '../../enum/TrangThaiBooking';
 import { dbDexie } from '../../lib/dexie/dexieDB';
 import { Guid } from 'guid-typescript';
 import ConfirmDelete from '../../components/AlertDialog/ConfirmDelete';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 
 export type IPropsTabKhachHangCheckIn = {
     txtSearch: string;
@@ -37,6 +51,32 @@ export default function TabKhachHangChecking(props: IPropsTabKhachHangCheckIn) {
         mes: ''
     });
     const [lstCustomerChecking, setLstCustomerChecking] = useState<PageKhachHangCheckInDto[]>([]);
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const [selectedCus, setSelectedCus] = useState<PageKhachHangCheckInDto | null>(null);
+
+    const handleClickMenu = (event: React.MouseEvent<HTMLElement>, cus: PageKhachHangCheckInDto) => {
+        setAnchorEl(event.currentTarget);
+        setSelectedCus(cus);
+    };
+
+    const handleCloseMenu = () => {
+        setAnchorEl(null);
+        setSelectedCus(null);
+    };
+
+    const handleMarkDone = () => {
+        if (selectedCus) {
+            onFinishCustomer(selectedCus);
+        }
+        handleCloseMenu();
+    };
+
+    const handleRemoveCustomer = () => {
+        if (selectedCus) {
+            onRemoveCustomerChecking(selectedCus);
+        }
+        handleCloseMenu();
+    };
 
     const GetListCustomerChecking = async (txtSearch: string) => {
         const param: PagedRequestDto = {
@@ -137,7 +177,7 @@ export default function TabKhachHangChecking(props: IPropsTabKhachHangCheckIn) {
         return <Loading />;
     }
     const getColorByTrangThai = (trangThaiCheckIn?: number): string => {
-        console.log(trangThaiCheckIn);
+        //console.log(trangThaiCheckIn);
         switch (trangThaiCheckIn) {
             case 1:
                 return '#d0f0c0'; // Xanh nhạt
@@ -149,6 +189,46 @@ export default function TabKhachHangChecking(props: IPropsTabKhachHangCheckIn) {
                 return '#f8d7da'; // Đỏ nhạt
             default:
                 return '#ffffff'; // Mặc định
+        }
+    };
+    const onFinishCustomer = async (cusItem: PageKhachHangCheckInDto) => {
+        const nextStatus = cusItem.trangThaiCheckIn === 1 ? 2 : 1;
+        let nextStatusText = '';
+
+        if (nextStatus === 1) {
+            nextStatusText = 'Đang sửa chữa';
+        } else {
+            nextStatusText = 'Đã sửa xong';
+        }
+
+        try {
+            // Gọi API cập nhật trạng thái mới
+            await CheckinService.UpdateTrangThaiCheckin(cusItem.idCheckIn, nextStatus);
+
+            // Cập nhật danh sách khách hàng trong local state
+            setLstCustomerChecking((prev) =>
+                prev.map((item) => {
+                    if (item.idCheckIn === cusItem.idCheckIn) {
+                        return new PageKhachHangCheckInDto({
+                            ...item,
+                            idKhachHang: item.idKhachHang ?? undefined,
+                            idHangHoa: item.idHangHoa ?? undefined,
+                            idChiNhanh: typeof item.idChiNhanh === 'string' ? null : item.idChiNhanh,
+                            maKhachHang: item.maKhachHang ?? undefined,
+                            dateTimeCheckIn: item.dateTimeCheckIn ?? undefined,
+                            soDienThoai: item.soDienThoai ?? '',
+                            tenKhachHang: item.tenKhachHang ?? '',
+                            tongTichDiem: item.tongTichDiem ?? 0,
+                            ghiChu: item.ghiChu ?? '',
+                            trangThaiCheckIn: nextStatus ?? '',
+                            txtTrangThaiCheckIn: nextStatusText
+                        });
+                    }
+                    return item;
+                })
+            );
+        } catch (error) {
+            console.error('Lỗi khi cập nhật trạng thái khách hàng:', error);
         }
     };
 
@@ -192,10 +272,20 @@ export default function TabKhachHangChecking(props: IPropsTabKhachHangCheckIn) {
                                         cursor: 'pointer'
                                     }
                                 }}>
-                                <CloseOutlinedIcon
-                                    sx={{ position: 'absolute', width: 25, top: 4, right: 4 }}
-                                    onClick={() => onRemoveCustomerChecking(cusItem)}
-                                />
+                                <IconButton
+                                    sx={{ position: 'absolute', top: 4, right: 4 }}
+                                    onClick={(e) => handleClickMenu(e, cusItem)}>
+                                    <MoreVertIcon />
+                                </IconButton>
+                                <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleCloseMenu}>
+                                    {selectedCus?.trangThaiCheckIn === 1 ? (
+                                        <MenuItem onClick={handleMarkDone}>Đang sửa chữa</MenuItem>
+                                    ) : (
+                                        <MenuItem onClick={handleMarkDone}>Đã sửa xong</MenuItem>
+                                    )}
+                                    <MenuItem onClick={handleRemoveCustomer}>Xóa</MenuItem>
+                                </Menu>
+
                                 <Stack
                                     justifyContent={'space-between'}
                                     spacing={1.5}

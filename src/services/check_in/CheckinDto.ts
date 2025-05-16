@@ -66,7 +66,8 @@ export class PageKhachHangCheckInDto {
         soDienThoai = '',
         tongTichDiem = 0,
         ghiChu = '',
-        txtTrangThaiCheckIn = 'Đang chờ'
+        txtTrangThaiCheckIn = 'Đã sửa xong',
+        trangThaiCheckIn = 1
     }) {
         this.idKhachHang = idKhachHang;
         this.idHangHoa = idHangHoa;
@@ -79,6 +80,7 @@ export class PageKhachHangCheckInDto {
         this.dateTimeCheckIn = dateTimeCheckIn;
         this.ghiChu = ghiChu;
         this.txtTrangThaiCheckIn = txtTrangThaiCheckIn;
+        this.trangThaiCheckIn = trangThaiCheckIn;
 
         this._tenKhach_KiTuDau = utils.getFirstLetter(this.tenKhachHang);
         this._dateCheckIn = format(new Date(this.dateTimeCheckIn), 'yyyy-MM-dd');
