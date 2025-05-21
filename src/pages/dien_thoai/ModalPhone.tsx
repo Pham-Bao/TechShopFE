@@ -72,6 +72,8 @@ const ModalHangHoaDienThoai = ({ handleSave, trigger }: any) => {
     const [fileImage, setFileImage] = useState<File>({} as File); // file image
 
     const [errTenHangHoa, setErrTenHangHoa] = useState(false);
+    const [errChuSoHuu, setErrChuSoHuu] = useState(false);
+
     const [errMaHangHoa, setErrMaHangHoa] = useState(false);
 
     const [imgur_imageId, setImgur_imageId] = useState('');
@@ -166,6 +168,7 @@ const ModalHangHoaDienThoai = ({ handleSave, trigger }: any) => {
         setWasClickSave(false);
         setErrMaHangHoa(false);
         setErrTenHangHoa(false);
+        setErrChuSoHuu(false);
         setImgur_imageId('');
         setImgur_albumId('');
     };
@@ -229,6 +232,10 @@ const ModalHangHoaDienThoai = ({ handleSave, trigger }: any) => {
     const CheckSave = async () => {
         if (utils.checkNull(productPhone.tenHangHoa ?? '')) {
             setErrTenHangHoa(true);
+            return false;
+        }
+        if (utils.checkNull(productPhone.idChuSoHuu ?? '')) {
+            setErrChuSoHuu(true);
             return false;
         }
         if (!utils.checkNull(productPhone.maHangHoa ?? '')) {
@@ -563,6 +570,33 @@ const ModalHangHoaDienThoai = ({ handleSave, trigger }: any) => {
                     </Stack>
                     <Grid container spacing={2} paddingTop={2}>
                         <Grid item xs={12} sm={4} md={4} lg={4}>
+                            <TextField
+                                variant="outlined"
+                                size="small"
+                                autoFocus
+                                sx={{ flex: 2 }}
+                                label={
+                                    <Typography variant="body2">
+                                        Tên {productPhone.tenLoaiHangHoa?.toLocaleLowerCase()}
+                                        <span className="text-danger"> *</span>
+                                    </Typography>
+                                }
+                                error={wasClickSave && errTenHangHoa}
+                                helperText={
+                                    wasClickSave && errTenHangHoa
+                                        ? `Vui lòng nhập tên ${productPhone.tenLoaiHangHoa?.toLocaleLowerCase()}`
+                                        : ''
+                                }
+                                value={productPhone.tenHangHoa}
+                                onChange={(event) => {
+                                    setProductPhone((itemOlds) => ({
+                                        ...itemOlds,
+                                        tenHangHoa: event.target.value
+                                    }));
+                                    setErrTenHangHoa(false);
+                                    setWasClickSave(false);
+                                }}
+                            />
                             <Box
                                 sx={{
                                     border: '1px solid #cccc',

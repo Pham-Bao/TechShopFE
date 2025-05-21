@@ -227,10 +227,10 @@ const Header: React.FC<HeaderProps> = (
                         gap="8px"
                         marginLeft="16px"
                         alignItems={'baseline'}
-                        // onClick={() => {
-                        //     navigate('/home');
-                        // }}
-                    >
+                        sx={{ cursor: 'pointer' }}
+                        onClick={() => {
+                            navigate('/home');
+                        }}>
                         <img style={{ width: '2rem', height: '2rem' }} src={LuckybeautyLogo} />
                         {window.screen.width <= 650 ? null : (
                             <Typography

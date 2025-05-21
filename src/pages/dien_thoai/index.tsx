@@ -594,6 +594,12 @@ const PageProduct = () => {
             renderHeader: (params) => <Box component={'span'}>{params.colDef.headerName}</Box>
         },
         {
+            field: 'imel',
+            headerName: 'IMEL',
+            minWidth: 130,
+            renderHeader: (params) => <Box component={'span'}>{params.colDef.headerName}</Box>
+        },
+        {
             field: 'noiDung',
             headerName: 'Nội dung',
             minWidth: 130,
