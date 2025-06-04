@@ -44,6 +44,8 @@ export default function MenuWithDataFromPhone({
                     const arrProduct = data?.items?.map((x: any) => {
                         return {
                             id: x.id.toString(),
+                            idDonViQuyDoi: x.idDonViQuyDoi.toString(),
+                            matKhau: x.matKhau,
                             tenMay: x.tenHangHoa,
                             tenNhomHang: x.tenNhomHang, // Tên máy
                             imel: x.imel, // IMEI

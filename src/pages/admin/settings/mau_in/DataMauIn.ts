@@ -11,6 +11,7 @@ import QuyChiTietDto from '../../../../services/so_quy/QuyChiTietDto';
 import TaiKhoanNganHangServices from '../../../../services/so_quy/TaiKhoanNganHangServices';
 import { TaiKhoanNganHangDto } from '../../../../services/so_quy/Dto/TaiKhoanNganHangDto';
 import { HINH_THUC_THANH_TOAN } from '../../../../lib/appconst';
+import { ModelHangHoaDienThoaiDto } from '../../../../services/product/dto';
 
 const dv1 = new PageHoaDonChiTietDto({
     maHangHoa: 'DV01',
@@ -35,8 +36,8 @@ const congty = {
 const chinhanh = {
     maChiNhanh: 'CN01',
     tenChiNhanh: 'Chi nhánh Hà Nội',
-    soDienThoai: '0978000854' as unknown as null,
-    diaChi: '31 Lê Văn Lương',
+    soDienThoai: '0944806416' as unknown as null,
+    diaChi: 'Ngã 4 Phố Cao',
     maSoThue: '',
     logo: logoChiNhanh as unknown as null
 } as ChiNhanhDto;
@@ -48,7 +49,11 @@ const khachhang = {
     diaChi: 'Hai Bà Trưng, HN',
     tenNhomKhach: 'Nhóm khách 01'
 } as KhachHangItemDto;
-
+const maySua = {
+    tenHangHoa: 'iPhone 7',
+    noiDung: 'Thay pin DLC',
+    loi: 'Phản quang, came mất nét'
+} as ModelHangHoaDienThoaiDto;
 const hoadon = new PageHoaDonDto({
     maHoaDon: 'HD001',
     ngayLapHoaDon: new Date().toString(),
@@ -100,6 +105,8 @@ phieuthu.quyHoaDon_ChiTiet = [
 class DataMauIn {
     congty = congty;
     khachhang = khachhang;
+    maySua = maySua;
+
     chinhanh = chinhanh;
     hoadon = hoadon;
     phieuthu = phieuthu;
@@ -241,6 +248,9 @@ class DataMauIn {
         data = data.replaceAll('{TenKhachHang}', this.khachhang.tenKhachHang);
         data = data.replaceAll('{DiaChiKhachHang}', this.khachhang.diaChi ?? '');
         data = data.replaceAll('{DienThoaiKhachHang}', this.khachhang.soDienThoai ?? '');
+        data = data.replaceAll('{TenMay}', this.maySua.tenHangHoa ?? '');
+        data = data.replaceAll('{NoiDung}', this.maySua.noiDung ?? '');
+        data = data.replaceAll('{Loi}', this.maySua.loi ?? '');
 
         data = data.replaceAll('{MaHoaDon}', this.hoadon.maHoaDon);
         data = data.replaceAll('{NgayBan}', format(new Date(this.hoadon?.ngayLapHoaDon ?? ''), 'dd/MM/yyyy HH:mm:ss'));

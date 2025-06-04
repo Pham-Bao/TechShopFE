@@ -245,10 +245,12 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
         setPhoneChosed({
             ...phoneChosed,
             id: item?.id,
+            idDonViQuyDoi: item?.idDonViQuyDoi,
             tenHangHoa: item?.tenHangHoa ?? '',
             tenNhomHang: item?.tenNhomHang ?? '',
             dungLuong: item?.dungLuong ?? '',
             mau: item?.mau ?? '',
+            matKhau: item?.matKhau ?? '',
             //tenChu: item?. ?? '',
             noiDung: item?.noiDung ?? '',
             loi: item?.loi ?? '',
@@ -731,9 +733,11 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
 
     const changePhone = async (item: IListPhone) => {
         setAnchorDropdownPhone(null);
+        console.log('item', item);
         setPhoneChosed({
             ...phoneChosed,
             id: item?.id,
+            idDonViQuyDoi: item?.idDonViQuyDoi,
             tenHangHoa: item?.tenMay ?? '',
             tenNhomHang: item?.tenNhomHang ?? '',
             dungLuong: item?.dungLuong ?? '',
@@ -848,6 +852,8 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
         setPhoneChosed({
             ...phoneChosed,
             id: Guid.EMPTY,
+            idDonViQuyDoi: Guid.EMPTY,
+
             tenHangHoa: 'Chưa chọn máy',
             dungLuong: '',
             mau: '',
@@ -1315,7 +1321,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
             });
 
             // Gọi hàm in
-            await InHoaDon(fakeMaHoaDon, ngayLap, dataQuyHD);
+            await InBaoGia(fakeMaHoaDon, ngayLap, dataQuyHD);
         } catch (error) {
             console.error('Lỗi khi in báo giá:', error);
             setObjAlert({
@@ -1324,6 +1330,44 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                 mes: 'Đã xảy ra lỗi khi in báo giá'
             });
         }
+    };
+
+    const InBaoGia = async (mahoadon = '', ngayLapHD = '', quyHD: QuyHoaDonDto) => {
+        const chinhanhPrint = await getInforChiNhanh_byID(idChiNhanhChosed ?? '');
+        const tempMauIn = await MauInServices.GetContentMauInMacDinh(1, 17);
+
+        const allCongTy = await cuaHangService.GetAllCongTy({} as PagedRequestDto);
+        let congty = {} as CuaHangDto;
+        if (allCongTy.length > 0) {
+            congty = allCongTy[0];
+        }
+        DataMauIn.chinhanh = chinhanhPrint;
+        DataMauIn.congty = congty;
+        DataMauIn.congty.logo = uploadFileService.GoogleApi_NewLink(congty?.logo);
+        DataMauIn.hoadon = hoadon;
+        DataMauIn.hoadon.maHoaDon = mahoadon;
+
+        DataMauIn.maySua.tenHangHoa = phoneChosed.tenHangHoa;
+        DataMauIn.maySua.noiDung = phoneChosed.noiDung;
+        DataMauIn.maySua.loi = phoneChosed.loi;
+
+        DataMauIn.hoadon.ngayLapHoaDon = ngayLapHD; // get ngaylapHD from DB (after add hours/minutes/seconds)
+        DataMauIn.hoadon.daThanhToan = quyHD?.tongTienThu;
+        DataMauIn.hoadon.conNo = hoadon?.tongThanhToan ?? 0 - quyHD?.tongTienThu ?? 0;
+        DataMauIn.hoadonChiTiet = hoaDonChiTiet;
+
+        DataMauIn.khachhang = {
+            maKhachHang: customerChosed?.maKhachHang,
+            tenKhachHang: customerChosed?.tenKhachHang,
+            soDienThoai: customerChosed?.soDienThoai
+        } as KhachHangItemDto;
+        DataMauIn.phieuthu = quyHD;
+
+        let newHtml = DataMauIn.replaceChiTietHoaDon(tempMauIn);
+        newHtml = DataMauIn.replaceChiNhanh(newHtml);
+        newHtml = DataMauIn.replaceHoaDon(newHtml);
+        newHtml = await DataMauIn.replacePhieuThuChi(newHtml);
+        DataMauIn.Print(newHtml);
     };
 
     const getInforChiNhanh_byID = async (idChiNhanh: string) => {
@@ -1344,10 +1388,12 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
         DataMauIn.congty.logo = uploadFileService.GoogleApi_NewLink(congty?.logo);
         DataMauIn.hoadon = hoadon;
         DataMauIn.hoadon.maHoaDon = mahoadon;
+
         DataMauIn.hoadon.ngayLapHoaDon = ngayLapHD; // get ngaylapHD from DB (after add hours/minutes/seconds)
         DataMauIn.hoadon.daThanhToan = quyHD?.tongTienThu;
         DataMauIn.hoadon.conNo = hoadon?.tongThanhToan ?? 0 - quyHD?.tongTienThu ?? 0;
         DataMauIn.hoadonChiTiet = hoaDonChiTiet;
+
         DataMauIn.khachhang = {
             maKhachHang: customerChosed?.maKhachHang,
             tenKhachHang: customerChosed?.tenKhachHang,
@@ -1549,6 +1595,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
         handleCloseDialog();
     };
     function showModalAddProduct(action?: number, id = '') {
+        console.log('showModalAddProduct', action, id);
         setTriggerModalProduct((old) => {
             return {
                 ...old,
@@ -1857,7 +1904,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                                             {phoneChosed?.isShow && (
                                                 <Stack direction="column" maxWidth={250}>
                                                     <Typography color={'#000000'} variant="caption" fontWeight="bold">
-                                                        Pass: 000000
+                                                        Pass: {phoneChosed?.matKhau}
                                                     </Typography>
                                                     <Typography color={'#000000'} variant="caption">
                                                         Pin: {phoneChosed?.pin}%
@@ -1875,9 +1922,9 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                                         <EditOutlinedIcon
                                             color="secondary"
                                             sx={{ marginLeft: 1, cursor: 'pointer' }}
-                                            onClick={(event) => {
-                                                event.stopPropagation();
-                                                showModalSuDungGDV();
+                                            onClick={() => {
+                                                //showModalAddProduct();
+                                                showModalAddProduct(2, phoneChosed?.idDonViQuyDoi);
                                             }}
                                         />
                                     ) : (

@@ -234,10 +234,10 @@ const ModalHangHoaDienThoai = ({ handleSave, trigger }: any) => {
             setErrTenHangHoa(true);
             return false;
         }
-        if (utils.checkNull(productPhone.idChuSoHuu ?? '')) {
-            setErrChuSoHuu(true);
-            return false;
-        }
+        // if (utils.checkNull(productPhone.idChuSoHuu ?? '')) {
+        //     setErrChuSoHuu(true);
+        //     return false;
+        // }
         if (!utils.checkNull(productPhone.maHangHoa ?? '')) {
             const exists = await ProductService.CheckExistsMaHangHoa(
                 productPhone.maHangHoa ?? '',
@@ -367,6 +367,7 @@ const ModalHangHoaDienThoai = ({ handleSave, trigger }: any) => {
                 laDonViTinhChuan: objNew.laDonViTinhChuan
             }
         ];
+        console.log('test ở đây');
         const data = await ProductService.CreateOrEditProductPhone(objNew);
         objNew.id = data.id;
         objNew.idHangHoa = data.id;
@@ -570,33 +571,6 @@ const ModalHangHoaDienThoai = ({ handleSave, trigger }: any) => {
                     </Stack>
                     <Grid container spacing={2} paddingTop={2}>
                         <Grid item xs={12} sm={4} md={4} lg={4}>
-                            <TextField
-                                variant="outlined"
-                                size="small"
-                                autoFocus
-                                sx={{ flex: 2 }}
-                                label={
-                                    <Typography variant="body2">
-                                        Tên {productPhone.tenLoaiHangHoa?.toLocaleLowerCase()}
-                                        <span className="text-danger"> *</span>
-                                    </Typography>
-                                }
-                                error={wasClickSave && errTenHangHoa}
-                                helperText={
-                                    wasClickSave && errTenHangHoa
-                                        ? `Vui lòng nhập tên ${productPhone.tenLoaiHangHoa?.toLocaleLowerCase()}`
-                                        : ''
-                                }
-                                value={productPhone.tenHangHoa}
-                                onChange={(event) => {
-                                    setProductPhone((itemOlds) => ({
-                                        ...itemOlds,
-                                        tenHangHoa: event.target.value
-                                    }));
-                                    setErrTenHangHoa(false);
-                                    setWasClickSave(false);
-                                }}
-                            />
                             <Box
                                 sx={{
                                     border: '1px solid #cccc',

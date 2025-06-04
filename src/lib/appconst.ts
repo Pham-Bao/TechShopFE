@@ -29,6 +29,7 @@ export const LoaiChungTu = {
     ALL: 0,
     KHAC: -1, // Chứng từ không liên quan đến hóa đơn
     HOA_DON_BAN_LE: 1,
+    BAO_GIA: 17,
     GOI_DICH_VU: 2,
     NHAP_HANG: 4,
     THE_GIA_TRI: 8,

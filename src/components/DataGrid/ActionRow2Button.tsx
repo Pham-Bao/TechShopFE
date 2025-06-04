@@ -9,6 +9,7 @@ import { TypeAction } from '../../lib/appconst';
 
 export default function ActionRow2Button({ handleClickAction }: any) {
     const onClickAction = (type: number) => {
+        console.log(type);
         handleClickAction(type);
     };
     return (

@@ -51,6 +51,7 @@ export default function PageMauIn() {
         // !import: replace theo thu tu: cthd, hoadon
         switch (idLoaiChungTu) {
             case LoaiChungTu.HOA_DON_BAN_LE:
+            case LoaiChungTu.BAO_GIA:
             case LoaiChungTu.GOI_DICH_VU:
                 {
                     let dataAfter = DataMauIn.replaceChiTietHoaDon(shtml);
@@ -89,6 +90,7 @@ export default function PageMauIn() {
     };
 
     const setListMauInHoaDon = (allMauIn: MauInDto[], idLoaiChungTu = LoaiChungTu.HOA_DON_BAN_LE) => {
+        console.log('setmauin', allMauIn, idLoaiChungTu);
         const mauInByLoaiChungTu = allMauIn.filter((x: MauInDto) => x.loaiChungTu === idLoaiChungTu);
         const mauMacDinh = mauInByLoaiChungTu.filter((x: MauInDto) => x.laMacDinh);
         const tempK80: MauInDto = {
@@ -232,6 +234,9 @@ export default function PageMauIn() {
             case LoaiChungTu.HOA_DON_BAN_LE:
                 sLoai = 'HD';
                 break;
+            case LoaiChungTu.BAO_GIA:
+                sLoai = 'BG';
+                break;
             case LoaiChungTu.GOI_DICH_VU:
                 sLoai = 'GDV';
                 break;
@@ -330,6 +335,7 @@ export default function PageMauIn() {
                             <Tab label="Thẻ giá trị" value={LoaiChungTu.THE_GIA_TRI} />
                             <Tab label="Phiếu thu" value={LoaiChungTu.PHIEU_THU} />
                             <Tab label="Phiếu chi" value={LoaiChungTu.PHIEU_CHI} />
+                            <Tab label="Báo Giá" value={LoaiChungTu.BAO_GIA} />
                         </Tabs>
                     </Box>
                 </Grid>

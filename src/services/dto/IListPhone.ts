@@ -1,5 +1,7 @@
 export interface IListPhone {
     id: string;
+    idDonViQuyDoi: string;
+    matKhau: string;
     tenMay: string;
     tenNhomHang: string;
     dungLuong?: string;

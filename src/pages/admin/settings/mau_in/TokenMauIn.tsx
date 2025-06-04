@@ -283,6 +283,38 @@ export default function TokenMauIn({ isShow, onClose }: any) {
                                     </Stack>
                                 </Stack>
                             </Stack>
+                            <Stack spacing={1}>
+                                <Stack sx={{ bgcolor: '#cccc' }} padding={1}>
+                                    <Typography variant="subtitle1" color={'blue'} fontWeight={700}>
+                                        Thông tin máy sửa
+                                    </Typography>
+                                </Stack>
+
+                                <Stack>
+                                    <Stack direction={'row'} justifyContent={'space-between'}>
+                                        <label onClick={(e) => CopyThisText(e)}> &#123;tenHangHoa&#125; </label>
+                                        <Typography variant="subtitle2">Tên máy</Typography>
+                                    </Stack>
+                                </Stack>
+                                <Stack>
+                                    <Stack direction={'row'} justifyContent={'space-between'}>
+                                        <label onClick={(e) => CopyThisText(e)}> &#123;noiDung&#125; </label>
+                                        <Typography variant="subtitle2">Nội dung sửa</Typography>
+                                    </Stack>
+                                </Stack>
+                                <Stack>
+                                    <Stack direction={'row'} justifyContent={'space-between'}>
+                                        <label onClick={(e) => CopyThisText(e)}> &#123;loi&#125; </label>
+                                        <Typography variant="subtitle2">Lỗi phát sinh khi test</Typography>
+                                    </Stack>
+                                </Stack>
+                                <Stack>
+                                    <Stack direction={'row'} justifyContent={'space-between'}>
+                                        <label onClick={(e) => CopyThisText(e)}> &#123;matKhau&#125; </label>
+                                        <Typography variant="subtitle2">Mật Khẩu</Typography>
+                                    </Stack>
+                                </Stack>
+                            </Stack>
                         </Grid>
                         <Grid item xs={12} sm={6} md={4}>
                             <Stack spacing={1}>
