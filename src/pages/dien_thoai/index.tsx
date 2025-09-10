@@ -13,7 +13,11 @@ import {
     Pagination,
     IconButton,
     Popover,
-    Checkbox
+    Checkbox,
+    FormControl,
+    RadioGroup,
+    FormControlLabel,
+    Radio
 } from '@mui/material';
 import { Add, Category, DeleteOutline, LocalOfferOutlined, Search } from '@mui/icons-material';
 import { ReactComponent as FilterIcon } from '../../images/icons/i-filter.svg';
@@ -76,19 +80,21 @@ const PageProduct = () => {
     const [rowSelectionModel, setRowSelectionModel] = React.useState<GridRowSelectionModel>([]);
     const [isShowModalChuyenNhom, setIsShowModalChuyenNhom] = useState(false);
     const [anchorElFilter, setAnchorElFilter] = useState<any>(null);
+    const [selectedLoaiDienThoai, setSelectedLoaiDienThoai] = useState<boolean>(true);
+
     const [pageDataProduct, setPageDataProduct] = useState<PagedResultDto<ModelHangHoaDto>>({
         totalCount: 0,
         totalPage: 0,
         items: []
     });
-
     const [filterPageProduct, setFilterPageProduct] = useState<PagedProductSearchDto>({
         idNhomHangHoas: [],
         textSearch: '',
         currentPage: 1,
         pageSize: AppConsts.pageOption[0].value,
         columnSort: '',
-        typeSort: ''
+        typeSort: '',
+        idLoaiHangHoa: 5
     });
 
     const GetListHangHoa = async () => {
@@ -146,7 +152,12 @@ const PageProduct = () => {
 
     useEffect(() => {
         GetListHangHoa();
-    }, [filterPageProduct.currentPage, filterPageProduct.pageSize, filterPageProduct.idNhomHangHoas]);
+    }, [
+        filterPageProduct.currentPage,
+        filterPageProduct.pageSize,
+        filterPageProduct.idNhomHangHoas,
+        filterPageProduct.idLoaiHangHoa
+    ]);
 
     function showModalAddNhomHang(id = '') {
         setTriggerModalNhomHang({
@@ -878,7 +889,34 @@ const PageProduct = () => {
                             </Grid>
                         </Grid>
                     </Grid>
-                    <Grid item xs={12} md={6} lg={6} display="flex" gap="8px" justifyContent="end">
+                    <Grid item xs={12} md={6} lg={6} display="flex" gap="8px" justifyContent="end" alignItems="center">
+                        <FormControl component="fieldset" size="small">
+                            <RadioGroup
+                                row
+                                name="loaiDienThoai"
+                                value={selectedLoaiDienThoai.toString()}
+                                onChange={(e) => {
+                                    const isHeThong = e.target.value === 'true';
+                                    setSelectedLoaiDienThoai(isHeThong);
+                                    setFilterPageProduct((prev) => ({
+                                        ...prev,
+                                        idLoaiHangHoa: isHeThong ? 5 : 4,
+                                        currentPage: 1
+                                    }));
+                                }}>
+                                <FormControlLabel
+                                    value="true"
+                                    control={<Radio size="small" />}
+                                    label="Điện thoại hệ thống"
+                                />
+                                <FormControlLabel
+                                    value="false"
+                                    control={<Radio size="small" />}
+                                    label="Điện thoại khách"
+                                />
+                            </RadioGroup>
+                        </FormControl>
+
                         {window.screen.width < 768 ? (
                             <Button
                                 className="btnNhapXuat btn-outline-hover"
@@ -899,6 +937,7 @@ const PageProduct = () => {
                                 <FilterIcon />
                             </Button>
                         ) : null}
+
                         <Button
                             size="small"
                             onClick={onImportShow}
@@ -912,6 +951,7 @@ const PageProduct = () => {
                             }}>
                             Nhập
                         </Button>
+
                         <Button
                             size="small"
                             onClick={exportToExcel}
@@ -925,6 +965,7 @@ const PageProduct = () => {
                             }}>
                             Xuất
                         </Button>
+
                         <Button
                             size="small"
                             variant="contained"

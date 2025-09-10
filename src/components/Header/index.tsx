@@ -29,7 +29,7 @@ import {
     Tooltip
 } from '@mui/material';
 import './header.css';
-import LuckybeautyLogo from '../../images/luckybeautylogo.png';
+import TechShopLogo from '../../images/TechShopLogo.png';
 // import { ReactComponent as ToggleIcon } from '../../images/btntoggle.svg';
 //import { ReactComponent as SuportIcon } from '../../images/messageChat.svg';
 import * as React from 'react';
@@ -231,7 +231,7 @@ const Header: React.FC<HeaderProps> = (
                         onClick={() => {
                             navigate('/home');
                         }}>
-                        <img style={{ width: '2rem', height: '2rem' }} src={LuckybeautyLogo} />
+                        <img style={{ width: '2rem', height: '2rem' }} src={TechShopLogo} />
                         {window.screen.width <= 650 ? null : (
                             <Typography
                                 color="#319DFF"
@@ -242,7 +242,7 @@ const Header: React.FC<HeaderProps> = (
                                     transform: collapsed && !isChildHovered ? 'translateX(-40px)' : 'translateX(0)',
                                     transition: '.4s'
                                 }}>
-                                Lucky Beauty
+                                Tech Shop
                             </Typography>
                         )}
                     </Box>

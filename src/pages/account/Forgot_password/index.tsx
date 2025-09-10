@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { TextField, Button, Typography, Box, IconButton } from '@mui/material';
 import './forgotPassword.css';
-import logo from '../../../images/Logo_Lucky_Beauty.svg';
+import logo from '../../../images/TechShopLogo.png';
 import { Link } from 'react-router-dom';
 import ChangeTenantModal from '../../../components/AlertDialog/ChangeTenantModel';
 import { Cookie } from '@mui/icons-material';
@@ -66,9 +66,9 @@ function ForgotPasswordPage() {
             <Box sx={{ maxWidth: 400, margin: '0 auto' }} className="forgot-password-page-box">
                 <div className="logo-forgot">
                     <div className="logo-image">
-                        <img src={logo} alt="Lucky Beauty" />
+                        <img src={logo} alt="Tech Shop" />
                     </div>
-                    <div className="logo-text">Lucky Beauty</div>
+                    <div className="logo-text">Tech Shop</div>
                 </div>
                 <Box textAlign={'center'} padding={'8px 8px 0px 8px'}>
                     <Typography fontSize={'13px'}>

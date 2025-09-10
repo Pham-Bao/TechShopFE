@@ -253,6 +253,20 @@ export const appRouters: AppRouteProps = {
                             isLayout: false,
                             featureName: AppFeatures.THE_GIA_TRI,
                             component: LoadableComponent(() => import('../../pages/the_gia_tri/page_danh_sach'))
+                        },
+                        {
+                            path: '/phieu_gui_hang',
+                            permission: 'Pages.HoaDon',
+                            title: 'In tem phiếu gửi hàng',
+                            name: 'phieuguihang',
+                            icon: <BsDot style={{ fontSize: 20 }} />,
+                            iconActive: null,
+                            children: [],
+                            showInMenu: true,
+                            isLayout: false,
+                            component: LoadableComponent(
+                                () => import('../../pages/ban_hang/phieu_gui_hang/page_phieu_gui_hang')
+                            )
                         }
                     ],
                     showInMenu: true,

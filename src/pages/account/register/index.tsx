@@ -4,7 +4,7 @@ import './register.css';
 import { Input, Checkbox, Grid, TextField, IconButton, InputAdornment, FormControlLabel } from '@mui/material';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import Visibility from '@mui/icons-material/Visibility';
-import logo from '../../../images/Lucky_beauty.jpg';
+import logo from '../../../images/TechShopLogo.png';
 import ApiVN from './api_VN';
 import { Link } from 'react-router-dom';
 import Cookies from 'js-cookie';
@@ -62,9 +62,9 @@ const RegisterScreen: React.FC = () => {
         <div className="register-page">
             <div className="logo-register">
                 <div className="logo-image">
-                    <img src={logo} alt="Lucky Beauty" />
+                    <img src={logo} alt="Tech Shop" />
                 </div>
-                <div className="logo-text">Lucky Beauty</div>
+                <div className="logo-text">Tech Shop</div>
             </div>
             <div className="align-items-center justify-content-center register-content">
                 <div className="register-col">

@@ -174,7 +174,7 @@ class CreateOrEditChiNhanhModal extends Component<ChiNhanhProps> {
                                             sx={{ fontSize: '16px', color: '#4c4b4c' }}></TextField>
                                     </Grid>
                                     <Grid item xs={12} sm={12}>
-                                        <NumericFormat
+                                        <TextField
                                             label={<Typography variant="subtitle2">Số điện thoại</Typography>}
                                             error={errors.soDienThoai && touched.soDienThoai ? true : false}
                                             helperText={
@@ -187,10 +187,18 @@ class CreateOrEditChiNhanhModal extends Component<ChiNhanhProps> {
                                             name="soDienThoai"
                                             placeholder="Nhập số điện thoại"
                                             value={values.soDienThoai}
-                                            onChange={handleChange}
+                                            onChange={(e) => {
+                                                const onlyNums = e.target.value.replace(/[^0-9]/g, '');
+                                                handleChange({
+                                                    target: {
+                                                        name: 'soDienThoai',
+                                                        value: onlyNums
+                                                    }
+                                                });
+                                            }}
                                             fullWidth
                                             sx={{ fontSize: '16px', color: '#4c4b4c' }}
-                                            customInput={TextField}
+                                            inputProps={{ maxLength: 11 }}
                                         />
                                     </Grid>
                                     <Grid item xs={12} sm={12}>

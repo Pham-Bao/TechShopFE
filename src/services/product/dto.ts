@@ -189,4 +189,5 @@ export class ModelNhomHangHoa {
 /* search */
 export class PagedProductSearchDto extends ParamSearchDto {
     idNhomHangHoas?: string[];
+    idLoaiHangHoa?: number;
 }

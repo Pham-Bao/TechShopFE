@@ -8,7 +8,7 @@ import AppConsts from '../../../lib/appconst';
 import './changePassword.css';
 import accountService from '../../../services/account/accountService';
 import { enqueueSnackbar } from 'notistack';
-import logo from '../../../images/Logo_Lucky_Beauty.svg';
+import logo from '../../../images/TechShopLogo.png';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 const ResetPassword = () => {
     const navigate = useNavigate();
@@ -39,14 +39,14 @@ const ResetPassword = () => {
                     <Box className={'change-password-page-inner'}>
                         <Box textAlign={'center'}>
                             <Box display={'flex'} justifyContent={'center'} alignItems={'center'} padding={'12px 0px'}>
-                                <img src={logo} alt="Lucky Beauty" />
+                                <img src={logo} alt="TechShop" />
                                 <Typography
                                     marginLeft={'5px'}
                                     fontSize={'18px'}
                                     fontWeight={700}
                                     fontFamily={'Vinhan !important'}
                                     color={'var(--color-main)'}>
-                                    Lucky Beauty
+                                    Tech Shop
                                 </Typography>
                             </Box>
 

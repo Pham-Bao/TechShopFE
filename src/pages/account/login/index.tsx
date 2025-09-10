@@ -94,9 +94,9 @@ const LoginScreen: React.FC = () => {
                     <div className="login-page-inner">
                         <div className="logo-login" style={{ padding: '12px 0px' }}>
                             <div className="logo-image">
-                                <img src={logo} alt="Lucky Beauty" />
+                                <img src={logo} alt="TechShop" />
                             </div>
-                            <div className="logo-text">Lucky Beauty</div>
+                            <div className="logo-text">TechShop</div>
                         </div>
                         <Typography
                             sx={{
