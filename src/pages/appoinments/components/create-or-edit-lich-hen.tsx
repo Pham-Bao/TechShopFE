@@ -55,44 +55,59 @@ class CreateOrEditLichHenModal extends Component<ICreateOrEditProps> {
     onOpenKhachHangModal = () => {
         this.setState({ isShowKhachHangModal: !this.state.isShowKhachHangModal });
     };
+
     handleSubmit = async (values: any) => {
-        if (values.idNhanVien === AppConsts.guidEmpty || values.idNhanVien === '') {
-            const nhanVienRanh = suggestStore.suggestKyThuatVien?.filter((x) => x.trangThai === 1);
-            if (nhanVienRanh && nhanVienRanh.length > 0) {
-                const randomIndex = Math.floor(Math.random() * nhanVienRanh.length);
-                const nhanVien = nhanVienRanh[randomIndex];
-                values.idNhanVien = nhanVien.id;
+        try {
+            // 🔥 auto chọn nhân viên nếu chưa chọn
+            if (!values.idNhanVien || values.idNhanVien === AppConsts.guidEmpty) {
+                const nhanVienRanh = suggestStore.suggestKyThuatVien?.filter((x) => x.trangThai === 1);
+
+                if (nhanVienRanh?.length) {
+                    const randomIndex = Math.floor(Math.random() * nhanVienRanh.length);
+                    values.idNhanVien = nhanVienRanh[randomIndex].id;
+                }
             }
+
+            // ✅ 1. Tạo lịch hẹn
+            const createResult = await bookingStore.onCreateOrEditBooking({
+                id: values.id,
+                bookingCode: values?.bookingCode ?? '',
+                idChiNhanh: Cookies.get('IdChiNhanh') ?? '',
+                idDonViQuiDoi: values.idDonViQuiDoi,
+                idKhachHang: values.idKhachHang,
+                idNhanVien: values.idNhanVien,
+                startHours: values.startHours,
+                startTime: values.startTime,
+                ghiChu: values.ghiChu,
+                trangThai: values.trangThai,
+
+                // 🔥 QUAN TRỌNG
+                idHangHoaDienThoai: values.idHangHoaDienThoai,
+                newTrangThai: values.newTrangThai
+            });
+
+            if (!createResult) {
+                enqueueSnackbar('Có lỗi xảy ra vui lòng thử lại sau!', {
+                    variant: 'error',
+                    autoHideDuration: 3000
+                });
+                return;
+            }
+
+            enqueueSnackbar(
+                values.id === AppConsts.guidEmpty || values.id === '' ? 'Thêm mới thành công' : 'Cập nhật thành công',
+                {
+                    variant: 'success',
+                    autoHideDuration: 3000
+                }
+            );
+
+            this.props.onOk(createResult.id);
+        } catch (error) {
+            console.log(error);
+            enqueueSnackbar('Có lỗi xảy ra', { variant: 'error' });
         }
-        const createResult = await bookingStore.onCreateOrEditBooking({
-            id: values.id,
-            bookingCode: values?.bookingCode ?? '',
-            idChiNhanh: Cookies.get('IdChiNhanh') ?? '',
-            idDonViQuiDoi: values.idDonViQuiDoi,
-            idKhachHang: values.idKhachHang,
-            idNhanVien: values.idNhanVien,
-            startHours: values.startHours,
-            startTime: values.startTime,
-            ghiChu: values.ghiChu,
-            trangThai: values.trangThai
-        });
-        const saveOK = createResult != null;
-        saveOK
-            ? enqueueSnackbar(
-                  values.id === AppConsts.guidEmpty || values.id === '' ? 'Thêm mới thành công' : 'Cập nhật thành công',
-                  {
-                      variant: 'success',
-                      autoHideDuration: 3000
-                  }
-              )
-            : enqueueSnackbar('Có lỗi xảy ra vui lòng thử lại sau!', {
-                  variant: 'error',
-                  autoHideDuration: 3000
-              });
-
-        this.props.onOk(createResult.id);
     };
-
     render(): ReactNode {
         const { visible, onCancel } = this.props;
         const initialValues = bookingStore.createOrEditBookingDto;
@@ -158,26 +173,64 @@ class CreateOrEditLichHenModal extends Component<ICreateOrEditProps> {
                                                     <AddIcon />
                                                 </Button>
                                             </Stack>
-                                            <Box
-                                                className="mt-3 mt-md-0"
-                                                display={'flex'}
-                                                justifyContent={'center'}
-                                                alignItems={'center'}
-                                                flexDirection={'column'}>
-                                                <Avatar sx={{ width: '140px', height: '140px', bgcolor: '#EEF0F4' }}>
-                                                    <CustomerIcon width={'60px'} height={'60px'} />
-                                                </Avatar>
-                                                <Typography
-                                                    className="mt-3 mt-md-4 mb-2 mb-md-3"
-                                                    color={'#3D475C'}
-                                                    fontSize={'18px'}
-                                                    fontWeight={'700'}>
-                                                    Thêm khách hàng
-                                                </Typography>
-                                                <Typography color={'#8492AE'} fontSize={'14px'} fontWeight={400}>
-                                                    Sử dụng tìm kiếm để thêm khách hàng
-                                                </Typography>
-                                            </Box>
+                                            {values.idDonViQuiDoi ? (
+                                                (() => {
+                                                    const dichVu = suggestStore.suggestDichVu?.find(
+                                                        (x) => x.id === values.idDonViQuiDoi
+                                                    );
+
+                                                    if (!dichVu) return null;
+
+                                                    return (
+                                                        <Box
+                                                            display="flex"
+                                                            justifyContent="center"
+                                                            alignItems="center"
+                                                            flexDirection="column">
+                                                            <Typography
+                                                                className="mt-3"
+                                                                color={'#3D475C'}
+                                                                fontSize={'18px'}
+                                                                fontWeight={'700'}>
+                                                                {dichVu.tenDichVu}
+                                                            </Typography>
+                                                            <Typography color={'#8492AE'} fontSize={'14px'}>
+                                                                Imel: {dichVu.imel}
+                                                            </Typography>
+                                                            <Typography color={'#8492AE'} fontSize={'14px'}>
+                                                                Giá: {dichVu.donGia?.toLocaleString()} đ
+                                                            </Typography>
+                                                            <Typography color={'#8492AE'} fontSize={'14px'}>
+                                                                Ghi chú: {dichVu.ghichu}
+                                                            </Typography>
+                                                        </Box>
+                                                    );
+                                                })()
+                                            ) : (
+                                                <Box
+                                                    className="mt-3 mt-md-0"
+                                                    display={'flex'}
+                                                    justifyContent={'center'}
+                                                    alignItems={'center'}
+                                                    flexDirection={'column'}>
+                                                    <Avatar
+                                                        sx={{ width: '140px', height: '140px', bgcolor: '#EEF0F4' }}>
+                                                        <CustomerIcon width={'60px'} height={'60px'} />
+                                                    </Avatar>
+
+                                                    <Typography
+                                                        className="mt-3 mt-md-4 mb-2 mb-md-3"
+                                                        color={'#3D475C'}
+                                                        fontSize={'18px'}
+                                                        fontWeight={'700'}>
+                                                        Thêm khách hàng
+                                                    </Typography>
+
+                                                    <Typography color={'#8492AE'} fontSize={'14px'}>
+                                                        Sử dụng tìm kiếm để thêm khách hàng
+                                                    </Typography>
+                                                </Box>
+                                            )}
                                         </Box>
                                     </Grid>
                                     <Grid item xs={12} sm={7}>
@@ -189,7 +242,7 @@ class CreateOrEditLichHenModal extends Component<ICreateOrEditProps> {
                                                         size: 'small',
                                                         label: (
                                                             <Typography variant="subtitle2">
-                                                                Ngày
+                                                                Ngày hẹn
                                                                 <span className="text-danger"> *</span>
                                                             </Typography>
                                                         ),
@@ -207,7 +260,7 @@ class CreateOrEditLichHenModal extends Component<ICreateOrEditProps> {
                                                 />
                                             </FormGroup>
                                             <Grid container spacing={2} sx={{ marginTop: '4px' }}>
-                                                <Grid item md={8} sm={6} xs={12}>
+                                                <Grid item md={12} sm={6} xs={12}>
                                                     <FormGroup>
                                                         <Autocomplete
                                                             options={suggestStore?.suggestDichVu ?? []}
@@ -260,38 +313,9 @@ class CreateOrEditLichHenModal extends Component<ICreateOrEditProps> {
                                                         />
                                                     </FormGroup>
                                                 </Grid>
-                                                <Grid item md={4} xs={12} sm={6}>
-                                                    <FormGroup>
-                                                        <TextField
-                                                            label={
-                                                                <Typography variant="subtitle2" fontSize="14px">
-                                                                    Thời gian bắt đầu{' '}
-                                                                    <span className="text-danger">*</span>
-                                                                </Typography>
-                                                            }
-                                                            error={
-                                                                errors.startHours && touched.startHours ? true : false
-                                                            }
-                                                            helperText={
-                                                                errors.startHours &&
-                                                                touched.startHours && (
-                                                                    <span className="text-danger">
-                                                                        {errors.startHours}
-                                                                    </span>
-                                                                )
-                                                            }
-                                                            InputLabelProps={{
-                                                                shrink: true
-                                                            }}
-                                                            type="time"
-                                                            size="small"
-                                                            name="startHours"
-                                                            value={values.startHours}
-                                                            onChange={handleChange}></TextField>
-                                                    </FormGroup>
-                                                </Grid>
+
                                                 <Grid container item spacing={[4, 2]}>
-                                                    <Grid item md={8} sm={6} xs={12}>
+                                                    <Grid item md={12} sm={6} xs={12}>
                                                         <FormGroup>
                                                             <Autocomplete
                                                                 options={suggestStore?.suggestKyThuatVien ?? []}
@@ -328,23 +352,6 @@ class CreateOrEditLichHenModal extends Component<ICreateOrEditProps> {
                                                                     />
                                                                 )}
                                                             />
-                                                        </FormGroup>
-                                                    </Grid>
-                                                    <Grid item md={4} sm={6} xs={12}>
-                                                        <FormGroup>
-                                                            <TextField
-                                                                label={
-                                                                    <Typography variant="subtitle2" fontSize="14px">
-                                                                        Thời gian làm
-                                                                    </Typography>
-                                                                }
-                                                                value={
-                                                                    suggestStore.suggestDichVu?.find(
-                                                                        (x) => x.id == values.idDonViQuiDoi
-                                                                    )?.thoiGianThucHien ?? '0'
-                                                                }
-                                                                type="text"
-                                                                size="small"></TextField>
                                                         </FormGroup>
                                                     </Grid>
                                                 </Grid>

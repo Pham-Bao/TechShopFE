@@ -92,11 +92,10 @@ body .font-normal {
 .MuiAutocomplete-option {
     font-size: var(--font-size-main) !important;
 }
-.MuiSvgIcon-root:hover{
-    filter: saturate(1.2)!important; /*tăng độ bão hòa của màu --> làm đậm màu hơn so với màu gốc*/
-    cursor: pointer!important;
+.MuiSvgIcon-root:hover {
+    filter: saturate(1.2) !important; /*tăng độ bão hòa của màu --> làm đậm màu hơn so với màu gốc*/
+    cursor: pointer !important;
 }
-
 
 /* style main button*/
 
@@ -164,8 +163,8 @@ body .font-normal {
 .MuiOutlinedInput-input {
     font-size: var(--font-size-main) !important;
     /* do thay đổi fontsize mặc định của textfied (16px -->14px) */
-     /* nên cũng phải thay đổi line-height của input cho phù hợp (1.4375em (23px --> 20px) */
-      /* chiều cao của input sau khi tahy đổi (40px --> 37px) */
+    /* nên cũng phải thay đổi line-height của input cho phù hợp (1.4375em (23px --> 20px) */
+    /* chiều cao của input sau khi tahy đổi (40px --> 37px) */
     height: 20px;
 }
 
@@ -430,39 +429,39 @@ body .font-normal {
     }
 }
 
-.text-cursor{
+.text-cursor {
     cursor: pointer;
     color: var(--color-main);
 }
-.payment-form-hinhthucTT p{
-font-size: 17px;
-font-weight: 500;
+.payment-form-hinhthucTT p {
+    font-size: 17px;
+    font-weight: 500;
 }
 
-.grid-table{
+.grid-table {
     align-items: center;
     border-bottom: 1px solid #ccc;
 }
-.grid-table.grid-table-header{
-   text-align: center;
+.grid-table.grid-table-header {
+    text-align: center;
 }
-.grid-table.grid-table-header p{
-   font-weight: 500;
+.grid-table.grid-table-header p {
+    font-weight: 500;
 }
-.grid-table.grid-content .MuiGrid-item{
+.grid-table.grid-content .MuiGrid-item {
     border-right: 1px solid #ccc;
 }
-.grid-table.grid-content .MuiGrid-item p{
+.grid-table.grid-content .MuiGrid-item p {
     padding-left: 8px;
     padding-right: 8px;
 }
-.only-icon:hover{
-   color: var(--color-second);
-   cursor: pointer;
+.only-icon:hover {
+    color: var(--color-second);
+    cursor: pointer;
 }
-.input-number input{
+.input-number input {
     text-align: right;
 }
-.payment-form-hinhthucTT .input-number input{
+.payment-form-hinhthucTT .input-number input {
     font-weight: 700;
 }

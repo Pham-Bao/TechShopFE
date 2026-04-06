@@ -105,7 +105,9 @@ class BookingStore {
             startHours: '',
             startTime: formatDate(new Date(), 'yyyy-MM-dd'),
             ghiChu: '',
-            trangThai: 1
+            trangThai: 1,
+            idHangHoaDienThoai: '',
+            newTrangThai: 0
         };
     }
     async getForEditBooking(id: string) {

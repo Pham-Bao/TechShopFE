@@ -3,4 +3,6 @@ export interface SuggestDichVuDto {
     tenDichVu: string;
     donGia: number;
     thoiGianThucHien: string;
+    imel: string;
+    ghichu: string;
 }

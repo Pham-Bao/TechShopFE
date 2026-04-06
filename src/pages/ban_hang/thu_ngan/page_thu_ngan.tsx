@@ -10,7 +10,8 @@ import {
     TextField,
     IconButton,
     CircularProgress,
-    Chip
+    Chip,
+    Button
 } from '@mui/material';
 import MoreOutlinedIcon from '@mui/icons-material/MoreOutlined';
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
@@ -91,7 +92,10 @@ import { IListPhone } from '../../../services/dto/IListPhone';
 import Utils from '../../../utils/utils';
 import { PagedResultDto } from '../../../services/dto/pagedResultDto';
 import ModalHangHoaDienThoai from '../../dien_thoai/ModalPhone';
+import ModalHangHoaDienThoaiSua from '../../dien_thoai/ModalDienThoaiSua';
+
 import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
+import khachHangStore from '../../../stores/khachHangStore';
 
 export type IPropsPageThuNgan = {
     txtSearch: string;
@@ -160,6 +164,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
 
     const [filterPageProduct, setFilterPageProduct] = useState<PagedProductSearchDto>({
         idNhomHangHoas: [],
+        idLoaiHangHoa: 5,
         textSearch: '',
         currentPage: 1,
         pageSize: AppConsts.pageOption[0].value,
@@ -601,6 +606,8 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
             idNhomHangHoa: item?.idNhomHangHoa as undefined,
             idHangHoa: item?.id as undefined,
             soLuong: 1,
+            imel: item?.imel,
+            mau: item?.mau,
             expanded: false
         });
         const itemCTHD = hoaDonChiTiet?.filter(
@@ -674,8 +681,8 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                 soDienThoai: customer?.soDienThoai ?? ''
             });
 
-            // const idCheckin = await InsertCustomer_toCheckIn(customer?.id?.toString());
-            // setHoaDon({ ...hoadon, idKhachHang: customer?.id?.toString(), idCheckIn: idCheckin });
+            const idCheckin = await InsertCustomer_toCheckIn(customer?.id?.toString());
+            setHoaDon({ ...hoadon, idKhachHang: customer?.id?.toString(), idCheckIn: idCheckin });
 
             await AddHD_toCache_IfNotExists();
             await dbDexie.hoaDon.update(hoadon?.id, {
@@ -689,11 +696,10 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
         }
     };
 
-    const InsertCustomer_toCheckIn = async (idHangHoa: string, customerId?: string): Promise<string> => {
+    const InsertCustomer_toCheckIn = async (customerId: string, idHangHoa?: string): Promise<string> => {
         const objCheckInNew: Partial<KHCheckInDto> = {
-            // Partial cho phép thiếu trường
             idKhachHang: customerId,
-            idHangHoa: idHangHoa || null,
+            idHangHoa: idHangHoa ?? null,
             dateTimeCheckIn: hoadon?.ngayLapHoaDon,
             idChiNhanh: idChiNhanhChosed,
             trangThai: TrangThaiCheckin.DOING,
@@ -703,33 +709,33 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
         return dataCheckIn.id;
     };
 
-    // const changeCustomer = async (item: IList) => {
-    //     setAnchorDropdownCustomer(null);
-    //     setCustomerChosed({
-    //         ...customerChosed,
-    //         id: item?.id,
-    //         maKhachHang: item?.maKhachHang ?? '',
-    //         tenKhachHang: item?.text ?? 'Chưa chọn khách',
-    //         soDienThoai: item?.text2 ?? '',
-    //         conNo: item?.conNo,
-    //         tenNhomKhach: item.nhomKhach,
-    //         isShow: true
-    //     });
-    //     const idCheckin = await InsertCustomer_toCheckIn(item?.id ?? Guid.EMPTY);
-    //     setHoaDon({ ...hoadon, idKhachHang: item?.id, idCheckIn: idCheckin });
+    const changeCustomer = async (item: IList) => {
+        setAnchorDropdownCustomer(null);
+        setCustomerChosed({
+            ...customerChosed,
+            id: item?.id,
+            maKhachHang: item?.maKhachHang ?? '',
+            tenKhachHang: item?.text ?? 'Chưa chọn khách',
+            soDienThoai: item?.text2 ?? '',
+            conNo: item?.conNo,
+            tenNhomKhach: item.nhomKhach,
+            isShow: true
+        });
+        const idCheckin = await InsertCustomer_toCheckIn(item?.id ?? Guid.EMPTY);
+        setHoaDon({ ...hoadon, idKhachHang: item?.id, idCheckIn: idCheckin });
 
-    //     await AddHD_toCache_IfNotExists();
-    //     await dbDexie.hoaDon.update(hoadon?.id, {
-    //         idCheckIn: idCheckin,
-    //         idKhachHang: item?.id,
-    //         tenKhachHang: item?.text,
-    //         maKhachHang: item?.maKhachHang, // todo maKhachHang
-    //         soDienThoai: item?.text2,
-    //         idHangHoa: 'iwhgfuiwheiuhdqsi'
-    //     });
+        await AddHD_toCache_IfNotExists();
+        await dbDexie.hoaDon.update(hoadon?.id, {
+            idCheckIn: idCheckin,
+            idKhachHang: item?.id,
+            tenKhachHang: item?.text,
+            maKhachHang: item?.maKhachHang, // todo maKhachHang
+            soDienThoai: item?.text2,
+            idHangHoa: 'iwhgfuiwheiuhdqsi'
+        });
 
-    //     await CheckCustomer_hasGDV(item?.id ?? '');
-    // };
+        //await CheckCustomer_hasGDV(item?.id ?? '');
+    };
 
     const changePhone = async (item: IListPhone) => {
         setAnchorDropdownPhone(null);
@@ -763,9 +769,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
             isShow: true
         });
 
-        const idCheckin = await InsertCustomer_toCheckIn(item?.id ?? Guid.EMPTY, data?.id?.toString());
-
-        //const idCheckin = await InsertCustomer_toCheckIn(item?.id ?? Guid.EMPTY);
+        const idCheckin = await InsertCustomer_toCheckIn(data?.id?.toString() ?? item?.id ?? Guid.EMPTY);
         setHoaDon({
             ...hoadon,
             idKhachHang: data?.id?.toString() ?? '',
@@ -1260,7 +1264,16 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                 type: 1,
                 mes: 'Thanh toán hóa đơn thành công'
             });
+            try {
+                const list = hoaDonChiTiet.filter((x) => x?.idHangHoa);
 
+                for (const item of list) {
+                    //trạng thái 2 là đã bán
+                    await ProductService.UpdateTrangThaiDienThoai(item.idHangHoa!, 2);
+                }
+            } catch (err) {
+                console.error('Lỗi update trạng thái điện thoại', err);
+            }
             await saveDiaryHoaDon(hoadonDB?.maHoaDon, hoadonDB?.ngayLapHoaDon);
 
             await CheckinService.UpdateTrangThaiCheckin(hoadon?.idCheckIn, TrangThaiCheckin.COMPLETED);
@@ -1353,7 +1366,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
 
         DataMauIn.hoadon.ngayLapHoaDon = ngayLapHD; // get ngaylapHD from DB (after add hours/minutes/seconds)
         DataMauIn.hoadon.daThanhToan = quyHD?.tongTienThu;
-        DataMauIn.hoadon.conNo = hoadon?.tongThanhToan ?? 0 - quyHD?.tongTienThu ?? 0;
+        //DataMauIn.hoadon.conNo = hoadon?.tongThanhToan ?? 0 - quyHD?.tongTienThu ?? 0;
         DataMauIn.hoadonChiTiet = hoaDonChiTiet;
 
         DataMauIn.khachhang = {
@@ -1391,7 +1404,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
 
         DataMauIn.hoadon.ngayLapHoaDon = ngayLapHD; // get ngaylapHD from DB (after add hours/minutes/seconds)
         DataMauIn.hoadon.daThanhToan = quyHD?.tongTienThu;
-        DataMauIn.hoadon.conNo = hoadon?.tongThanhToan ?? 0 - quyHD?.tongTienThu ?? 0;
+        //DataMauIn.hoadon.conNo = hoadon?.tongThanhToan ?? 0 - quyHD?.tongTienThu ?? 0;
         DataMauIn.hoadonChiTiet = hoaDonChiTiet;
 
         DataMauIn.khachhang = {
@@ -1595,7 +1608,6 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
         handleCloseDialog();
     };
     function showModalAddProduct(action?: number, id = '') {
-        console.log('showModalAddProduct', action, id);
         setTriggerModalProduct((old) => {
             return {
                 ...old,
@@ -1639,8 +1651,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                     isShow: true
                 });
 
-                const idCheckin = await InsertCustomer_toCheckIn(objNew?.id ?? Guid.EMPTY, data?.id?.toString());
-
+                const idCheckin = await InsertCustomer_toCheckIn(data?.id?.toString() ?? '', objNew?.id ?? Guid.EMPTY);
                 setHoaDon({
                     ...hoadon,
                     idKhachHang: data?.id?.toString() ?? '',
@@ -1670,7 +1681,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
 
     return (
         <>
-            <ModalHangHoaDienThoai trigger={triggerModalProduct} handleSave={saveProduct}></ModalHangHoaDienThoai>
+            <ModalHangHoaDienThoaiSua trigger={triggerModalProduct} handleSave={saveProduct}></ModalHangHoaDienThoaiSua>
             <ConfirmDelete
                 isShow={confirmDialog.show}
                 title={confirmDialog.title}
@@ -1812,7 +1823,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                                                                     cursor: 'pointer'
                                                                 }
                                                             }}>
-                                                            <Stack spacing={2} onClick={() => choseProduct(item)}>
+                                                            <Stack spacing={0.5} onClick={() => choseProduct(item)}>
                                                                 <Typography
                                                                     fontWeight={500}
                                                                     variant="body2"
@@ -1822,8 +1833,13 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                                                                         whiteSpace: 'nowrap',
                                                                         width: '100%'
                                                                     }}>
-                                                                    {item?.tenHangHoa}
+                                                                    {item?.tenHangHoa}, {item?.mau}
                                                                 </Typography>
+
+                                                                <Typography variant="caption" sx={{ lineHeight: 1 }}>
+                                                                    {item?.imel}
+                                                                </Typography>
+
                                                                 <Typography variant="caption">
                                                                     {Intl.NumberFormat('vi-VN').format(
                                                                         item?.giaBan as number
@@ -1845,205 +1861,151 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                 <Grid item lg={5} md={6} xs={12} sm={7}>
                     <Stack marginLeft={2} position={'relative'} height={'100%'}>
                         <Stack>
-                            <Stack
-                                direction={'row'}
-                                paddingBottom={2}
-                                maxHeight={48}
-                                justifyContent={'space-between'}
-                                sx={{ mt: 1 }}>
-                                <Stack direction={'row'} spacing={0.5} alignItems={'center'} width="100%">
-                                    <Avatar sx={{ width: 40, height: 40 }}>
-                                        <PhoneIphoneIcon sx={{ fontSize: 28 }} />
-                                    </Avatar>
-
+                            {loaiHoaDon === LoaiChungTu.HOA_DON_BAN_LE ? (
+                                // UI hóa đơn bán lẻ
+                                <Stack
+                                    direction="row"
+                                    alignItems="center"
+                                    justifyContent="space-between"
+                                    paddingBottom={2}
+                                    sx={{
+                                        borderBottom: '1px solid #eee'
+                                    }}>
+                                    {/* LEFT: Thông tin khách */}
                                     <Stack
-                                        spacing={1}
-                                        onClick={(event) => {
-                                            setAnchorDropdownPhone(event.currentTarget);
-                                        }}
-                                        sx={{ flexGrow: 1, cursor: 'pointer' }}>
-                                        <Stack direction="row" spacing={3} alignItems="center" title="Thay đổi máy">
-                                            {/* Cột thông tin máy */}
-                                            <Stack direction="row" alignItems="center" spacing={1} maxWidth={250}>
-                                                <Stack direction="column">
-                                                    <Typography
-                                                        variant="body2"
-                                                        fontWeight={500}
-                                                        className="lableOverflow">
-                                                        {phoneChosed?.tenHangHoa
-                                                            ? `${phoneChosed?.tenHangHoa}${
-                                                                  phoneChosed?.dungLuong
-                                                                      ? ` | ${phoneChosed?.dungLuong}`
-                                                                      : ''
-                                                              }${phoneChosed?.mau ? ` | ${phoneChosed?.mau}` : ''}`
-                                                            : 'Chưa chọn máy'}
-                                                    </Typography>
+                                        direction="row"
+                                        spacing={1.5}
+                                        alignItems="center"
+                                        sx={{ cursor: 'pointer', flex: 1 }}
+                                        onClick={(event) => setAnchorDropdownCustomer(event.currentTarget)}>
+                                        <Avatar sx={{ width: 36, height: 36 }} />
 
-                                                    {phoneChosed?.isShow && (
-                                                        <>
-                                                            <Typography
-                                                                variant="body2"
-                                                                fontWeight={300}
-                                                                className="lableOverflow"
-                                                                sx={{ textTransform: 'none', color: '#555' }}>
-                                                                Nội dung: {phoneChosed?.noiDung}
-                                                            </Typography>
-                                                            <Typography
-                                                                variant="body2"
-                                                                fontWeight={300}
-                                                                className="lableOverflow"
-                                                                sx={{ textTransform: 'none', color: '#555' }}>
-                                                                Lỗi: {phoneChosed?.loi}
-                                                            </Typography>
-                                                        </>
+                                        <Stack spacing={0.3} minWidth={0}>
+                                            {/* Tên + nhóm */}
+                                            <Typography variant="body2" fontWeight={500} noWrap>
+                                                {customerChosed?.tenKhachHang ?? 'Chưa chọn khách hàng'}
+                                            </Typography>
+
+                                            {customerChosed?.isShow && (
+                                                <Typography variant="caption" color="text.secondary" noWrap>
+                                                    Nhóm: {customerChosed?.tenNhomKhach}
+                                                </Typography>
+                                            )}
+
+                                            {/* Công nợ + SĐT */}
+                                            {customerChosed?.isShow && (
+                                                <Stack direction="row" spacing={2}>
+                                                    {customerChosed?.conNo !== 0 && (
+                                                        <Typography variant="caption" fontWeight={500}>
+                                                            Nợ:{' '}
+                                                            {Intl.NumberFormat('vi-VN').format(
+                                                                customerChosed?.conNo ?? 0
+                                                            )}
+                                                            đ
+                                                        </Typography>
                                                     )}
-                                                </Stack>
-                                            </Stack>
 
-                                            {/* Cột còn nợ, pin, imel */}
-                                            {phoneChosed?.isShow && (
-                                                <Stack direction="column" maxWidth={250}>
-                                                    <Typography color={'#000000'} variant="caption" fontWeight="bold">
-                                                        Pass: {phoneChosed?.matKhau}
-                                                    </Typography>
-                                                    <Typography color={'#000000'} variant="caption">
-                                                        Pin: {phoneChosed?.pin}%
-                                                    </Typography>
-                                                    <Typography color={'#000000'} variant="caption">
-                                                        Imel: {phoneChosed?.imel}
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        {customerChosed?.soDienThoai}
                                                     </Typography>
                                                 </Stack>
                                             )}
                                         </Stack>
                                     </Stack>
 
-                                    {/* Icon Thêm hoặc Sửa (ở bên trái, thay phiên nhau) */}
-                                    {phoneChosed?.isShow ? (
-                                        <EditOutlinedIcon
-                                            color="secondary"
-                                            sx={{ marginLeft: 1, cursor: 'pointer' }}
-                                            onClick={() => {
-                                                //showModalAddProduct();
-                                                showModalAddProduct(2, phoneChosed?.idDonViQuyDoi);
-                                            }}
-                                        />
-                                    ) : (
-                                        <IconButton
-                                            aria-label="add-customer"
-                                            color="primary"
-                                            title="Thêm máy mới"
-                                            onClick={(event) => {
-                                                event.stopPropagation();
-                                                showModalAddProduct();
-                                            }}>
-                                            <AddOutlinedIcon color="info" sx={{ width: 20 }} />
-                                        </IconButton>
-                                    )}
+                                    {/* RIGHT: Button */}
+                                    <Button
+                                        variant="contained"
+                                        size="small"
+                                        onClick={showModalAddCustomer}
+                                        sx={{
+                                            textTransform: 'none',
+                                            borderRadius: '8px',
+                                            boxShadow: 'none',
+                                            px: 2,
+                                            ml: 2,
+                                            whiteSpace: 'nowrap'
+                                        }}>
+                                        Thêm Khách hàng
+                                    </Button>
 
-                                    {/* Icon Xóa (luôn cố định ở bên phải) */}
-                                    {phoneChosed?.isShow && (
-                                        <CloseOutlinedIcon
-                                            color="error"
-                                            titleAccess="Bỏ chọn máy"
-                                            sx={{ width: 20, marginLeft: 1, cursor: 'pointer' }}
-                                            onClick={(event) => {
-                                                event.stopPropagation();
-                                                RemovePhone();
-                                            }}
-                                        />
-                                    )}
-                                </Stack>
-                                <MenuWithDataFromPhone
-                                    typeSearch={TypeSearchfromDB.CUSTOMER}
-                                    open={expandSearchCusPhone}
-                                    anchorEl={anchorDropdownPhone}
-                                    handleClose={() => setAnchorDropdownPhone(null)}
-                                    handleChoseItem={changePhone}
-                                />
-                            </Stack>
-                            <Box
-                                sx={{
-                                    height: '1px',
-                                    width: '89%',
-                                    backgroundColor: '#ccc',
-                                    my: 1,
-                                    mx: 'auto'
-                                }}
-                            />
-                            <Stack direction={'row'} paddingBottom={2} maxHeight={48} justifyContent={'space-between'}>
-                                <Stack>
-                                    <Stack direction={'row'} spacing={0.5} alignItems={'center'}>
-                                        <Avatar />
-                                        <Stack spacing={1}>
-                                            <Stack
-                                                direction={'row'}
-                                                spacing={3}
-                                                alignItems={'center'}
-                                                title="Thay đổi khách hàng"
-                                                sx={{ cursor: 'pointer' }}>
-                                                {/* Cột 1: Tên khách hàng, Nhóm khách hàng & Icon */}
-                                                <Stack direction="row" alignItems="center" spacing={1} maxWidth={250}>
-                                                    <Stack direction="column">
-                                                        <Typography
-                                                            variant="body2"
-                                                            fontWeight={500}
-                                                            className="lableOverflow">
-                                                            {customerChosed?.tenKhachHang ?? 'Chưa chọn khách hàng'}
-                                                        </Typography>
-                                                        {customerChosed?.isShow && ( // Chỉ hiển thị nhóm khách hàng nếu isShow = true
-                                                            <Typography
-                                                                variant="body2"
-                                                                fontWeight={300}
-                                                                className="lableOverflow"
-                                                                sx={{ textTransform: 'none', color: '#555' }}>
-                                                                Nhóm: {customerChosed?.tenNhomKhach}
-                                                            </Typography>
-                                                        )}
-                                                    </Stack>
-                                                </Stack>
-
-                                                {/* Cột 2: Còn nợ & Số điện thoại (chỉ hiển thị nếu isShow = true) */}
-                                                {customerChosed?.isShow && (
-                                                    <Stack direction="column" maxWidth={250}>
-                                                        {customerChosed?.conNo != null &&
-                                                            customerChosed?.conNo != 0 && (
-                                                                <Typography
-                                                                    color={'#000000'}
-                                                                    variant="caption"
-                                                                    sx={{ fontWeight: 'bold' }}>
-                                                                    Còn nợ:{' '}
-                                                                    {new Intl.NumberFormat('vi-VN').format(
-                                                                        customerChosed?.conNo ?? 0
-                                                                    )}{' '}
-                                                                    đ
-                                                                </Typography>
-                                                            )}
-                                                        <Typography color={'#000000'} variant="caption">
-                                                            Điện thoại: {customerChosed?.soDienThoai}
-                                                        </Typography>
-                                                    </Stack>
-                                                )}
-                                            </Stack>
-                                        </Stack>
-                                    </Stack>
-                                </Stack>
-
-                                <Stack
-                                    alignItems={'end'}
-                                    sx={{
-                                        '& fieldset': {
-                                            border: 'none'
-                                        },
-                                        ' & input': {
-                                            textAlign: 'right'
-                                        }
-                                    }}>
-                                    <DatePickerCustom
-                                        defaultVal={hoadon?.ngayLapHoaDon}
-                                        handleChangeDate={changeNgayLapHoaDon}
+                                    {/* Dropdown */}
+                                    <MenuWithDataFromDB
+                                        open={expandSearchCus}
+                                        anchorEl={anchorDropdownCustomer}
+                                        handleClose={() => setAnchorDropdownCustomer(null)}
+                                        typeSearch={TypeSearchfromDB.CUSTOMER}
+                                        handleChoseItem={changeCustomer}
                                     />
                                 </Stack>
-                            </Stack>
+                            ) : (
+                                <Stack
+                                    direction="row"
+                                    alignItems="center"
+                                    justifyContent="space-between"
+                                    sx={{
+                                        borderBottom: '1px solid #eee',
+                                        pb: 2
+                                    }}>
+                                    <Stack
+                                        direction="row"
+                                        spacing={1.5}
+                                        alignItems="center"
+                                        sx={{ cursor: 'pointer', flex: 1 }}
+                                        onClick={(event) => {
+                                            setAnchorDropdownPhone(event.currentTarget);
+                                        }}>
+                                        <Avatar sx={{ width: 36, height: 36 }} />
+
+                                        <Stack spacing={0.3} minWidth={0}>
+                                            <Typography variant="body2" fontWeight={500} noWrap>
+                                                {phoneChosed?.tenHangHoa ?? 'Chưa chọn máy'}
+                                            </Typography>
+                                            {phoneChosed?.imel && (
+                                                <Typography variant="caption" color="text.secondary" noWrap>
+                                                    IMEI: {phoneChosed?.imel}
+                                                </Typography>
+                                            )}
+                                            {phoneChosed?.tenChu && (
+                                                <Stack direction="row" spacing={2}>
+                                                    <Typography variant="caption" fontWeight={500}>
+                                                        {phoneChosed?.tenChu}
+                                                    </Typography>
+                                                </Stack>
+                                            )}
+                                            {phoneChosed?.idChuSoHuu && (
+                                                <Stack direction="row" spacing={2}>
+                                                    <Typography variant="caption" fontWeight={500}>
+                                                        {phoneChosed?.idChuSoHuu}
+                                                    </Typography>
+                                                </Stack>
+                                            )}
+                                        </Stack>
+                                    </Stack>
+
+                                    <Button
+                                        variant="contained"
+                                        size="small"
+                                        onClick={() => showModalAddProduct(1, phoneChosed.idHangHoa)}
+                                        sx={{
+                                            textTransform: 'none',
+                                            borderRadius: '8px',
+                                            boxShadow: 'none',
+                                            px: 2,
+                                            ml: 2,
+                                            whiteSpace: 'nowrap'
+                                        }}>
+                                        Thêm máy sửa chữa
+                                    </Button>
+                                    <MenuWithDataFromPhone
+                                        open={expandSearchCusPhone}
+                                        anchorEl={anchorDropdownPhone}
+                                        handleClose={() => setAnchorDropdownPhone(null)}
+                                        typeSearch={TypeSearchfromDB.CUSTOMER}
+                                        handleChoseItem={changePhone}
+                                    />
+                                </Stack>
+                            )}
 
                             <Stack overflow={'auto'} maxHeight={'calc(84vh - 280px)!important'} zIndex={3}>
                                 {hoaDonChiTiet
@@ -2060,18 +2022,30 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                                             alignItems={'center'}
                                             padding={'8px 0px'}>
                                             <Grid item xs={12} lg={6} md={5}>
-                                                <Stack spacing={1}>
-                                                    <Stack direction={'row'} spacing={1} alignItems={'center'}>
+                                                <Grid item xs={12} lg={6} md={5}>
+                                                    <Stack direction="row" spacing={1} alignItems="flex-start">
                                                         <PersonAddOutlinedIcon
                                                             titleAccess="Chọn nhân viên thực hiện"
-                                                            sx={{ cursor: 'pointer' }}
+                                                            sx={{ cursor: 'pointer', mt: '2px' }}
                                                             onClick={() => showPopNhanVienThucHien(cthd)}
                                                         />
-                                                        <Typography className="lableOverflow" title={cthd?.tenHangHoa}>
-                                                            {cthd?.tenHangHoa}
-                                                        </Typography>
+
+                                                        <Stack spacing={0}>
+                                                            <Typography
+                                                                className="lableOverflow"
+                                                                title={cthd?.tenHangHoa}>
+                                                                {cthd?.tenHangHoa}, {cthd?.mau}
+                                                            </Typography>
+
+                                                            <Typography
+                                                                variant="caption"
+                                                                className="lableOverflow"
+                                                                title={cthd?.imel}>
+                                                                {cthd?.imel}
+                                                            </Typography>
+                                                        </Stack>
                                                     </Stack>
-                                                </Stack>
+                                                </Grid>
                                             </Grid>
                                             <Grid item xs={12} lg={6} md={7}>
                                                 <Grid container alignItems={'center'}>

@@ -84,6 +84,7 @@ const PageProduct = () => {
 
     const [filterPageProduct, setFilterPageProduct] = useState<PagedProductSearchDto>({
         idNhomHangHoas: [],
+        idLoaiHangHoa: 2,
         textSearch: '',
         currentPage: 1,
         pageSize: AppConsts.pageOption[0].value,
@@ -925,10 +926,10 @@ const PageProduct = () => {
                     </Grid>
                 </Grid>
                 <Grid container item spacing={2} paddingTop={1} columns={13}>
-                    <Grid item lg={3} md={3} sm={4} xs={13} display={window.screen.width <= 600 ? 'none' : ''}>
+                    <Grid item lg={2} md={2} sm={3} xs={13} display={window.screen.width <= 600 ? 'none' : ''}>
                         {filterContent}
                     </Grid>
-                    <Grid item lg={10} md={10} sm={9} xs={13}>
+                    <Grid item lg={11} md={11} sm={10} xs={13}>
                         {rowSelectionModel.length > 0 && (
                             <ActionRowSelect
                                 lstOption={[

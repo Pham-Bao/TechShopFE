@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { useEffect, useState, useContext } from 'react';
 import { NumericFormat } from 'react-number-format';
+import axios, { AxiosError } from 'axios';
 import {
     Dialog,
     DialogTitle,
@@ -56,7 +57,6 @@ import { CreateOrEditKhachHangDto } from '../../services/khach-hang/dto/CreateOr
 import { IList } from '../../services/dto/IList';
 import { TypeSearchfromDB } from '../../enum/TypeSearch_fromDB';
 import khachHangService from '../../services/khach-hang/khachHangService';
-
 const ModalHangHoaDienThoai = ({ handleSave, trigger }: any) => {
     const appContext = useContext(AppContext);
     const chiNhanhCurrent = appContext.chinhanhCurrent;
@@ -151,18 +151,39 @@ const ModalHangHoaDienThoai = ({ handleSave, trigger }: any) => {
             }
         }
     };
+    const GetIphoneConnectPC = async () => {
+        try {
+            console.log('trạng thái ' + isNew);
+            const data = await ProductService.GetIphoneConnectPC();
+            if (!data) return;
 
+            setProductPhone((prev) => ({
+                ...prev,
+                tenHangHoa: data.dongMay ?? prev.tenHangHoa,
+                dungLuong: data.dungLuong?.replace('GB', '') ?? prev.dungLuong,
+                mau: data.mau ?? prev.mau,
+                imel: data.imei ?? prev.imel,
+                pin: data.batteryHealth ?? prev.pin
+            }));
+        } catch (err) {
+            console.log('Không phát hiện iPhone');
+        }
+    };
     useEffect(() => {
         GetInforAlbum();
         InitData();
 
+        setIsNew(trigger.isNew);
+
         if (trigger.isShow) {
             setOpen(true);
             showModal(trigger.id);
-        }
-        setIsNew(trigger.isNew);
-    }, [trigger]);
 
+            if (trigger.isNew) {
+                GetIphoneConnectPC(); // 👈 chỉ gọi khi tạo mới
+            }
+        }
+    }, [trigger]);
     const InitData = () => {
         setFileImage({} as File);
         setWasClickSave(false);
@@ -299,87 +320,101 @@ const ModalHangHoaDienThoai = ({ handleSave, trigger }: any) => {
     };
 
     async function saveProduct() {
+        if (wasClickSave) return;
         setWasClickSave(true);
 
-        if (wasClickSave) {
-            return;
-        }
-        const check = await CheckSave();
-        if (!check) {
-            return;
-        }
+        try {
+            const check = await CheckSave();
+            if (!check) {
+                setWasClickSave(false);
+                return;
+            }
 
-        // imageData: tennantName_HangHoa/image (albumId/imageId)
-        let imgur_PathImage = '';
-        if ((fileImage?.size ?? 0) > 0) {
-            let subAlbumId = imgur_albumId;
-            if (utils.checkNull(imgur_albumId)) {
-                // create subAlbum
-                const subAlbum = await ImgurAPI.CreateNewAlbum(`${tenantName}_HangHoa`);
-                if (subAlbum != null && subAlbum?.id !== undefined) {
-                    imgur_PathImage = `${subAlbum?.id}/`;
-                    subAlbumId = subAlbum?.id;
+            let imgur_PathImage = productPhone?.image ?? '';
+
+            // upload image
+            if ((fileImage?.size ?? 0) > 0) {
+                let subAlbumId = imgur_albumId;
+
+                if (utils.checkNull(imgur_albumId)) {
+                    const subAlbum = await ImgurAPI.CreateNewAlbum(`${tenantName}_HangHoa`);
+                    if (subAlbum?.id) {
+                        subAlbumId = subAlbum.id;
+                    }
                 }
-            } else {
-                imgur_PathImage = `${imgur_albumId}/`;
+
+                const dataImage = await ImgurAPI.UploadImage(fileImage);
+
+                if (dataImage?.id) {
+                    imgur_PathImage = `${subAlbumId}/${dataImage.id}`;
+                    await ImgurAPI.AddImageToAlbum_WithImageId(subAlbumId, dataImage.id);
+                }
             }
 
-            // add image to subAlbum
-            const dataImage = await ImgurAPI.UploadImage(fileImage);
-            if (dataImage != null && dataImage?.id !== undefined) {
-                imgur_PathImage += `${dataImage?.id}`;
-                await ImgurAPI.AddImageToAlbum_WithImageId(subAlbumId, dataImage?.id ?? '');
+            // nếu update mà xóa ảnh
+            if (!utils.checkNull(imgur_imageId) && utils.checkNull(productImage)) {
+                imgur_PathImage = '';
             }
+
+            const objNew = {
+                ...productPhone,
+                giaBan: utils.formatNumberToFloat(productPhone.giaBan),
+                giaVon: utils.formatNumberToFloat(productPhone.giaVon),
+                tenHangHoa_KhongDau: utils.strToEnglish(productPhone.tenHangHoa ?? ''),
+                tenLoaiHangHoa: productPhone.idLoaiHangHoa === 1 ? 'Hàng hóa' : 'điện thoại',
+                txtTrangThaiHang: productPhone.trangThai === 1 ? 'Đang kinh doanh' : 'Ngừng kinh doanh',
+                image: imgur_PathImage,
+                dungLuong: productPhone.dungLuong,
+                mau: productPhone.mau,
+                noiDung: productPhone.noiDung,
+                pin: productPhone.pin,
+                imel: productPhone.imel,
+                loi: productPhone.loi,
+                matKhau: productPhone.matKhau,
+                idChuSoHuu: customerChosed?.id,
+                idLoaiHangHoa: 4,
+                donViQuiDois: [
+                    {
+                        id: productPhone.idDonViQuyDoi,
+                        maHangHoa: productPhone.maHangHoa,
+                        tenDonViTinh: '',
+                        tyLeChuyenDoi: productPhone.tyLeChuyenDoi,
+                        giaBan: utils.formatNumberToFloat(productPhone.giaBan),
+                        giaVon: utils.formatNumberToFloat(productPhone.giaVon),
+                        laDonViTinhChuan: productPhone.laDonViTinhChuan
+                    }
+                ]
+            };
+
+            const data = await ProductService.CreateOrEditProductPhone(objNew);
+
+            objNew.id = data.id;
+            objNew.idHangHoa = data.id;
+            objNew.donViQuiDois = [...data.donViQuiDois];
+
+            const dvChuan = data.donViQuiDois;
+
+            objNew.maHangHoa = dvChuan?.maHangHoa;
+            objNew.idDonViQuyDoi = dvChuan?.id;
+
+            await saveDiaryProduct(objNew);
+
+            handleSave(objNew, isNew ? TypeAction.INSEART : TypeAction.UPDATE);
+
+            setOpen(false);
+        } catch (error: any) {
+            const message = error?.response?.data?.error?.message || 'Có lỗi xảy ra khi lưu sản phẩm';
+
+            setObjAlert({
+                show: true,
+                mes: message,
+                type: 2 // error
+            });
+
+            setWasClickSave(false);
+        } finally {
+            setWasClickSave(false);
         }
-
-        // if update: imageId != null
-        if (!utils.checkNull(imgur_imageId) && utils.checkNull(productImage)) {
-            imgur_PathImage = '';
-        } else {
-            imgur_PathImage = productPhone?.image ?? ''; // keep
-        }
-
-        const objNew = { ...productPhone };
-        objNew.giaBan = utils.formatNumberToFloat(productPhone.giaBan);
-        objNew.giaVon = utils.formatNumberToFloat(productPhone.giaVon);
-        objNew.tenHangHoa_KhongDau = utils.strToEnglish(objNew.tenHangHoa ?? '');
-        objNew.tenLoaiHangHoa = objNew.idLoaiHangHoa == 1 ? 'Hàng hóa' : 'điện thoại';
-        objNew.txtTrangThaiHang = objNew.trangThai == 1 ? 'Đang kinh doanh' : 'Ngừng kinh doanh';
-        objNew.image = imgur_PathImage;
-        objNew.dungLuong = productPhone.dungLuong;
-        objNew.mau = productPhone.mau;
-        objNew.noiDung = productPhone.noiDung;
-        objNew.pin = productPhone.pin;
-        objNew.imel = productPhone.imel;
-        objNew.loi = productPhone.loi;
-        objNew.matKhau = productPhone.matKhau;
-        objNew.idChuSoHuu = customerChosed.id;
-        objNew.idLoaiHangHoa = 4;
-
-        objNew.donViQuiDois = [
-            {
-                id: objNew.idDonViQuyDoi,
-                maHangHoa: objNew.maHangHoa,
-                tenDonViTinh: '',
-                tyLeChuyenDoi: objNew.tyLeChuyenDoi,
-                giaBan: objNew.giaBan,
-                giaVon: objNew.giaVon,
-                laDonViTinhChuan: objNew.laDonViTinhChuan
-            }
-        ];
-        console.log('test ở đây');
-        const data = await ProductService.CreateOrEditProductPhone(objNew);
-        objNew.id = data.id;
-        objNew.idHangHoa = data.id;
-        objNew.donViQuiDois = [...data.donViQuiDois];
-        objNew.maHangHoa = data.donViQuiDois.filter((x: any) => x.laDonViTinhChuan === 1)[0]?.maHangHoa;
-        objNew.idDonViQuyDoi = data.donViQuiDois.filter((x: any) => x.laDonViTinhChuan === 1)[0]?.id;
-
-        // save diary
-        await saveDiaryProduct(objNew);
-
-        handleSave(objNew, isNew ? TypeAction.INSEART : TypeAction.UPDATE);
-        setOpen(false);
     }
 
     function showModalAddNhomHang(id = '') {
@@ -483,180 +518,53 @@ const ModalHangHoaDienThoai = ({ handleSave, trigger }: any) => {
                 </DialogTitle>
 
                 <DialogContent>
-                    <Stack>
-                        <Stack direction={'row'} spacing={1} alignItems={'center'}>
-                            <Avatar />
-                            <Stack
-                                spacing={1}
-                                onClick={(event) => {
-                                    setAnchorDropdownCustomer(event.currentTarget);
-                                }}>
-                                <Stack
-                                    direction={'row'}
-                                    spacing={3}
-                                    alignItems={'center'}
-                                    title="Thay đổi khách hàng"
-                                    sx={{ cursor: 'pointer' }}>
-                                    {/* Cột 1: Tên khách hàng, Nhóm khách hàng & Icon */}
-                                    <Stack direction="row" alignItems="center" spacing={1} maxWidth={250}>
-                                        <Stack direction="column">
-                                            <Typography variant="body2" fontWeight={500} className="lableOverflow">
-                                                {customerChosed?.tenKhachHang ?? 'Chưa chọn khách hàng'}
-                                            </Typography>
-                                            {customerChosed?.isShow && ( // Chỉ hiển thị nhóm khách hàng nếu isShow = true
-                                                <Typography
-                                                    variant="body2"
-                                                    fontWeight={300}
-                                                    className="lableOverflow"
-                                                    sx={{ textTransform: 'none', color: '#555' }}>
-                                                    Nhóm: {customerChosed?.tenNhomKhach}
-                                                </Typography>
-                                            )}
-                                        </Stack>
-
-                                        {/* Icon Xóa hoặc Thêm khách hàng (chỉ hiển thị 1 trong 2) */}
-                                        {customerChosed?.isShow ? (
-                                            <CloseOutlinedIcon
-                                                color="error"
-                                                titleAccess="Bỏ chọn khách hàng"
-                                                sx={{ width: 20, cursor: 'pointer' }}
-                                                onClick={(event) => {
-                                                    event.stopPropagation();
-                                                    RemoveCustomer();
-                                                }}
-                                            />
-                                        ) : (
-                                            <IconButton
-                                                aria-label="add-customer"
-                                                color="primary"
-                                                title="Thêm khách hàng mới"
-                                                onClick={(event) => {
-                                                    event.stopPropagation();
-                                                    // showModalAddCustomer();
-                                                }}>
-                                                <AddOutlinedIcon color="info" sx={{ width: 20 }} />
-                                            </IconButton>
-                                        )}
-                                    </Stack>
-
-                                    {/* Cột 2: Còn nợ & Số điện thoại (chỉ hiển thị nếu isShow = true) */}
-                                    {customerChosed?.isShow && (
-                                        <Stack direction="column" maxWidth={250}>
-                                            {customerChosed?.conNo != null && customerChosed?.conNo != 0 && (
-                                                <Typography
-                                                    color={'#000000'}
-                                                    variant="caption"
-                                                    sx={{ fontWeight: 'bold' }}>
-                                                    Còn nợ:{' '}
-                                                    {new Intl.NumberFormat('vi-VN').format(customerChosed?.conNo ?? 0)}{' '}
-                                                    đ
-                                                </Typography>
-                                            )}
-                                            <Typography color={'#000000'} variant="caption">
-                                                Điện thoại: {customerChosed?.soDienThoai}
-                                            </Typography>
-                                        </Stack>
-                                    )}
-                                </Stack>
-                            </Stack>
-                        </Stack>
-
-                        <MenuWithDataFromDB
-                            typeSearch={TypeSearchfromDB.CUSTOMER}
-                            open={expandSearchCus}
-                            anchorEl={anchorDropdownCustomer}
-                            handleClose={() => setAnchorDropdownCustomer(null)}
-                            handleChoseItem={changeCustomer}
-                        />
-                    </Stack>
-                    <Grid container spacing={2} paddingTop={2}>
+                    <Grid container spacing={2}>
                         <Grid item xs={12} sm={4} md={4} lg={4}>
-                            <Box
+                            <Stack
                                 sx={{
-                                    border: '1px solid #cccc',
-                                    p: 1,
+                                    border: '1px dashed #ccc',
+                                    borderRadius: 3,
+                                    p: 3,
                                     height: '100%',
-                                    textAlign: 'center',
-                                    position: 'relative'
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
                                 }}>
-                                {!utils.checkNull(productImage) ? (
-                                    <Box sx={{ position: 'relative', height: '100%' }}>
-                                        <img src={productImage} style={{ width: '100%', height: '100%' }} />
-                                    </Box>
-                                ) : (
-                                    <>
-                                        <Stack spacing={1} paddingTop={2}>
-                                            <Box>
-                                                <InsertDriveFileIcon className="icon-size" />
-                                            </Box>
-
-                                            <Box>
-                                                <CloudDoneIcon
-                                                    style={{
-                                                        paddingRight: '5px',
-                                                        color: 'var(--color-main)'
-                                                    }}
-                                                />
-                                                <Link underline="always" fontSize={'13px'}>
-                                                    Tải ảnh lên
-                                                </Link>
-                                            </Box>
-                                            <Typography variant="caption">File định dạng jpeg, png</Typography>
-                                        </Stack>
-                                    </>
-                                )}
-                                <TextField
-                                    type="file"
-                                    sx={{
-                                        position: 'absolute',
-                                        top: 0,
-                                        left: 0,
-                                        width: '100%',
-                                        height: '100%',
-                                        opacity: 0,
-                                        '& input': {
-                                            height: '100%'
-                                        },
-                                        '& div': {
-                                            height: '100%'
-                                        }
-                                    }}
-                                    onChange={choseImage}
+                                <Box
+                                    component="img"
+                                    src="https://cdn-icons-png.flaticon.com/512/15/15874.png"
+                                    sx={{ width: 80, height: 80, mb: 1 }}
                                 />
-                            </Box>
+                            </Stack>
                         </Grid>
-                        <Grid item xs={12} sm={8} md={8} lg={8}>
+
+                        <Grid item xs={12} sm={8} md={8} lg={8} sx={{ mt: 1 }}>
                             <Stack spacing={2}>
+                                {/* TÊN + GB + MÀU */}
                                 <Stack direction="row" spacing={2}>
                                     <TextField
-                                        variant="outlined"
+                                        fullWidth
                                         size="small"
                                         autoFocus
                                         sx={{ flex: 2 }}
-                                        label={
-                                            <Typography variant="body2">
-                                                Tên {productPhone.tenLoaiHangHoa?.toLocaleLowerCase()}
-                                                <span className="text-danger"> *</span>
-                                            </Typography>
-                                        }
+                                        label={`Tên ${productPhone.tenLoaiHangHoa?.toLowerCase() || ''} *`}
                                         error={wasClickSave && errTenHangHoa}
                                         helperText={
                                             wasClickSave && errTenHangHoa
-                                                ? `Vui lòng nhập tên ${productPhone.tenLoaiHangHoa?.toLocaleLowerCase()}`
+                                                ? `Vui lòng nhập tên ${productPhone.tenLoaiHangHoa?.toLowerCase()}`
                                                 : ''
                                         }
-                                        value={productPhone.tenHangHoa}
-                                        onChange={(event) => {
-                                            setProductPhone((itemOlds) => ({
-                                                ...itemOlds,
-                                                tenHangHoa: event.target.value
+                                        value={productPhone.tenHangHoa || ''}
+                                        onChange={(e) => {
+                                            setProductPhone((prev) => ({
+                                                ...prev,
+                                                tenHangHoa: e.target.value
                                             }));
                                             setErrTenHangHoa(false);
                                             setWasClickSave(false);
                                         }}
                                     />
+
                                     <TextField
-                                        variant="outlined"
                                         size="small"
                                         sx={{ flex: 1 }}
                                         label="GB"
@@ -668,8 +576,8 @@ const ModalHangHoaDienThoai = ({ handleSave, trigger }: any) => {
                                             }))
                                         }
                                     />
+
                                     <TextField
-                                        variant="outlined"
                                         size="small"
                                         sx={{ flex: 1 }}
                                         label="Màu sắc"
@@ -682,63 +590,12 @@ const ModalHangHoaDienThoai = ({ handleSave, trigger }: any) => {
                                         }
                                     />
                                 </Stack>
-                                <TextField
-                                    variant="outlined"
-                                    size="small"
-                                    sx={{ flex: 1 }}
-                                    label="Nội dung"
-                                    value={productPhone.noiDung || ''}
-                                    onChange={(e) =>
-                                        setProductPhone((prev) => ({
-                                            ...prev,
-                                            noiDung: e.target.value
-                                        }))
-                                    }
-                                />
-                                <Stack direction={'row'} spacing={1}>
-                                    <Autocomplete
-                                        size="small"
-                                        fullWidth
-                                        disablePortal
-                                        value={nhomChosed}
-                                        isOptionEqualToValue={(option, value) => option.id === value.id}
-                                        options={nhomHangHoaStore?.listAllNhomHang?.filter(
-                                            (x) => x.id !== null && x.id !== ''
-                                        )}
-                                        onChange={(event, newValue) => handleChangeNhom(newValue)}
-                                        getOptionLabel={(option: any) => (option.tenNhomHang ? option.tenNhomHang : '')}
-                                        renderInput={(params) => (
-                                            <TextField
-                                                {...params}
-                                                label={`Nhóm ${productPhone.tenLoaiHangHoa?.toLocaleLowerCase()}`}
-                                            />
-                                        )}
-                                        renderOption={(props, item) => (
-                                            <Box component={'li'} {...props} className="autocomplete-option">
-                                                {item.tenNhomHang}
-                                            </Box>
-                                        )}
-                                    />
-                                    <Add
-                                        titleAccess="Thêm nhóm"
-                                        sx={{
-                                            width: 36,
-                                            display: abpCustom.isGrandPermission('Pages.DM_NhomHangHoa.Create')
-                                                ? ''
-                                                : 'none',
-                                            height: 36,
-                                            padding: 0.5,
-                                            border: '1px solid #ccc',
-                                            borderRadius: '4px'
-                                        }}
-                                        onClick={() => showModalAddNhomHang()}
-                                    />
-                                </Stack>
+
+                                {/* PIN + IMEI + MẬT KHẨU */}
                                 <Stack direction="row" spacing={2}>
                                     <TextField
-                                        variant="outlined"
                                         size="small"
-                                        sx={{ flex: 1 }}
+                                        sx={{ flex: 0.7 }}
                                         label="Pin"
                                         value={productPhone.pin || ''}
                                         onChange={(e) =>
@@ -748,11 +605,11 @@ const ModalHangHoaDienThoai = ({ handleSave, trigger }: any) => {
                                             }))
                                         }
                                     />
+
                                     <TextField
-                                        variant="outlined"
                                         size="small"
-                                        sx={{ flex: 1 }}
-                                        label="IMEL"
+                                        sx={{ flex: 2 }}
+                                        label="IMEI"
                                         value={productPhone.imel || ''}
                                         onChange={(e) =>
                                             setProductPhone((prev) => ({
@@ -761,8 +618,8 @@ const ModalHangHoaDienThoai = ({ handleSave, trigger }: any) => {
                                             }))
                                         }
                                     />
+
                                     <TextField
-                                        variant="outlined"
                                         size="small"
                                         sx={{ flex: 1 }}
                                         label="Mật khẩu"
@@ -775,7 +632,9 @@ const ModalHangHoaDienThoai = ({ handleSave, trigger }: any) => {
                                         }
                                     />
                                 </Stack>
-                                {/* <Stack direction="row" spacing={2}>
+
+                                {/* GIÁ */}
+                                <Stack direction="row" spacing={2}>
                                     <NumericFormat
                                         size="small"
                                         fullWidth
@@ -784,8 +643,9 @@ const ModalHangHoaDienThoai = ({ handleSave, trigger }: any) => {
                                         thousandSeparator="."
                                         decimalSeparator=","
                                         customInput={TextField}
-                                        onChange={(event) => editGiaBan(event)}
+                                        onChange={editGiaBan}
                                     />
+
                                     <NumericFormat
                                         size="small"
                                         fullWidth
@@ -794,81 +654,40 @@ const ModalHangHoaDienThoai = ({ handleSave, trigger }: any) => {
                                         thousandSeparator="."
                                         decimalSeparator=","
                                         customInput={TextField}
-                                        onChange={(event) => editGiaVon(event)}
+                                        onChange={editGiaVon}
                                     />
-                                </Stack> */}
+                                </Stack>
+
+                                {/* LỖI */}
+                                <TextField
+                                    fullWidth
+                                    size="small"
+                                    label="Lỗi"
+                                    placeholder="Nhập mô tả lỗi"
+                                    value={productPhone.loi || ''}
+                                    onChange={(e) =>
+                                        setProductPhone((prev) => ({
+                                            ...prev,
+                                            loi: e.target.value
+                                        }))
+                                    }
+                                />
+
+                                {/* GHI CHÚ */}
+                                <TextField
+                                    fullWidth
+                                    multiline
+                                    rows={2}
+                                    label="Ghi chú"
+                                    value={productPhone.moTa || ''}
+                                    onChange={(e) =>
+                                        setProductPhone((prev) => ({
+                                            ...prev,
+                                            moTa: e.target.value
+                                        }))
+                                    }
+                                />
                             </Stack>
-                        </Grid>
-                    </Grid>
-                    <Grid container>
-                        <Grid item xs={0} sm={4} md={4} lg={4}></Grid>
-                        <Grid item xs={12} sm={8} md={8} lg={8} paddingTop={2} pl={{ sm: 0, md: 0.5 }}>
-                            <TextField
-                                variant="outlined"
-                                size="small"
-                                fullWidth
-                                label="Lỗi"
-                                placeholder="Nhập mô tả lỗi"
-                                value={productPhone.loi || ''}
-                                onChange={(event) =>
-                                    setProductPhone((prev) => ({
-                                        ...prev,
-                                        loi: event.target.value
-                                    }))
-                                }
-                            />
-                        </Grid>
-                        <Grid item xs={0} sm={4} md={4} lg={4}></Grid>
-                        <Grid item xs={12} sm={8} md={8} lg={8} paddingTop={2} pl={{ sm: 0, md: 0.5 }}>
-                            <TextField
-                                variant="outlined"
-                                fullWidth
-                                multiline
-                                rows="2"
-                                label="Ghi chú"
-                                value={productPhone?.moTa ?? ''}
-                                onChange={(event) =>
-                                    setProductPhone((itemOlds) => {
-                                        return {
-                                            ...itemOlds,
-                                            moTa: event.target.value
-                                        };
-                                    })
-                                }
-                            />
-                        </Grid>
-                        <Grid item xs={12}>
-                            <Grid item xs={12} sm={12} md={12} lg={12} style={{ display: 'none' }}>
-                                <FormGroup>
-                                    <FormControlLabel
-                                        control={
-                                            <Checkbox
-                                                size="small"
-                                                checked={productPhone.laHangHoa}
-                                                onChange={(event) => {
-                                                    setProductPhone((olds: ModelHangHoaDienThoaiDto) => {
-                                                        return {
-                                                            ...olds,
-                                                            laHangHoa: event.target.checked,
-                                                            idLoaiHangHoa: event.target.checked ? 2 : 1,
-                                                            tenLoaiHangHoa: event.target.checked
-                                                                ? 'hàng hóa'
-                                                                : 'điện thoại'
-                                                        };
-                                                    });
-                                                }}
-                                                sx={{
-                                                    color: '#7C3367',
-                                                    '&.Mui-checked': {
-                                                        color: '#7C3367'
-                                                    }
-                                                }}
-                                            />
-                                        }
-                                        label="Là hàng hóa"
-                                    />
-                                </FormGroup>
-                            </Grid>
                         </Grid>
                     </Grid>
                 </DialogContent>
@@ -926,17 +745,30 @@ const ModalHangHoaDienThoai = ({ handleSave, trigger }: any) => {
 
                     {productPhone.trangThai !== 0 && (
                         <>
-                            {!wasClickSave && (
-                                <Button
-                                    variant="contained"
-                                    sx={{ bgcolor: '#7C3367' }}
-                                    onClick={saveProduct}
-                                    className="btn-container-hover">
-                                    Lưu
-                                </Button>
-                            )}
-                            {wasClickSave && (
-                                <Button variant="contained" sx={{ bgcolor: '#7C3367' }} className="btn-container-hover">
+                            {!wasClickSave ? (
+                                <>
+                                    <Button
+                                        variant="contained"
+                                        sx={{ bgcolor: '#7C3367' }}
+                                        onClick={() => {
+                                            //setIsPrintAfterSave(false);
+                                            saveProduct();
+                                        }}>
+                                        Lưu
+                                    </Button>
+
+                                    <Button
+                                        variant="contained"
+                                        sx={{ bgcolor: '#1976d2', ml: 1 }}
+                                        onClick={() => {
+                                            //setIsPrintAfterSave(true);
+                                            saveProduct();
+                                        }}>
+                                        Lưu & In
+                                    </Button>
+                                </>
+                            ) : (
+                                <Button variant="contained" sx={{ bgcolor: '#7C3367' }}>
                                     Đang lưu
                                 </Button>
                             )}

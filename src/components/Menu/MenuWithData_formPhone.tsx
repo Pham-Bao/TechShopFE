@@ -27,6 +27,7 @@ export default function MenuWithDataFromPhone({
     const [lstOption, setLstOption] = useState<IListPhone[]>([]);
     const [filterPageProduct, setFilterPageProduct] = useState<PagedProductSearchDto>({
         idNhomHangHoas: [],
+        idLoaiHangHoa: 5,
         textSearch: '',
         currentPage: 1,
         pageSize: 50,

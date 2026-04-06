@@ -9,4 +9,6 @@ export interface CreateBookingDto {
     idNhanVien: string | null;
     idDonViQuiDoi: string;
     idChiNhanh: string;
+    idHangHoaDienThoai: string | null;
+    newTrangThai: number;
 }

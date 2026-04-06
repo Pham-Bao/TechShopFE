@@ -88,3 +88,40 @@ export class HoaDonRequestDto extends RequestFromToDto {
         this.trangThaiNos = trangThaiNos;
     }
 }
+export class DienThoaiRequestDto extends RequestFromToDto {
+    trangThai?: number[];
+    dungLuong?: string;
+    mau?: string;
+    thuTuGia?: number;
+
+    constructor({
+        idChiNhanhs = [],
+        textSearch = '',
+        currentPage = 0,
+        pageSize = 10,
+        columnSort = '',
+        typeSort = 'DESC',
+        fromDate = null,
+        toDate = null,
+        trangThais = [],
+        dungLuongs = '',
+        maus = '',
+        thuTuGias = 0
+    }) {
+        super({
+            idChiNhanhs,
+            textSearch,
+            currentPage,
+            pageSize,
+            columnSort,
+            typeSort,
+            fromDate,
+            toDate
+        });
+
+        this.trangThai = trangThais;
+        this.dungLuong = dungLuongs;
+        this.mau = maus;
+        this.thuTuGia = thuTuGias;
+    }
+}

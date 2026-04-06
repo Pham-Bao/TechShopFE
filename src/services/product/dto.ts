@@ -21,6 +21,8 @@ export class ModelHangHoaDto {
     tenNhomHang?: string = '';
     tenLoaiHangHoa?: string = 'Dịch vụ';
     txtTrangThaiHang?: string = 'Đang kinh doanh';
+    imel?: string = '';
+    mau?: string = '';
 
     idDonViQuyDoi?: string;
     tenDonViTinh?: string = '';

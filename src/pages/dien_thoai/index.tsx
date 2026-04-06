@@ -1,8 +1,10 @@
 import * as React from 'react';
 import { observer } from 'mobx-react';
-
+import JsBarcode from 'jsbarcode';
 import { useState, useEffect, useContext } from 'react';
 import { DataGrid, GridColDef, GridRenderCellParams, GridRowId, GridRowSelectionModel } from '@mui/x-data-grid';
+import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
+import { useMemo } from 'react';
 import {
     Grid,
     Box,
@@ -58,6 +60,13 @@ import { AppContext } from '../../services/chi_nhanh/ChiNhanhContext';
 import { CreateNhatKyThaoTacDto } from '../../services/nhat_ky_hoat_dong/dto/CreateNhatKyThaoTacDto';
 import nhatKyHoatDongService from '../../services/nhat_ky_hoat_dong/nhatKyHoatDongService';
 import Cookies from 'js-cookie';
+import TrangThaiHangSelect from './TrangThaiHangSelect';
+import PopoverFilterDienThoai from './PopoverFilterDienThoai';
+import { DienThoaiRequestDto } from '../../services/dto/ParamSearchDto';
+import ButtonOnlyIcon from '../../components/Button/ButtonOnlyIcon';
+import bookingStore from '../../stores/bookingStore';
+import CreateOrEditLichHenModal from '../appoinments/components/create-or-edit-lich-hen';
+import suggestStore from '../../stores/suggestStore';
 
 const PageProduct = () => {
     const appContext = useContext(AppContext);
@@ -80,8 +89,9 @@ const PageProduct = () => {
     const [rowSelectionModel, setRowSelectionModel] = React.useState<GridRowSelectionModel>([]);
     const [isShowModalChuyenNhom, setIsShowModalChuyenNhom] = useState(false);
     const [anchorElFilter, setAnchorElFilter] = useState<any>(null);
-    const [selectedLoaiDienThoai, setSelectedLoaiDienThoai] = useState<boolean>(true);
+    const [anchorElFilterNangCao, setAnchorElFilterNangCao] = useState<any>(null);
 
+    const [selectedLoaiDienThoai, setSelectedLoaiDienThoai] = useState<number>(4);
     const [pageDataProduct, setPageDataProduct] = useState<PagedResultDto<ModelHangHoaDto>>({
         totalCount: 0,
         totalPage: 0,
@@ -94,7 +104,7 @@ const PageProduct = () => {
         pageSize: AppConsts.pageOption[0].value,
         columnSort: '',
         typeSort: '',
-        idLoaiHangHoa: 5
+        idLoaiHangHoa: 4
     });
 
     const GetListHangHoa = async () => {
@@ -129,6 +139,10 @@ const PageProduct = () => {
         await nhomHangHoaStore.getAllNhomHang();
     };
 
+    const GetIphoneConnectPC = async () => {
+        await ProductService.GetIphoneConnectPC();
+    };
+
     const GetTreeNhomHangHoa = async () => {
         // used to tree at menu left
         const list = await GroupProductService.GetTreeNhomHangHoa();
@@ -144,6 +158,10 @@ const PageProduct = () => {
     const PageLoad = () => {
         GetListNhomHangHoa();
         GetTreeNhomHangHoa();
+        //GetIphoneConnectPC();
+        GetAllDichVu();
+        GetAllListCustomer();
+        GetAllKyThuatVien();
     };
 
     useEffect(() => {
@@ -177,7 +195,148 @@ const PageProduct = () => {
             };
         });
     }
+    const handlePrintProduct = (rowItem: any) => {
+        const imei = rowItem.imel;
 
+        const width = window.screen.width * 0.7;
+        const height = window.screen.height * 0.7;
+        const left = (window.screen.width - width) / 2;
+        const top = (window.screen.height - height) / 2;
+
+        const printWindow = window.open('', '', `width=${width},height=${height},left=${left},top=${top}`);
+
+        if (printWindow) {
+            printWindow.document.write(`
+        <html>
+        <head>
+            <title>In Tem TechShop</title>
+
+           <style>
+
+@page{
+    size:80mm 60mm;
+    margin:0;
+}
+
+body{
+    font-family: Arial, sans-serif;
+    font-size:11px;
+    margin:0;
+    padding:5px;
+    width:80mm;
+    height:60mm;
+    box-sizing:border-box;
+    display:flex;
+    flex-direction:column;
+}
+
+.header{
+    display:flex;
+    justify-content:space-between;
+    font-weight:bold;
+    font-size:12px;
+}
+
+.product{
+    margin-top:4px;
+    font-weight:bold;
+    font-size:13px;
+}
+
+.info{
+    margin-top:3px;
+    line-height:1.3;
+}
+
+.barcode{
+    text-align:center;
+    margin-top:4px;
+}
+
+.barcode svg{
+    width:100%;
+    height:28px;
+}
+
+.barcode-text{
+    font-size:11px;
+    letter-spacing:1px;
+}
+
+.footer{
+    text-align:center;
+    font-size:10px;
+    margin-top:auto;
+}
+
+.line{
+    border-bottom:1px dashed #000;
+    margin:4px 0;
+}
+
+</style>
+
+            <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+
+        </head>
+
+       <body>
+
+<div class="header">
+    <div>TECHSHOP</div>
+    <div>${new Date().toLocaleDateString()}</div>
+</div>
+
+<div class="product">
+    ${rowItem.tenHangHoa} ${rowItem.mau || ''} ${rowItem.dungLuong || ''}GB
+</div>
+<div><b>Pin:</b> ${rowItem.pin || '-'}% | <b>Sạc:</b> ${rowItem.soLanSac || '-'} lần</div>
+
+<div class="info">
+    <div><b>Tình trạng:</b> ${rowItem.tinhTrang || '-'}</div>
+    <div><b>Nội dung:</b> ${rowItem.noiDung || '-'}</div>
+    <div><b>Lỗi:</b> ${rowItem.loi || '-'}</div>
+</div>
+
+<div class="line"></div>
+
+<div class="info">
+    <b>IMEI:</b> ${imei}
+</div>
+
+<div class="barcode">
+    <svg id="barcode"></svg>
+    <div class="barcode-text">${imei}</div>
+</div>
+
+<div class="footer">
+miniphone.vn
+</div>
+
+<script>
+
+window.onload=function(){
+
+    JsBarcode("#barcode","${imei}",{
+        format:"CODE128",
+        width:2,
+        height:35,
+        displayValue:false
+    });
+
+    window.print();
+    window.close();
+}
+
+</script>
+
+</body>
+        </html>
+        `);
+
+            printWindow.document.close();
+        }
+    };
     const editNhomHangHoa = (isEdit: any, item: ModelNhomHangHoa) => {
         if (isEdit) {
             setTriggerModalNhomHang({
@@ -306,39 +465,45 @@ const PageProduct = () => {
 
     const doActionRow = (type: number, rowItem: any) => {
         setRowHover(rowItem);
-        switch (type) {
-            case TypeAction.DELETE:
-                {
-                    const role = abpCustom.isGrandPermission('Pages.DM_HangHoa.Delete');
-                    if (!role) {
-                        setObjAlert({ ...objAlert, show: true, type: 2, mes: 'Không có quyền xóa điện thoại' });
-                        return;
-                    }
-                }
-                break;
-            case TypeAction.UPDATE:
-                {
-                    const role = abpCustom.isGrandPermission('Pages.DM_HangHoa.Edit');
-                    if (!role) {
-                        setObjAlert({ ...objAlert, show: true, type: 2, mes: 'Không có quyền cập nhật điện thoại' });
-                        return;
-                    }
-                }
-                break;
-        }
 
-        if (type < 3) {
-            showModalAddProduct(type, rowItem?.idDonViQuyDoi);
-        } else {
-            setInforDeleteProduct(
-                new PropConfirmOKCancel({
-                    show: true,
-                    title: 'Xác nhận xóa',
-                    mes: `Bạn có chắc chắn muốn xóa ${rowItem.tenLoaiHangHoa.toLocaleLowerCase()}  ${
-                        rowItem?.maHangHoa ?? ' '
-                    } không?`
-                })
-            );
+        switch (type) {
+            case TypeAction.UPDATE: {
+                const role = abpCustom.isGrandPermission('Pages.DM_HangHoa.Edit');
+                if (!role) {
+                    setObjAlert({ ...objAlert, show: true, type: 2, mes: 'Không có quyền cập nhật điện thoại' });
+                    return;
+                }
+
+                showModalAddProduct(TypeAction.UPDATE, rowItem?.idDonViQuyDoi);
+                break;
+            }
+
+            case TypeAction.DELETE: {
+                const role = abpCustom.isGrandPermission('Pages.DM_HangHoa.Delete');
+                if (!role) {
+                    setObjAlert({ ...objAlert, show: true, type: 2, mes: 'Không có quyền xóa điện thoại' });
+                    return;
+                }
+
+                setInforDeleteProduct(
+                    new PropConfirmOKCancel({
+                        show: true,
+                        title: 'Xác nhận xóa',
+                        mes: `Bạn có chắc chắn muốn xóa ${rowItem.tenLoaiHangHoa.toLocaleLowerCase()} ${
+                            rowItem?.maHangHoa ?? ''
+                        } không?`
+                    })
+                );
+                break;
+            }
+
+            case TypeAction.PRINT: {
+                handlePrintProduct(rowItem);
+                break;
+            }
+
+            default:
+                break;
         }
     };
     const deleteProduct = async () => {
@@ -426,7 +591,41 @@ const PageProduct = () => {
             }
         }
     };
+    const TrangThaiText: any = {
+        1: 'Chưa bán',
+        2: 'Đã bán',
+        3: 'Khách hẹn',
+        4: 'Cho mượn',
+        5: 'Khác'
+    };
+    const handleOpenLichHen = (row: any) => {
+        setRowSelected(row);
+        console.log('đơn vị quy đổi', row);
+        bookingStore.createOrEditBookingDto.idDonViQuiDoi = row.idDonViQuyDoi;
 
+        setOpenLichHen(true);
+    };
+
+    const GetAllDichVu = async () => {
+        await suggestStore.getSuggestDichVu();
+    };
+
+    const GetAllListCustomer = async () => {
+        await suggestStore.getSuggestKhachHang();
+    };
+    const GetAllKyThuatVien = async () => {
+        await suggestStore.getSuggestKyThuatVien();
+    };
+
+    const handleChangeTrangThai = (row: any, newStatus: number) => {
+        if (row.trangThai !== 3 && newStatus === 3) {
+            bookingStore.createOrEditBookingDto.idHangHoaDienThoai = row.idHangHoa;
+            bookingStore.createOrEditBookingDto.newTrangThai = newStatus;
+
+            handleOpenLichHen(row);
+            return;
+        }
+    };
     const restoreProduct = async () => {
         await ProductService.RestoreProduct_byIdHangHoa(rowHover?.id ?? '');
         setRowHover({} as ModelHangHoaDto);
@@ -574,162 +773,154 @@ const PageProduct = () => {
         }
         setCheckAllRow(isCheck);
     };
+    const [openLichHen, setOpenLichHen] = useState(false);
+    const [rowSelected, setRowSelected] = useState<any>(null);
+    const columns: GridColDef[] = useMemo(() => {
+        const isKhach = selectedLoaiDienThoai === 5;
 
-    const columns: GridColDef[] = [
-        {
-            field: 'checkBox',
-            flex: 0.3,
-            sortable: false,
-            filterable: false,
-            disableColumnMenu: true,
-            renderHeader: () => {
-                return <Checkbox onChange={(e) => dataGrid_clickCheckAll(e.target.checked)} checked={checkAllRow} />;
+        return [
+            {
+                field: 'checkBox',
+                flex: 0.3,
+                sortable: false,
+                filterable: false,
+                disableColumnMenu: true,
+                renderHeader: () => (
+                    <Checkbox onChange={(e) => dataGrid_clickCheckAll(e.target.checked)} checked={checkAllRow} />
+                ),
+                renderCell: (params) => (
+                    <Checkbox
+                        onChange={(e) => dataGrid_clickCheckOne(params.row.id, e.target.checked)}
+                        checked={rowSelectionModel.includes(params.row.id)}
+                    />
+                )
             },
-            renderCell: (params) => (
-                <Checkbox
-                    onChange={(e) => dataGrid_clickCheckOne(params.row.id, e.target.checked)}
-                    checked={rowSelectionModel.includes(params.row.id)}
-                />
-            )
-        },
-        {
-            field: 'tenChu',
-            headerName: 'Tên khách',
-            minWidth: 120,
-            renderHeader: (params) => <Box component={'span'}>{params.colDef.headerName}</Box>
-        },
-        {
-            field: 'tenHangHoa',
-            headerName: 'Tên điện thoại',
-            minWidth: 130,
-            renderHeader: (params) => <Box component={'span'}>{params.colDef.headerName}</Box>
-        },
-        {
-            field: 'imel',
-            headerName: 'IMEL',
-            minWidth: 130,
-            renderHeader: (params) => <Box component={'span'}>{params.colDef.headerName}</Box>
-        },
-        {
-            field: 'noiDung',
-            headerName: 'Nội dung',
-            minWidth: 130,
-            renderHeader: (params) => <Box component={'span'}>{params.colDef.headerName}</Box>
-        },
-        {
-            field: 'matKhau',
-            headerName: 'Mật khẩu',
-            minWidth: 100,
-            renderHeader: (params) => <Box component={'span'}>{params.colDef.headerName}</Box>
-        },
-        {
-            field: 'tenNhomHang',
-            headerName: 'Nhóm ĐT',
-            minWidth: 100,
-            flex: 1,
-            renderHeader: (params) => <Box component={'span'}>{params.colDef.headerName}</Box>
-        },
-        {
-            field: 'giaBan',
-            headerName: 'Giá bán',
-            minWidth: 100,
-            flex: 1,
-            renderCell: (params) => (
-                <Box display="flex" justifyContent="end" width="100%">
-                    {new Intl.NumberFormat('vi-VN').format(params.value)}
-                </Box>
-            ),
-            renderHeader: (params) => <Box component={'span'}>{params.colDef.headerName}</Box>
-        },
-        {
-            field: 'giaVon',
-            headerName: 'Giá vốn',
-            minWidth: 100,
-            flex: 1,
-            renderCell: (params) => (
-                <Box display="flex" justifyContent="end" width="100%">
-                    {new Intl.NumberFormat('vi-VN').format(params.value)}
-                </Box>
-            ),
-            renderHeader: (params) => <Box component={'span'}>{params.colDef.headerName}</Box>
-        },
-        {
-            field: 'loi',
-            headerName: 'Lỗi',
-            minWidth: 180,
-            flex: 1,
-            renderHeader: (params) => <Box component={'span'}>{params.colDef.headerName}</Box>
-        },
-        {
-            field: 'moTa',
-            headerName: 'Ghi chú',
-            minWidth: 180,
-            flex: 1,
-            renderHeader: (params) => <Box component={'span'}>{params.colDef.headerName}</Box>
-        },
-        {
-            field: 'txtTrangThaiHang',
-            headerName: 'Trạng thái',
-            headerAlign: 'center',
-            align: 'center',
-            minWidth: 130,
-            flex: 1,
-            renderCell: (params) => (
-                <Box
-                    className={
-                        params.row.trangThai === 1
-                            ? 'data-grid-cell-trangthai-active'
-                            : 'data-grid-cell-trangthai-notActive'
-                    }>
-                    {params.value || ''}
-                </Box>
-            ),
-            renderHeader: (params) => <Box component={'span'}>{params.colDef.headerName}</Box>
-        },
-        {
-            field: 'actions',
-            headerName: '#',
-            headerAlign: 'center',
-            maxWidth: 60,
-            flex: 1,
-            disableColumnMenu: true,
-            renderCell: (params) => (
-                <ActionRow2Button handleClickAction={(type: number) => doActionRow(type, params.row)} />
-            ),
+            {
+                field: 'tenHangHoa',
+                headerName: 'Tên điện thoại',
+                minWidth: 150
+            },
+            {
+                field: 'mau',
+                headerName: 'Màu',
+                minWidth: 90
+            },
+            {
+                field: 'pin',
+                headerName: 'Pin',
+                minWidth: 80
+            },
+            {
+                field: 'dungLuong',
+                headerName: 'GB',
+                minWidth: 80
+            },
 
-            // renderCell: (params) => (
-            //     <ActionViewEditDelete
-            //         lstOption={
-            //             [
-            //                 {
-            //                     id: '0',
-            //                     color: '#009EF7',
-            //                     icon: <Info sx={{ color: '#009EF7' }} />,
-            //                     text: 'Xem',
-            //                     isShow: true
-            //                 },
-            //                 {
-            //                     id: '1',
-            //                     text: 'Sửa',
-            //                     color: '#009EF7',
-            //                     icon: <Edit sx={{ color: '#009EF7' }} />,
-            //                     isShow: abpCustom.isGrandPermission('Pages.DM_HangHoa.Edit')
-            //                 },
-            //                 {
-            //                     id: '2',
-            //                     text: 'Xóa',
-            //                     color: '#F1416C',
-            //                     icon: <DeleteForever sx={{ color: '#F1416C' }} />,
-            //                     isShow: abpCustom.isGrandPermission('Pages.DM_HangHoa.Delete')
-            //                 }
-            //             ] as IList[]
-            //         }
-            //         handleAction={(action: any) => doActionRow(action, params.row)}
-            //     />
-            // ),
-            renderHeader: (params) => <Box component={'span'}>{params.colDef.headerName}</Box>
-        }
-    ];
+            // ✅ CỘT CHỈ HIỆN KHI LÀ MÁY KHÁCH
+            ...(isKhach
+                ? [
+                      {
+                          field: 'tenKhach',
+                          headerName: 'Khách hàng',
+                          minWidth: 150
+                      },
+                      {
+                          field: 'soDienThoai',
+                          headerName: 'SĐT',
+                          minWidth: 120
+                      }
+                  ]
+                : []),
+
+            {
+                field: 'imel',
+                headerName: 'IMEL',
+                width: 120,
+                renderCell: (params) => {
+                    const imei = params.value || '';
+                    const imeiShow = imei.length > 8 ? '...' + imei.slice(-8) : imei;
+
+                    return (
+                        <Box
+                            title="Click để copy"
+                            onClick={() => navigator.clipboard.writeText(imei)}
+                            sx={{
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    textDecoration: 'underline',
+                                    color: 'primary.main'
+                                }
+                            }}>
+                            {imeiShow}
+                        </Box>
+                    );
+                }
+            },
+            {
+                field: 'giaVon',
+                headerName: 'Giá nhập',
+                minWidth: 100,
+                flex: 1,
+                renderCell: (params) => (
+                    <Box display="flex" justifyContent="end" width="100%">
+                        {new Intl.NumberFormat('vi-VN').format(params.value)}
+                    </Box>
+                )
+            },
+            {
+                field: 'giaBan',
+                headerName: 'Giá bán',
+                minWidth: 100,
+                flex: 1,
+                renderCell: (params) => (
+                    <Box display="flex" justifyContent="end" width="100%">
+                        {new Intl.NumberFormat('vi-VN').format(params.value)}
+                    </Box>
+                )
+            },
+            {
+                field: 'loi',
+                headerName: 'Lỗi',
+                minWidth: 180,
+                flex: 1
+            },
+            {
+                field: 'moTa',
+                headerName: 'Ghi chú',
+                minWidth: 180,
+                flex: 1
+            },
+            {
+                field: 'trangThai',
+                headerName: 'Trạng thái',
+                minWidth: 150,
+                renderCell: (params) => (
+                    <TrangThaiHangSelect
+                        value={params.row.trangThai}
+                        onChange={(newStatus: number) => handleChangeTrangThai(params.row, newStatus)}
+                    />
+                )
+            },
+            {
+                field: 'actions',
+                headerName: '#',
+                maxWidth: 160,
+                flex: 1,
+                disableColumnMenu: true,
+                renderCell: (params) => (
+                    <ActionRow2Button
+                        sx={{
+                            ml: 1,
+                            width: 16,
+                            color: '#7e7979',
+                            cursor: 'pointer'
+                        }}
+                        handleClickAction={(type: number) => doActionRow(type, params.row)}
+                    />
+                )
+            }
+        ];
+    }, [selectedLoaiDienThoai, checkAllRow, rowSelectionModel]);
     const filterContent = (
         <Box
             className="page-box-left"
@@ -809,11 +1000,35 @@ const PageProduct = () => {
             </Box>
         </Box>
     );
-
+    const ApplyFilter = (paramFilter: DienThoaiRequestDto) => {
+        setAnchorElFilterNangCao(null);
+        setFilterPageProduct({
+            ...filterPageProduct,
+            currentPage: 1,
+            //trangThaiNos: paramFilter.trangThaiNos,
+            trangThais: paramFilter.trangThais,
+            idChiNhanhs: paramFilter.idChiNhanhs
+        });
+    };
+    const reloadData = async () => {
+        const res = await ProductService.Get_DMHangHoaDienThoai(filterPageProduct);
+        setPageDataProduct(res);
+    };
     return (
         <>
+            <div id="printArea" style={{ display: 'none' }}></div>
             <ModalNhomHangHoa trigger={triggerModalNhomHang} handleSave={saveNhomHang}></ModalNhomHangHoa>
             <ModalHangHoaDienThoai trigger={triggerModalProduct} handleSave={saveProduct}></ModalHangHoaDienThoai>
+            <CreateOrEditLichHenModal
+                visible={openLichHen}
+                onCancel={() => setOpenLichHen(false)}
+                idLichHen=""
+                onOk={() => {
+                    setOpenLichHen(false);
+                    reloadData();
+                }}
+            />
+            <div id="printLabel" style={{ display: 'none' }}></div>{' '}
             <ConfirmDelete
                 isShow={inforDeleteProduct.show}
                 title={inforDeleteProduct.title}
@@ -850,6 +1065,12 @@ const PageProduct = () => {
                     })}
                 onClose={() => setIsShowModalChuyenNhom(false)}
                 agreeChuyenNhom={chuyenNhomHang}
+            />
+            <PopoverFilterDienThoai
+                anchorEl={anchorElFilterNangCao}
+                paramFilter={filterPageProduct}
+                handleClose={() => setAnchorElFilterNangCao(null)}
+                handleApply={ApplyFilter}
             />
             <Grid container className="dich-vu-page" spacing={1} gap={4} paddingTop={2}>
                 <Grid item container alignItems="center" spacing={1} justifyContent="space-between">
@@ -893,27 +1114,24 @@ const PageProduct = () => {
                         <FormControl component="fieldset" size="small">
                             <RadioGroup
                                 row
-                                name="loaiDienThoai"
-                                value={selectedLoaiDienThoai.toString()}
+                                value={selectedLoaiDienThoai}
                                 onChange={(e) => {
-                                    const isHeThong = e.target.value === 'true';
-                                    setSelectedLoaiDienThoai(isHeThong);
+                                    const value = Number(e.target.value);
+
+                                    setSelectedLoaiDienThoai(value);
+
                                     setFilterPageProduct((prev) => ({
                                         ...prev,
-                                        idLoaiHangHoa: isHeThong ? 5 : 4,
+                                        idLoaiHangHoa: value,
                                         currentPage: 1
                                     }));
                                 }}>
                                 <FormControlLabel
-                                    value="true"
+                                    value={4}
                                     control={<Radio size="small" />}
                                     label="Điện thoại hệ thống"
                                 />
-                                <FormControlLabel
-                                    value="false"
-                                    control={<Radio size="small" />}
-                                    label="Điện thoại khách"
-                                />
+                                <FormControlLabel value={5} control={<Radio size="small" />} label="Điện thoại khách" />
                             </RadioGroup>
                         </FormControl>
 
@@ -937,7 +1155,16 @@ const PageProduct = () => {
                                 <FilterIcon />
                             </Button>
                         ) : null}
-
+                        <ButtonOnlyIcon
+                            icon={
+                                <FilterAltOutlinedIcon
+                                    titleAccess="Lọc nâng cao"
+                                    sx={{ width: 20 }}
+                                    onClick={(event) => setAnchorElFilterNangCao(event.currentTarget)}
+                                />
+                            }
+                            style={{ width: 40, backgroundColor: 'white' }}
+                        />
                         <Button
                             size="small"
                             onClick={onImportShow}
@@ -982,10 +1209,10 @@ const PageProduct = () => {
                     </Grid>
                 </Grid>
                 <Grid container item spacing={2} paddingTop={1} columns={13}>
-                    <Grid item lg={3} md={3} sm={4} xs={13} display={window.screen.width <= 600 ? 'none' : ''}>
+                    <Grid item lg={2} md={2} sm={3} xs={13} display={window.screen.width <= 600 ? 'none' : ''}>
                         {filterContent}
                     </Grid>
-                    <Grid item lg={10} md={10} sm={9} xs={13}>
+                    <Grid item lg={11} md={11} sm={10} xs={13}>
                         {rowSelectionModel.length > 0 && (
                             <ActionRowSelect
                                 lstOption={[

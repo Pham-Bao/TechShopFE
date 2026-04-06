@@ -538,7 +538,7 @@ export default function MainPageThuNgan() {
                                         onChange={changeTabHoaDon}
                                         aria-label="nav tabs example">
                                         <Tab
-                                            label="Hóa đơn sửa"
+                                            label="Hóa đơn bán"
                                             value={LoaiChungTu.HOA_DON_BAN_LE}
                                             sx={{
                                                 display: abpCustom.isGrandPermission('Pages.HoaDon.Create')
@@ -547,8 +547,8 @@ export default function MainPageThuNgan() {
                                             }}
                                         />
                                         <Tab
-                                            label="Hóa đơn bán"
-                                            value={LoaiChungTu.GOI_DICH_VU}
+                                            label="Hóa đơn sửa"
+                                            value={LoaiChungTu.HOA_DON_SUA_CHUA}
                                             sx={{
                                                 display:
                                                     (isHost || isShowFeatureGDV) &&
@@ -565,8 +565,8 @@ export default function MainPageThuNgan() {
                                         onClick={addNewInvoice}
                                         title={
                                             pageThuNgan_LoaiHoaDon == LoaiChungTu.HOA_DON_BAN_LE
-                                                ? 'Thêm hóa đơn'
-                                                : 'Thêm gói dịch vụ'
+                                                ? 'Thêm hóa đơn bán'
+                                                : 'Thêm hóa đơn sửa'
                                         }>
                                         <AddOutlinedIcon />
                                     </IconButton>

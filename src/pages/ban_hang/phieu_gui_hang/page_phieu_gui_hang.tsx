@@ -1,16 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState, useEffect } from 'react';
-import { Box, Grid, TextField, Typography, Button, Stack, Autocomplete } from '@mui/material';
+import { Box, Grid, TextField, Typography, Button, Stack } from '@mui/material';
+
 import { PagedRequestDto } from '../../../services/dto/pagedRequestDto';
 import chiNhanhService from '../../../services/chi_nhanh/chiNhanhService';
 
-interface ChiNhanh {
-    id: string;
-    tenChiNhanh: string;
-    soDienThoai: string;
-    diaChi: string;
-}
+import MenuWithDataFromDB from '../../../components/Menu/MenuWithData_fromDB';
+import { TypeSearchfromDB } from '../../../enum/TypeSearch_fromDB';
 
 const PhieuGuiHang: React.FC = () => {
     const [formData, setFormData] = useState({
@@ -26,8 +22,13 @@ const PhieuGuiHang: React.FC = () => {
         note: ''
     });
 
-    const [allChiNhanh, setAllChiNhanh] = useState<ChiNhanh[]>([]);
+    const [allChiNhanh, setAllChiNhanh] = useState<any[]>([]);
 
+    // ===== MENU CONTROL =====
+    const [anchorElReceiver, setAnchorElReceiver] = useState<HTMLElement | null>(null);
+    const openReceiver = Boolean(anchorElReceiver);
+
+    // ===== LOAD CHI NHÁNH =====
     useEffect(() => {
         const getAllChiNhanh = async () => {
             const data = await chiNhanhService.GetAll({
@@ -42,7 +43,9 @@ const PhieuGuiHang: React.FC = () => {
                 soDienThoai: item.soDienThoai,
                 diaChi: item.diaChi
             }));
+
             setAllChiNhanh(list);
+
             if (list.length > 0) {
                 setFormData((prev) => ({
                     ...prev,
@@ -56,11 +59,13 @@ const PhieuGuiHang: React.FC = () => {
         getAllChiNhanh();
     }, []);
 
+    // ===== HANDLE CHANGE =====
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
+    // ===== PRINT =====
     const handleSubmit = () => {
         printTem();
     };
@@ -91,10 +96,7 @@ const PhieuGuiHang: React.FC = () => {
       <head>
         <title>In Tem TechShop</title>
         <style>
-          @page {
-            size: 80mm 60mm;
-            margin: 0;
-          }
+    
 
           body {
             font-family: Arial, sans-serif;
@@ -200,71 +202,51 @@ const PhieuGuiHang: React.FC = () => {
 
     return (
         <Box p={3}>
-            <Typography variant="h5" gutterBottom>
-                Phiếu Gửi Hàng
-            </Typography>
+            <Typography variant="h5">Phiếu Gửi Hàng</Typography>
+
             <Grid container spacing={3}>
+                {/* ===== NGƯỜI GỬI ===== */}
                 <Grid item xs={12} md={6}>
                     <Typography variant="h6">Người Gửi</Typography>
+
                     <Stack spacing={2}>
-                        <Autocomplete
-                            freeSolo
-                            options={allChiNhanh}
-                            getOptionLabel={(option) => (typeof option === 'string' ? option : option.tenChiNhanh)}
-                            value={allChiNhanh.find((cn) => cn.tenChiNhanh === formData.senderName) || null}
-                            onChange={(event, value) => {
-                                if (value && typeof value !== 'string') {
-                                    setFormData((prev) => ({
-                                        ...prev,
-                                        senderName: value.tenChiNhanh,
-                                        senderPhone: value.soDienThoai,
-                                        senderAddress: value.diaChi
-                                    }));
-                                } else if (typeof value === 'string') {
-                                    setFormData((prev) => ({
-                                        ...prev,
-                                        senderName: value
-                                    }));
-                                }
-                            }}
-                            onInputChange={(event, newInputValue) => {
-                                setFormData((prev) => ({ ...prev, senderName: newInputValue }));
-                            }}
-                            renderInput={(params) => <TextField {...params} label="Tên người gửi" fullWidth />}
-                        />
+                        <TextField label="Tên chi nhánh" value={formData.senderName} fullWidth />
+
                         <TextField
-                            label="Số điện thoại người gửi"
-                            name="senderPhone"
+                            label="SĐT"
                             value={formData.senderPhone}
                             onChange={(e) =>
-                                setFormData((prev) => ({ ...prev, senderPhone: e.target.value.replace(/[^0-9]/g, '') }))
+                                setFormData((prev) => ({
+                                    ...prev,
+                                    senderPhone: e.target.value.replace(/[^0-9]/g, '')
+                                }))
                             }
-                            fullWidth
-                            inputProps={{ maxLength: 11 }}
                         />
-                        <TextField
-                            label="Địa chỉ người gửi"
-                            name="senderAddress"
-                            value={formData.senderAddress}
-                            onChange={handleChange}
-                            fullWidth
-                        />
+
+                        <TextField label="Địa chỉ" value={formData.senderAddress} onChange={handleChange} />
                     </Stack>
                 </Grid>
 
+                {/* ===== NGƯỜI NHẬN ===== */}
                 <Grid item xs={12} md={6}>
                     <Typography variant="h6">Người Nhận</Typography>
+
                     <Stack spacing={2}>
                         <TextField
                             label="Tên người nhận"
-                            name="receiverName"
                             value={formData.receiverName}
-                            onChange={handleChange}
                             fullWidth
+                            onClick={(e) => setAnchorElReceiver(e.currentTarget)}
+                            onChange={(e) =>
+                                setFormData((prev) => ({
+                                    ...prev,
+                                    receiverName: e.target.value
+                                }))
+                            }
                         />
+
                         <TextField
-                            label="Số điện thoại người nhận"
-                            name="receiverPhone"
+                            label="SĐT"
                             value={formData.receiverPhone}
                             onChange={(e) =>
                                 setFormData((prev) => ({
@@ -272,65 +254,73 @@ const PhieuGuiHang: React.FC = () => {
                                     receiverPhone: e.target.value.replace(/[^0-9]/g, '')
                                 }))
                             }
-                            fullWidth
-                            inputProps={{ maxLength: 11 }}
                         />
-                        <TextField
-                            label="Địa chỉ người nhận"
-                            name="receiverAddress"
-                            value={formData.receiverAddress}
-                            onChange={handleChange}
-                            fullWidth
-                        />
+
+                        <TextField label="Địa chỉ" value={formData.receiverAddress} onChange={handleChange} />
                     </Stack>
                 </Grid>
 
+                {/* ===== HÀNG ===== */}
                 <Grid item xs={12}>
-                    <Typography variant="h6">Thông Tin Hàng Hóa</Typography>
                     <Stack spacing={2}>
                         <TextField
-                            label="Tên hàng hóa"
+                            label="Tên hàng"
                             name="productName"
                             value={formData.productName}
                             onChange={handleChange}
-                            fullWidth
                         />
+
                         <TextField
                             label="Số lượng"
-                            name="quantity"
                             value={formData.quantity}
                             onChange={(e) =>
-                                setFormData((prev) => ({ ...prev, quantity: e.target.value.replace(/[^0-9]/g, '') }))
+                                setFormData((prev) => ({
+                                    ...prev,
+                                    quantity: e.target.value.replace(/[^0-9]/g, '')
+                                }))
                             }
-                            fullWidth
                         />
+
                         <TextField
-                            label="Trọng lượng (kg)"
-                            name="weight"
+                            label="Khối lượng"
                             value={formData.weight}
                             onChange={(e) =>
-                                setFormData((prev) => ({ ...prev, weight: e.target.value.replace(/[^0-9.]/g, '') }))
+                                setFormData((prev) => ({
+                                    ...prev,
+                                    weight: e.target.value.replace(/[^0-9.]/g, '')
+                                }))
                             }
-                            fullWidth
                         />
-                        <TextField
-                            label="Ghi chú"
-                            name="note"
-                            value={formData.note}
-                            onChange={handleChange}
-                            fullWidth
-                            multiline
-                            rows={3}
-                        />
+
+                        <TextField label="Ghi chú" name="note" value={formData.note} onChange={handleChange} />
                     </Stack>
                 </Grid>
 
                 <Grid item xs={12}>
-                    <Button variant="contained" color="primary" onClick={handleSubmit}>
-                        Lưu & In Ngay
+                    <Button variant="contained" onClick={handleSubmit}>
+                        Lưu & In
                     </Button>
                 </Grid>
             </Grid>
+
+            {/* ===== MENU SEARCH CUSTOMER ===== */}
+            <MenuWithDataFromDB
+                open={openReceiver}
+                anchorEl={anchorElReceiver}
+                typeSearch={TypeSearchfromDB.CUSTOMER}
+                handleClose={() => setAnchorElReceiver(null)}
+                handleChoseItem={(item: any) => {
+                    setFormData((prev) => ({
+                        ...prev,
+                        receiverName: item.text,
+                        receiverPhone: item.text2 || '',
+                        receiverAddress: item.diaChi || ''
+                    }));
+
+                    setAnchorElReceiver(null);
+                }}
+                style={{ width: anchorElReceiver?.clientWidth }}
+            />
         </Box>
     );
 };

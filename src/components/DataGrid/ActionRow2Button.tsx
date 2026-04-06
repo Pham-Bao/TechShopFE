@@ -6,10 +6,9 @@ import BorderHorizontalOutlinedIcon from '@mui/icons-material/BorderHorizontalOu
 import BorderColorOutlinedIcon from '@mui/icons-material/BorderColorOutlined';
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import { TypeAction } from '../../lib/appconst';
-
+import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
 export default function ActionRow2Button({ handleClickAction }: any) {
     const onClickAction = (type: number) => {
-        console.log(type);
         handleClickAction(type);
     };
     return (
@@ -20,9 +19,14 @@ export default function ActionRow2Button({ handleClickAction }: any) {
                     sx={{ width: '16px', color: '#7e7979' }}
                     onClick={() => onClickAction(TypeAction.UPDATE)}
                 />
-                <DeleteIcon
-                    title="Xóa"
-                    style={{ width: '16px', color: '#7e7979' }}
+                <PrintOutlinedIcon
+                    titleAccess="In"
+                    sx={{ width: '16px', color: '#7e7979', cursor: 'pointer' }}
+                    onClick={() => onClickAction(TypeAction.PRINT)}
+                />
+                <DeleteOutlinedIcon
+                    titleAccess="Xóa"
+                    sx={{ fontSize: 18, color: '#7e7979', cursor: 'pointer' }}
                     onClick={() => onClickAction(TypeAction.DELETE)}
                 />
             </Stack>

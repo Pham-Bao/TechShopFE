@@ -4,6 +4,7 @@ import { IHangHoaGroupTheoNhomDto, ModelHangHoaDienThoaiDto, ModelHangHoaDto, Pa
 import Utils from '../../utils/utils';
 import { IFileDto } from '../dto/FileDto';
 import { FileUpload } from '../dto/FileUpload';
+import { aW } from '@fullcalendar/core/internal-common';
 
 class ProductService {
     CheckExistsMaHangHoa = async (maHangHoa: string, id?: string) => {
@@ -111,6 +112,17 @@ class ProductService {
             });
         return xx;
     };
+    UpdateTrangThaiDienThoai = async (idHangHoa: string, trangThai: number) => {
+        const xx = await http
+            .post(`api/services/app/HangHoa/UpdateTrangThaiDienThoai`, {
+                id: idHangHoa,
+                trangThai: trangThai
+            })
+            .then((res: { data: { result: any } }) => {
+                return res.data.result;
+            });
+        return xx;
+    };
     DeleteMultipleProduct = async (lstIdHangHoa: any) => {
         const xx = await http.post(`api/services/app/HangHoa/DeleteMultipleProduct`, lstIdHangHoa);
         return xx.data.success;
@@ -135,6 +147,10 @@ class ProductService {
                 return res.data.result;
             });
         return xx;
+    };
+    GetIphoneConnectPC = async () => {
+        const res = await http.get('api/services/app/Iphone/GetIphoneInfo');
+        return res.data.result;
     };
 }
 export default new ProductService();

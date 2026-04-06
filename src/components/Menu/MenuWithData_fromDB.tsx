@@ -39,7 +39,8 @@ export default function MenuWithDataFromDB({ open, typeSearch, anchorEl, handleC
                                 nhomKhach: x.tenNhomKhach,
                                 icon: x.avatar,
                                 conNo: x.conNo,
-                                maKhachHang: x.maKhachHang
+                                maKhachHang: x.maKhachHang,
+                                diaChi: x.diaChi
                             } as IList;
                         });
                         setLstOption([...arrCus]);
