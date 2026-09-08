@@ -37,12 +37,21 @@ export const LoaiChungTu = {
     PHIEU_THU: 11,
     PHIEU_CHI: 12,
     PHIEU_DIEU_CHINH_TGT: 16,
-    HOA_DON_SUA_CHUA: 3
+    HOA_DON_SUA_CHUA: 17,
+    HOA_DON_BAO_HANH: 18,
+    PHIEU_KIEM_KE: 9
 };
 export const LoaiDoiTuong = {
     KHACH_HANG: 1,
     NHA_CUNG_CAP: 2,
     NHAN_VIEN: 3
+};
+export const LoaiHangHoa = {
+    HANG_HOA: 1,
+    DICH_VU: 2,
+    COMBO: 3,
+    DIEN_THOAI: 4,
+    DIEN_THOAI_SUA: 5
 };
 export const LoaiMauIn = {
     K80: 1,

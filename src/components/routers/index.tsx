@@ -24,6 +24,8 @@ import { ReactComponent as MoneyIcon } from '../../images/moneys.svg';
 import { ReactComponent as MoneyActive } from '../../images/moneysActive.svg';
 import SettingRoutes from '../../pages/admin/settings/settingRoutes';
 import { AppFeatures } from '../../enum/Features';
+import WarehouseIcon from '@mui/icons-material/Warehouse';
+import Inventory2Icon from '@mui/icons-material/Inventory2';
 type RenderRouteProps = {
     layout: React.ElementType;
     name: string;
@@ -382,6 +384,67 @@ export const appRouters: AppRouteProps = {
                             isLayout: false,
                             children: [],
                             component: LoadableComponent(() => import('../../pages/dichvu_nhanvien'))
+                        }
+                    ],
+                    component: null
+                },
+                {
+                    path: '/kho-hangs',
+                    permission: 'Pages.DM_HangHoa',
+                    title: 'Kho Hàng',
+                    icon: <Inventory2Icon sx={{ fontSize: 20 }} />,
+                    iconActive: <Inventory2Icon sx={{ fontSize: 20 }} />,
+                    name: 'khohang',
+                    showInMenu: true,
+                    isLayout: false,
+                    children: [
+                        {
+                            path: '/nhap-hangs',
+                            permission: 'Pages.DM_HangHoa',
+                            title: 'Nhập Hàng',
+                            icon: <BsDot style={{ fontSize: 20 }} />,
+                            iconActive: null,
+                            name: 'dichvu',
+                            showInMenu: true,
+                            isLayout: false,
+                            children: [],
+                            component: LoadableComponent(() => import('../../pages/kho_hang/nhap_hang'))
+                        },
+                        {
+                            path: '/nhap-hang/tao-moi',
+                            permission: 'Pages.DM_HangHoa',
+                            title: 'Tạo phiếu nhập',
+                            icon: <BsDot style={{ fontSize: 20 }} />,
+                            iconActive: null,
+                            name: 'taophieunhap',
+                            showInMenu: false,
+                            isLayout: false,
+                            children: [],
+                            component: LoadableComponent(() => import('../../pages/kho_hang/page_them_phieu_nhap_hang'))
+                        },
+                        {
+                            path: '/kiem-ke/tao-moi',
+                            permission: 'Pages.DM_HangHoa',
+                            title: 'Tạo kiểm kê',
+                            icon: <BsDot style={{ fontSize: 20 }} />,
+                            iconActive: null,
+                            name: 'taokiemke',
+                            showInMenu: false,
+                            isLayout: false,
+                            children: [],
+                            component: LoadableComponent(() => import('../../pages/kho_hang/page_them_phieu_kiem_ke'))
+                        },
+                        {
+                            path: '/phieu-kiem-kes',
+                            permission: 'Pages.DM_HangHoa',
+                            title: 'Kiểm kê',
+                            icon: <BsDot style={{ fontSize: 20 }} />,
+                            iconActive: null,
+                            name: 'dichvunhanvien',
+                            showInMenu: true,
+                            isLayout: false,
+                            children: [],
+                            component: LoadableComponent(() => import('../../pages/kho_hang/kiem_ke'))
                         }
                     ],
                     component: null

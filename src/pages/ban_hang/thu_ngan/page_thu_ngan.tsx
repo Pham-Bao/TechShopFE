@@ -93,9 +93,11 @@ import Utils from '../../../utils/utils';
 import { PagedResultDto } from '../../../services/dto/pagedResultDto';
 import ModalHangHoaDienThoai from '../../dien_thoai/ModalPhone';
 import ModalHangHoaDienThoaiSua from '../../dien_thoai/ModalDienThoaiSua';
+import TheKhoService from '../../../services/the_kho/sevice';
 
 import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
 import khachHangStore from '../../../stores/khachHangStore';
+import CreateOrEditDM_TheKhoDto from '../../../services/the_kho/dto';
 
 export type IPropsPageThuNgan = {
     txtSearch: string;
@@ -103,7 +105,7 @@ export type IPropsPageThuNgan = {
     customerIdChosed: string;
     phoneIdChosed: string;
     idChiNhanhChosed: string;
-
+    onChangeSoLuongCheckIn: (value: number) => void;
     idInvoiceWaiting?: string;
     idCheckIn?: string;
     arrIdNhomHangFilter?: string[];
@@ -116,6 +118,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
     const {
         txtSearch,
         loaiHoaDon,
+        onChangeSoLuongCheckIn,
         customerIdChosed,
         phoneIdChosed,
         idChiNhanhChosed,
@@ -154,7 +157,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
     const [isShowModalAddCus, setIsShowModalAddCus] = useState(false);
     const [newCus, setNewCus] = useState<CreateOrEditKhachHangDto>({} as CreateOrEditKhachHangDto);
     const [customerChosed, setCustomerChosed] = useState<CreateOrEditKhachHangDto>({} as CreateOrEditKhachHangDto);
-    const [phoneChosed, setPhoneChosed] = useState<ModelHangHoaDienThoaiDto>({} as ModelHangHoaDienThoaiDto);
+    const [phoneChosed, setPhoneChosed] = useState<ModelHangHoaDienThoaiDto | null>(null);
     const [triggerModalProduct, setTriggerModalProduct] = useState<PropModal>(new PropModal({ isShow: false }));
     const [pageDataProduct, setPageDataProduct] = useState<PagedResultDto<ModelHangHoaDto>>({
         totalCount: 0,
@@ -176,15 +179,16 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
     const [hoadon, setHoaDon] = useState<PageHoaDonDto>(
         new PageHoaDonDto({
             idKhachHang: null,
-            idLoaiChungTu: LoaiChungTu.HOA_DON_BAN_LE,
+            idLoaiChungTu: loaiHoaDon,
             tenKhachHang: 'Chưa chọn khách',
+            idHangHoa: null,
             idChiNhanh: idChiNhanhChosed
         })
     );
     const [confirmDialog, setConfirmDialog] = useState<PropConfirmOKCancel>({
         show: false,
         title: '',
-        type: 1, // 1.remove customer, 2.change tabhoadon
+        type: 1,
         mes: ''
     });
 
@@ -205,13 +209,14 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
         getListHangHoa_groupbyNhom(txtSearch, []);
     };
 
-    const getListHangHoa_groupbyNhom = async (txtSearch: string, arrIdNhomHang: string[] = []) => {
+    const getListHangHoa_groupbyNhom = async (txtSearch: string, arrIdNhomHang: string[] = [], loaiHoaDon?: number) => {
         setIsLoadingData(true);
         const input = {
             IdNhomHangHoas: arrIdNhomHang,
             TextSearch: txtSearch,
             IdLoaiHangHoa: 0, // all
             CurrentPage: 0,
+            idLoaiChungTu: loaiHoaDon,
             PageSize: 50
         } as PagedProductSearchDto;
         const data = await ProductService.GetDMHangHoa_groupByNhom(input);
@@ -253,10 +258,10 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
             idDonViQuyDoi: item?.idDonViQuyDoi,
             tenHangHoa: item?.tenHangHoa ?? '',
             tenNhomHang: item?.tenNhomHang ?? '',
-            dungLuong: item?.dungLuong ?? '',
+            dungLuong: item?.dungLuong ?? 0,
             mau: item?.mau ?? '',
             matKhau: item?.matKhau ?? '',
-            //tenChu: item?. ?? '',
+            tenChu: item?.tenChu ?? '',
             noiDung: item?.noiDung ?? '',
             loi: item?.loi ?? '',
             pin: item?.pin ?? '',
@@ -267,6 +272,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
     };
 
     const SetDataHoaDon_byIdWaiting = async () => {
+        console.log('có chạy ở đây không');
         const hdCache = await dbDexie.hoaDon
             .where('id')
             .equals(idInvoiceWaiting ?? '')
@@ -276,9 +282,8 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                 ...hdCache[0]
             });
             setHoaDonChiTiet([...(hdCache[0]?.hoaDonChiTiet ?? [])]);
-
+            setPhoneChosed(null);
             await GetInforCustomer_byId(hdCache[0]?.idKhachHang ?? Guid.EMPTY);
-            //await CheckCustomer_hasGDV(hdCache[0]?.idKhachHang ?? Guid.EMPTY);
 
             onSetActiveTabLoaiHoaDon(hdCache[0]?.idLoaiChungTu ?? LoaiChungTu.HOA_DON_BAN_LE);
         } else {
@@ -295,6 +300,8 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
     };
 
     const InitData_forHoaDon = async () => {
+        console.log('có chạy ở đây không');
+
         const idCheckInNew = idCheckIn ?? Guid.EMPTY;
         const hdCache = await dbDexie.hoaDon
             .where('idCheckIn')
@@ -302,8 +309,10 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
             .and((x) => x.idChiNhanh === idChiNhanhChosed)
             .toArray();
         if (hdCache?.length > 0) {
+            console.log('có chạy ở đây không phoneIdChosed', hdCache);
             setHoaDon({
-                ...hdCache[0]
+                ...hdCache[0],
+                idHangHoa: phoneIdChosed ?? hdCache[0]?.idHangHoa
             });
             setHoaDonChiTiet([...(hdCache[0]?.hoaDonChiTiet ?? [])]);
             onSetActiveTabLoaiHoaDon(hdCache[0]?.idLoaiChungTu ?? LoaiChungTu.HOA_DON_BAN_LE);
@@ -315,7 +324,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                 idKhachHang: customerIdChosed,
                 idHangHoa: phoneIdChosed,
                 idChiNhanh: idChiNhanhChosed,
-                idLoaiChungTu: LoaiChungTu.HOA_DON_BAN_LE,
+                idLoaiChungTu: loaiHoaDon,
                 idCheckIn: idCheckInNew
             });
         }
@@ -354,12 +363,10 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
             }
         }
 
-        await AgreeChangeLoaiHoaDon();
+        // await AgreeChangeLoaiHoaDon();
     };
 
     useEffect(() => {
-        // firstload: auto set loaiHoadon = HOA_DON_BAN_LE
-
         InitData_forHoaDon();
     }, [idChiNhanhChosed, idCheckIn, customerIdChosed, phoneIdChosed]);
 
@@ -370,6 +377,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
             return;
         }
         ChangeLoaiHoaDon();
+        getListHangHoa_groupbyNhom(txtSearch, arrIdNhomHangFilter, loaiHoaDon);
     }, [loaiHoaDon]);
 
     useEffect(() => {
@@ -385,7 +393,8 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
         if (customerIdChosed && phoneIdChosed) {
             GetInforCustomer_byId(customerIdChosed);
             GetInforPhone_byId(phoneIdChosed);
-            //CheckCustomer_hasGDV(customerIdChosed);
+        } else if (customerIdChosed) {
+            GetInforCustomer_byId(customerIdChosed);
         }
     }, [customerIdChosed, phoneIdChosed]);
 
@@ -465,71 +474,6 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
         }
         return true;
     };
-    const AgreeSuDungGDV = async (type: number, lstChosed?: ChiTietSuDungGDVDto[]) => {
-        setIsShowModalSuDungGDV(false);
-        if (lstChosed) {
-            const checkSD = GDV_CheckSuDungQuaBuoi(lstChosed);
-            if (!checkSD) {
-                return;
-            }
-
-            if (hoadon?.idLoaiChungTu !== LoaiChungTu.HOA_DON_BAN_LE) {
-                // update loaiHoaDon
-                setHoaDon({ ...hoadon, idLoaiChungTu: LoaiChungTu.HOA_DON_BAN_LE });
-                await dbDexie.hoaDon.update(hoadon?.id, {
-                    idLoaiChungTu: LoaiChungTu.HOA_DON_BAN_LE
-                });
-                onSetActiveTabLoaiHoaDon(LoaiChungTu.HOA_DON_BAN_LE);
-            }
-            // if = GDV --> add newHD with customer
-            // remove ctold if same & add again
-            const cthdRemove: PageHoaDonChiTietDto[] = [];
-            const arrChosed: PageHoaDonChiTietDto[] = [];
-            for (let index = 0; index < lstChosed.length; index++) {
-                const element = lstChosed[index];
-                // check exist cthd
-                const itemCTHD = hoaDonChiTiet?.filter(
-                    (x) => x.idDonViQuyDoi === element?.idDonViQuyDoi && x?.idChiTietHoaDon === element?.idChiTietHoaDon
-                );
-                if (itemCTHD?.length > 0) {
-                    // tang soluong
-                    const newCT = { ...itemCTHD[0] };
-                    newCT.soLuong = newCT.soLuong + 1;
-                    arrChosed.push(newCT);
-
-                    cthdRemove.push(itemCTHD[0]);
-                } else {
-                    // add new
-                    const newCT = new PageHoaDonChiTietDto({
-                        id: Guid.create().toString(),
-                        soLuong: 1,
-                        maHangHoa: element?.maHangHoa,
-                        tenHangHoa: element?.tenHangHoa,
-                        idDonViQuyDoi: element?.idDonViQuyDoi,
-                        idHangHoa: element?.idHangHoa,
-                        idNhomHangHoa: element?.idNhomHangHoa
-                    });
-                    newCT.idChiTietHoaDon = element?.idChiTietHoaDon;
-                    newCT.soLuongConLai = element?.soLuongConLai ?? 0;
-                    newCT.donGiaTruocCK = element?.donGiaTruocCK ?? 0;
-                    newCT.tienChietKhau = element?.tienChietKhau ?? 0;
-                    // sử dụng gdv: thành tiền = 0
-                    newCT.thanhTienTruocCK = 0;
-                    newCT.thanhTienSauCK = 0;
-                    newCT.thanhTienSauVAT = 0;
-                    arrChosed.push(newCT);
-                }
-            }
-            const arrIdCTHDRemove = cthdRemove?.map((x) => {
-                return x.id;
-            });
-            const arrCT_afterRemove = hoaDonChiTiet?.filter((x) => !arrIdCTHDRemove.includes(x.id));
-            const lstCTHDLast = [...arrChosed, ...(arrCT_afterRemove ?? [])];
-            setHoaDonChiTiet([...lstCTHDLast]);
-
-            await UpdateCTHD_toCache([...lstCTHDLast]);
-        }
-    };
 
     useEffect(() => {
         if (firstLoad.current) {
@@ -579,13 +523,13 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
 
     // only used when change textsearch
     const debounceSearchHangHoa = useRef(
-        debounce(async (txtSearch: string) => {
-            getListHangHoa_groupbyNhom(txtSearch, arrIdNhomHangChosed);
+        debounce(async (txtSearch: string, loaiHoaDon: number) => {
+            getListHangHoa_groupbyNhom(txtSearch, arrIdNhomHangChosed, loaiHoaDon);
         }, 500)
     ).current;
 
     useEffect(() => {
-        debounceSearchHangHoa(txtSearch);
+        debounceSearchHangHoa(txtSearch, loaiHoaDon);
     }, [txtSearch]);
 
     const removeCTHD = async (item: HoaDonChiTietDto) => {
@@ -692,7 +636,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                 maKhachHang: customer?.maKhachHang,
                 soDienThoai: customer?.soDienThoai
             });
-            setCustomerHasGDV(false);
+            //setCustomerHasGDV(false);
         }
     };
 
@@ -706,6 +650,10 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
             ghiChu: ''
         };
         const dataCheckIn = await CheckinService.InsertCustomerCheckIn(objCheckInNew as KHCheckInDto);
+        const input = { keyword: '', skipCount: 0, maxResultCount: 50, idChiNhanh: Cookies.get('IdChiNhanh') };
+        const list = await CheckinService.GetListCustomerChecking(input);
+        props.onChangeSoLuongCheckIn(list.length);
+
         return dataCheckIn.id;
     };
 
@@ -730,8 +678,8 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
             idKhachHang: item?.id,
             tenKhachHang: item?.text,
             maKhachHang: item?.maKhachHang, // todo maKhachHang
-            soDienThoai: item?.text2,
-            idHangHoa: 'iwhgfuiwheiuhdqsi'
+            soDienThoai: item?.text2
+            //idHangHoa: 'iwhgfuiwheiuhdqsi'
         });
 
         //await CheckCustomer_hasGDV(item?.id ?? '');
@@ -739,14 +687,14 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
 
     const changePhone = async (item: IListPhone) => {
         setAnchorDropdownPhone(null);
-        console.log('item', item);
+
         setPhoneChosed({
             ...phoneChosed,
             id: item?.id,
             idDonViQuyDoi: item?.idDonViQuyDoi,
             tenHangHoa: item?.tenMay ?? '',
             tenNhomHang: item?.tenNhomHang ?? '',
-            dungLuong: item?.dungLuong ?? '',
+            dungLuong: item?.dungLuong ? Number(item.dungLuong) : undefined,
             mau: item?.mau ?? '',
             tenChu: item?.chuMay ?? '',
             noiDung: item?.noiDung ?? '',
@@ -859,7 +807,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
             idDonViQuyDoi: Guid.EMPTY,
 
             tenHangHoa: 'Chưa chọn máy',
-            dungLuong: '',
+            dungLuong: undefined,
             mau: '',
             tenChu: '',
             noiDung: '',
@@ -930,17 +878,6 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
             moTa: '',
             idLoaiKhach: 1
         });
-    };
-
-    const changeNgayLapHoaDon = async (dt: string) => {
-        setHoaDon({
-            ...hoadon,
-            ngayLapHoaDon: dt
-        });
-        await dbDexie.hoaDon
-            .where('id')
-            .equals(hoadon?.id)
-            .modify((o: PageHoaDonDto) => (o.ngayLapHoaDon = dt));
     };
 
     const onClickOKConfirm = async () => {
@@ -1154,6 +1091,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
             idChiNhanh: idChiNhanhChosed,
             tenKhachHang: 'Chưa chọn khách'
         });
+        setPhoneChosed(null);
         setHoaDon({ ...newHD });
         setCustomerChosed({
             ...customerChosed,
@@ -1162,7 +1100,8 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
             tenKhachHang: 'Chưa chọn khách',
             soDienThoai: '',
             tongTichDiem: 0,
-            avatar: ''
+            avatar: '',
+            conNo: 0
         } as CreateOrEditKhachHangDto);
 
         onSetActiveTabLoaiHoaDon(hoadon.idLoaiChungTu);
@@ -1244,41 +1183,78 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
     };
 
     const saveHoaDon = async () => {
-        setIsSavingHoaDon(true);
         if (isSavingHoaDon) return;
+        setIsSavingHoaDon(true);
 
-        const checkSave = await checkSaveInvoice();
-        if (!checkSave) {
-            setIsSavingHoaDon(false);
-            return;
-        }
-        const dataSave = { ...hoadon };
-        dataSave.hoaDonChiTiet = hoaDonChiTiet;
-        dataSave?.hoaDonChiTiet?.map((x: PageHoaDonChiTietDto, index: number) => {
-            x.stt = index + 1; // update STT for cthd
-        });
-        const hoadonDB = await HoaDonService.CreateHoaDon(dataSave);
-        if (hoadonDB != null) {
+        try {
+            const checkSave = await checkSaveInvoice();
+            if (!checkSave) {
+                setIsSavingHoaDon(false);
+                return;
+            }
+
+            const dataSave = { ...hoadon };
+            dataSave.hoaDonChiTiet = hoaDonChiTiet;
+
+            dataSave.hoaDonChiTiet?.forEach((x: PageHoaDonChiTietDto, index: number) => {
+                x.stt = index + 1;
+            });
+
+            const hoadonDB = await HoaDonService.CreateHoaDon(dataSave);
+
+            if (!hoadonDB) {
+                setIsSavingHoaDon(false);
+                return;
+            }
             setObjAlert({
                 show: true,
                 type: 1,
                 mes: 'Thanh toán hóa đơn thành công'
             });
             try {
+                const listChiTietHangHoa = hoaDonChiTiet.filter((x) => x?.idHangHoa);
+
+                if (listChiTietHangHoa.length > 0) {
+                    const listTheKho: CreateOrEditDM_TheKhoDto[] = hoaDonChiTiet
+                        .filter((x) => x?.idHangHoa)
+                        .map(
+                            (item) =>
+                                new CreateOrEditDM_TheKhoDto({
+                                    idHangHoa: hoadonDB.idHangHoa as string,
+
+                                    idHoaDon: hoadonDB.id,
+                                    idLoaiChungTu: hoadonDB.idLoaiChungTu,
+
+                                    soLuong: -Math.abs(item.soLuong ?? 0),
+
+                                    tonTruoc: 0,
+                                    tonSau: 0,
+
+                                    ghiChu: `Bán hàng - ${hoadonDB.maHoaDon}`
+                                })
+                        );
+
+                    if (listTheKho.length > 0) {
+                        await TheKhoService.CreateTheKho(listTheKho);
+                    }
+                }
+            } catch (err) {
+                console.error('Lỗi tạo thẻ kho', err);
+            }
+            try {
                 const list = hoaDonChiTiet.filter((x) => x?.idHangHoa);
 
                 for (const item of list) {
-                    //trạng thái 2 là đã bán
                     await ProductService.UpdateTrangThaiDienThoai(item.idHangHoa!, 2);
                 }
             } catch (err) {
-                console.error('Lỗi update trạng thái điện thoại', err);
+                console.error('Lỗi update trạng thái sản phẩm', err);
             }
+
             await saveDiaryHoaDon(hoadonDB?.maHoaDon, hoadonDB?.ngayLapHoaDon);
-
             await CheckinService.UpdateTrangThaiCheckin(hoadon?.idCheckIn, TrangThaiCheckin.COMPLETED);
-            await CheckinService.Update_IdHoaDon_toCheckInHoaDon(hoadon?.idCheckIn, hoadonDB.id);
 
+            await CheckinService.Update_IdHoaDon_toCheckInHoaDon(hoadon?.idCheckIn, hoadonDB.id);
             if (isThanhToanTienMat) {
                 const dataQuyHD = await SoQuyServices.savePhieuThu_forHoaDon({
                     idChiNhanh: idChiNhanhChosed,
@@ -1287,23 +1263,29 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                     ngayLapHoaDon: hoadon?.ngayLapHoaDon,
                     hoadon: {
                         maHoaDon: hoadonDB?.maHoaDon,
-                        id: (hoadonDB?.id ?? null) as unknown as null,
-                        idKhachHang: customerChosed?.id as unknown as null,
+                        id: hoadonDB?.id as any,
+                        idKhachHang: customerChosed?.id as any,
                         tenKhachHang: customerChosed?.tenKhachHang
                     }
                 });
-                if (dataQuyHD != null) {
+
+                if (dataQuyHD) {
                     await InHoaDon(hoadonDB?.maHoaDon, hoadonDB?.ngayLapHoaDon, dataQuyHD);
                 }
             }
 
             await dbDexie.hoaDon.where('id').equals(hoadon?.id).delete();
+
             ResetState_AfterSave();
             onRemoveHoaDon_toCache();
+
             return hoadonDB;
+        } catch (error) {
+            console.error('Lỗi save hóa đơn:', error);
+        } finally {
+            setIsSavingHoaDon(false);
         }
     };
-
     const handleBaoGia = async () => {
         try {
             if (!hoadon || !hoaDonChiTiet || hoaDonChiTiet.length === 0) {
@@ -1360,9 +1342,9 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
         DataMauIn.hoadon = hoadon;
         DataMauIn.hoadon.maHoaDon = mahoadon;
 
-        DataMauIn.maySua.tenHangHoa = phoneChosed.tenHangHoa;
-        DataMauIn.maySua.noiDung = phoneChosed.noiDung;
-        DataMauIn.maySua.loi = phoneChosed.loi;
+        DataMauIn.maySua.tenHangHoa = phoneChosed?.tenHangHoa;
+        DataMauIn.maySua.noiDung = phoneChosed?.noiDung;
+        DataMauIn.maySua.loi = phoneChosed?.loi;
 
         DataMauIn.hoadon.ngayLapHoaDon = ngayLapHD; // get ngaylapHD from DB (after add hours/minutes/seconds)
         DataMauIn.hoadon.daThanhToan = quyHD?.tongTienThu;
@@ -1627,7 +1609,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                     id: objNew?.id,
                     tenHangHoa: objNew?.tenHangHoa ?? '',
                     tenNhomHang: objNew?.tenNhomHang ?? '',
-                    dungLuong: objNew?.dungLuong ?? '',
+                    dungLuong: objNew?.dungLuong ?? 0,
                     mau: objNew?.mau ?? '',
                     tenChu: objNew?.idChuSoHuu ?? '',
                     noiDung: objNew?.noiDung ?? '',
@@ -1659,6 +1641,15 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                     idHangHoa: objNew?.id?.toString() ?? ''
                 });
 
+                await AddHD_toCache_IfNotExists();
+                await dbDexie.hoaDon.update(hoadon?.id, {
+                    idCheckIn: idCheckin,
+                    idKhachHang: data?.id?.toString(),
+                    tenKhachHang: data?.tenKhachHang,
+                    maKhachHang: data?.maKhachHang,
+                    soDienThoai: data?.soDienThoai,
+                    idLoaiChungTu: 17
+                });
                 setObjAlert({ show: true, type: 1, mes: 'Thêm ' + sLoai + ' thành công' });
                 break;
             }
@@ -1678,7 +1669,46 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
             items: list.items
         });
     };
+    const handleRemovePhone = () => {
+        setCustomerChosed({
+            ...customerChosed,
+            id: Guid.EMPTY,
+            maKhachHang: 'KL', // todo makhachhang
+            tenKhachHang: 'Chưa chọn khách',
+            soDienThoai: '',
+            conNo: 0,
+            tenNhomKhach: '',
+            isShow: false
+        });
+        setPhoneChosed(null);
+        setHoaDonChiTiet([]);
 
+        setHoaDon((prev) => ({
+            ...prev,
+            idHangHoa: '',
+            idKhachHang: ''
+        }));
+    };
+    const handleRemoveCustomer = () => {
+        setCustomerChosed({
+            ...customerChosed,
+            id: Guid.EMPTY,
+            maKhachHang: 'KL', // todo makhachhang
+            tenKhachHang: 'Chưa chọn khách',
+            soDienThoai: '',
+            conNo: 0,
+            tenNhomKhach: '',
+            isShow: false
+        });
+        setPhoneChosed(null);
+        setHoaDonChiTiet([]);
+
+        setHoaDon((prev) => ({
+            ...prev,
+            idHangHoa: '',
+            idKhachHang: ''
+        }));
+    };
     return (
         <>
             <ModalHangHoaDienThoaiSua trigger={triggerModalProduct} handleSave={saveProduct}></ModalHangHoaDienThoaiSua>
@@ -1700,13 +1730,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                 title="Thêm mới khách hàng"
                 formRef={newCus}
             />
-            <ModalSuDungGDV
-                isShowModal={isShowModalSuDungGDV}
-                idUpdate={customerChosed?.id}
-                maKhachHang={customerChosed?.maKhachHang}
-                onClose={() => setIsShowModalSuDungGDV(false)}
-                onOK={AgreeSuDungGDV}
-            />
+
             <ModalEditChiTietGioHang
                 formType={1}
                 isShow={isShowEditGioHang}
@@ -1913,22 +1937,25 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                                         </Stack>
                                     </Stack>
 
-                                    {/* RIGHT: Button */}
                                     <Button
                                         variant="contained"
                                         size="small"
-                                        onClick={showModalAddCustomer}
-                                        sx={{
-                                            textTransform: 'none',
-                                            borderRadius: '8px',
-                                            boxShadow: 'none',
-                                            px: 2,
-                                            ml: 2,
-                                            whiteSpace: 'nowrap'
+                                        color={
+                                            customerChosed?.id && customerChosed?.id !== Guid.EMPTY
+                                                ? 'error'
+                                                : 'primary'
+                                        }
+                                        onClick={() => {
+                                            if (customerChosed?.id && customerChosed?.id !== Guid.EMPTY) {
+                                                handleRemoveCustomer();
+                                            } else {
+                                                showModalAddCustomer();
+                                            }
                                         }}>
-                                        Thêm Khách hàng
+                                        {customerChosed?.id && customerChosed?.id !== Guid.EMPTY
+                                            ? '✕'
+                                            : 'Thêm khách hàng'}
                                     </Button>
-
                                     {/* Dropdown */}
                                     <MenuWithDataFromDB
                                         open={expandSearchCus}
@@ -1950,52 +1977,86 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                                     <Stack
                                         direction="row"
                                         spacing={1.5}
-                                        alignItems="center"
+                                        alignItems="flex-start"
                                         sx={{ cursor: 'pointer', flex: 1 }}
                                         onClick={(event) => {
                                             setAnchorDropdownPhone(event.currentTarget);
                                         }}>
                                         <Avatar sx={{ width: 36, height: 36 }} />
 
-                                        <Stack spacing={0.3} minWidth={0}>
-                                            <Typography variant="body2" fontWeight={500} noWrap>
-                                                {phoneChosed?.tenHangHoa ?? 'Chưa chọn máy'}
-                                            </Typography>
-                                            {phoneChosed?.imel && (
-                                                <Typography variant="caption" color="text.secondary" noWrap>
-                                                    IMEI: {phoneChosed?.imel}
-                                                </Typography>
-                                            )}
-                                            {phoneChosed?.tenChu && (
-                                                <Stack direction="row" spacing={2}>
-                                                    <Typography variant="caption" fontWeight={500}>
-                                                        {phoneChosed?.tenChu}
+                                        <Stack spacing={1} flex={1}>
+                                            {/* 2 cột */}
+                                            <Stack
+                                                direction="row"
+                                                spacing={3}
+                                                justifyContent="space-between"
+                                                alignItems="flex-start">
+                                                <Stack spacing={0.3} minWidth={140}>
+                                                    <Typography variant="caption" fontWeight={600}>
+                                                        {customerChosed?.tenKhachHang || 'Khách lẻ'}
                                                     </Typography>
+
+                                                    <Typography variant="caption">
+                                                        {customerChosed?.soDienThoai || '---'}
+                                                    </Typography>
+
+                                                    {!phoneChosed && (
+                                                        <Typography
+                                                            variant="caption"
+                                                            color="text.secondary"
+                                                            fontStyle="italic">
+                                                            Chưa chọn máy
+                                                        </Typography>
+                                                    )}
                                                 </Stack>
-                                            )}
-                                            {phoneChosed?.idChuSoHuu && (
-                                                <Stack direction="row" spacing={2}>
-                                                    <Typography variant="caption" fontWeight={500}>
-                                                        {phoneChosed?.idChuSoHuu}
+
+                                                <Stack spacing={0.3} flex={1} minWidth={0}>
+                                                    {phoneChosed?.tenHangHoa && (
+                                                        <Typography variant="body2" fontWeight={500} noWrap>
+                                                            {[
+                                                                phoneChosed.tenHangHoa,
+                                                                phoneChosed.dungLuong,
+                                                                phoneChosed.mau
+                                                            ]
+                                                                .filter(Boolean)
+                                                                .join(', ')}
+                                                        </Typography>
+                                                    )}
+
+                                                    {phoneChosed?.imel && (
+                                                        <Typography variant="caption" color="text.secondary" noWrap>
+                                                            IMEI: {phoneChosed?.imel}
+                                                        </Typography>
+                                                    )}
+                                                </Stack>
+                                            </Stack>
+
+                                            {/* Nội dung + lỗi */}
+                                            {phoneChosed && (
+                                                <Stack spacing={0.5}>
+                                                    <Typography variant="caption">
+                                                        <strong>Nội dung:</strong> {phoneChosed?.noiDung}
+                                                    </Typography>
+
+                                                    <Typography variant="caption">
+                                                        <strong>Lỗi trước sửa:</strong> {phoneChosed?.loi}
                                                     </Typography>
                                                 </Stack>
                                             )}
                                         </Stack>
                                     </Stack>
-
                                     <Button
                                         variant="contained"
                                         size="small"
-                                        onClick={() => showModalAddProduct(1, phoneChosed.idHangHoa)}
-                                        sx={{
-                                            textTransform: 'none',
-                                            borderRadius: '8px',
-                                            boxShadow: 'none',
-                                            px: 2,
-                                            ml: 2,
-                                            whiteSpace: 'nowrap'
+                                        color={phoneChosed ? 'error' : 'primary'}
+                                        onClick={() => {
+                                            if (phoneChosed) {
+                                                handleRemovePhone();
+                                            } else {
+                                                showModalAddProduct(1);
+                                            }
                                         }}>
-                                        Thêm máy sửa chữa
+                                        {phoneChosed ? '✕' : 'Thêm máy sửa chữa'}
                                     </Button>
                                     <MenuWithDataFromPhone
                                         open={expandSearchCusPhone}

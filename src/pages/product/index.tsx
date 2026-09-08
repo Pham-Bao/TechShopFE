@@ -13,7 +13,9 @@ import {
     Pagination,
     IconButton,
     Popover,
-    Checkbox
+    Checkbox,
+    Tab,
+    Tabs
 } from '@mui/material';
 import { Add, Category, DeleteOutline, LocalOfferOutlined, Search } from '@mui/icons-material';
 import { ReactComponent as FilterIcon } from '../../images/icons/i-filter.svg';
@@ -35,7 +37,7 @@ import { ModelNhomHangHoa, ModelHangHoaDto, PagedProductSearchDto } from '../../
 import { ReactComponent as UploadIcon } from '../../images/upload.svg';
 import { ReactComponent as DownIcon } from '../../images/download.svg';
 import Utils from '../../utils/utils'; // func common
-import AppConsts, { LoaiNhatKyThaoTac, TypeAction } from '../../lib/appconst';
+import AppConsts, { LoaiDoiTuong, LoaiHangHoa, LoaiNhatKyThaoTac, TypeAction } from '../../lib/appconst';
 import './style.css';
 import fileDowloadService from '../../services/file-dowload.service';
 import uploadFileService from '../../services/uploadFileService';
@@ -54,7 +56,11 @@ import { AppContext } from '../../services/chi_nhanh/ChiNhanhContext';
 import { CreateNhatKyThaoTacDto } from '../../services/nhat_ky_hoat_dong/dto/CreateNhatKyThaoTacDto';
 import nhatKyHoatDongService from '../../services/nhat_ky_hoat_dong/nhatKyHoatDongService';
 import Cookies from 'js-cookie';
-
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
+import VerifiedIcon from '@mui/icons-material/Verified';
+import AppsIcon from '@mui/icons-material/Apps';
+import ModalTheKho from './ModalTheKho';
 const PageProduct = () => {
     const appContext = useContext(AppContext);
     const chiNhanhCurrent = appContext.chinhanhCurrent;
@@ -76,6 +82,8 @@ const PageProduct = () => {
     const [rowSelectionModel, setRowSelectionModel] = React.useState<GridRowSelectionModel>([]);
     const [isShowModalChuyenNhom, setIsShowModalChuyenNhom] = useState(false);
     const [anchorElFilter, setAnchorElFilter] = useState<any>(null);
+    const [openTheKho, setOpenTheKho] = useState(false);
+    const [theKhoData, setTheKhoData] = useState<any>(null);
     const [pageDataProduct, setPageDataProduct] = useState<PagedResultDto<ModelHangHoaDto>>({
         totalCount: 0,
         totalPage: 0,
@@ -84,7 +92,7 @@ const PageProduct = () => {
 
     const [filterPageProduct, setFilterPageProduct] = useState<PagedProductSearchDto>({
         idNhomHangHoas: [],
-        idLoaiHangHoa: 2,
+        idLoaiHangHoa: 0,
         textSearch: '',
         currentPage: 1,
         pageSize: AppConsts.pageOption[0].value,
@@ -147,7 +155,12 @@ const PageProduct = () => {
 
     useEffect(() => {
         GetListHangHoa();
-    }, [filterPageProduct.currentPage, filterPageProduct.pageSize, filterPageProduct.idNhomHangHoas]);
+    }, [
+        filterPageProduct.currentPage,
+        filterPageProduct.pageSize,
+        filterPageProduct.idNhomHangHoas,
+        filterPageProduct.idLoaiHangHoa
+    ]);
 
     function showModalAddNhomHang(id = '') {
         setTriggerModalNhomHang({
@@ -156,14 +169,44 @@ const PageProduct = () => {
             id: id
         });
     }
+    const [tabValue, setTabValue] = useState(0);
+    const handleChangeTab = (event: React.SyntheticEvent, newValue: number) => {
+        setTabValue(newValue);
 
-    function showModalAddProduct(action?: number, id = '') {
+        let loaiHangHoa: number | undefined = undefined;
+
+        switch (newValue) {
+            case 0:
+                loaiHangHoa = undefined; // hoặc null => tất cả
+                break;
+
+            case 1:
+                loaiHangHoa = LoaiHangHoa.HANG_HOA;
+                break;
+
+            case 2:
+                loaiHangHoa = LoaiHangHoa.DICH_VU;
+                break;
+
+            default:
+                loaiHangHoa = undefined;
+                break;
+        }
+
+        setFilterPageProduct((prev) => ({
+            ...prev,
+            currentPage: 1,
+            idLoaiHangHoa: loaiHangHoa
+        }));
+    };
+    function showModalAddProduct(action?: number, id = '', idLoaiHangHoa?: number) {
         setTriggerModalProduct((old) => {
             return {
                 ...old,
                 isShow: true,
                 isNew: Utils.checkNull(id),
-                id: id
+                id: id,
+                idLoaiHangHoa: idLoaiHangHoa
             };
         });
     }
@@ -564,146 +607,121 @@ const PageProduct = () => {
         }
         setCheckAllRow(isCheck);
     };
+    const handleOpenTheKho = (row: any) => {
+        setTheKhoData({
+            idHangHoa: row.idHangHoa,
+            tenHangHoa: row.tenHangHoa,
+            maHangHoa: row.maHangHoa
+        });
 
-    const columns: GridColDef[] = [
-        {
-            field: 'checkBox',
-            flex: 0.3,
-            sortable: false,
-            filterable: false,
-            disableColumnMenu: true,
-            renderHeader: () => {
-                return <Checkbox onChange={(e) => dataGrid_clickCheckAll(e.target.checked)} checked={checkAllRow} />;
+        setOpenTheKho(true);
+    };
+    const columns: GridColDef[] = React.useMemo(() => {
+        const baseColumns: GridColDef[] = [
+            {
+                field: 'checkBox',
+                flex: 0.3,
+                sortable: false,
+                filterable: false,
+                disableColumnMenu: true,
+                renderHeader: () => (
+                    <Checkbox onChange={(e) => dataGrid_clickCheckAll(e.target.checked)} checked={checkAllRow} />
+                ),
+                renderCell: (params) => (
+                    <Checkbox
+                        onChange={(e) => dataGrid_clickCheckOne(params.row.id, e.target.checked)}
+                        checked={rowSelectionModel.includes(params.row.id)}
+                    />
+                )
             },
-            renderCell: (params) => (
-                <Checkbox
-                    onChange={(e) => dataGrid_clickCheckOne(params.row.id, e.target.checked)}
-                    checked={rowSelectionModel.includes(params.row.id)}
-                />
-            )
-        },
-        {
-            field: 'maHangHoa',
-            headerName: 'Mã dịch vụ',
+            {
+                field: 'maHangHoa',
+                headerName: 'Mã dịch vụ',
+                minWidth: 100,
+                flex: 1
+            },
+            {
+                field: 'tenHangHoa',
+                headerName: 'Tên dịch vụ',
+                minWidth: 250
+            },
+            {
+                field: 'tenNhomHang',
+                headerName: 'Nhóm dịch vụ',
+                minWidth: 176,
+                flex: 1
+            },
+            {
+                field: 'giaBan',
+                headerName: 'Giá bán',
+                minWidth: 100,
+                flex: 1,
+                renderCell: (params) => (
+                    <Box display="flex" justifyContent="end" width="100%">
+                        {new Intl.NumberFormat('vi-VN').format(params.value)}
+                    </Box>
+                )
+            },
+            {
+                field: 'giaVon',
+                headerName: 'Giá vốn',
+                minWidth: 100,
+                flex: 1,
+                renderCell: (params) => (
+                    <Box display="flex" justifyContent="end" width="100%">
+                        {new Intl.NumberFormat('vi-VN').format(params.value)}
+                    </Box>
+                )
+            },
 
-            minWidth: 100,
-            flex: 1,
-            renderHeader: (params) => <Box component={'span'}>{params.colDef.headerName}</Box>
-        },
-        {
-            field: 'tenHangHoa',
-            headerName: 'Tên dịch vụ',
-            minWidth: 250,
-            renderHeader: (params) => <Box component={'span'}>{params.colDef.headerName}</Box>
-        },
-        {
-            field: 'tenNhomHang',
-            headerName: 'Nhóm dịch vụ',
-            minWidth: 176,
-            flex: 1,
-            renderHeader: (params) => <Box component={'span'}>{params.colDef.headerName}</Box>
-        },
-        {
-            field: 'giaBan',
-            headerName: 'Giá bán',
-            minWidth: 100,
-            flex: 1,
-            renderCell: (params) => (
-                <Box display="flex" justifyContent="end" width="100%">
-                    {new Intl.NumberFormat('vi-VN').format(params.value)}
-                </Box>
-            ),
-            renderHeader: (params) => <Box component={'span'}>{params.colDef.headerName}</Box>
-        },
-        {
-            field: 'giaVon',
-            headerName: 'Giá vốn',
-            minWidth: 100,
-            flex: 1,
-            renderCell: (params) => (
-                <Box display="flex" justifyContent="end" width="100%">
-                    {new Intl.NumberFormat('vi-VN').format(params.value)}
-                </Box>
-            ),
-            renderHeader: (params) => <Box component={'span'}>{params.colDef.headerName}</Box>
-        },
-        {
-            field: 'soPhutThucHien',
-            headerName: 'Thời gian (phút)',
-            minWidth: 128,
-            flex: 1,
-            renderCell: (params) => (
-                <Box display="flex" width="100%" justifyContent="end">
-                    <Typography variant="body2" color="#333233" marginLeft="9px" fontSize="12px">
-                        {params.value}
-                    </Typography>
-                </Box>
-            ),
-            renderHeader: (params) => <Box sx={{ fontWeight: '700' }}>{params.colDef.headerName}</Box>
-        },
-        {
-            field: 'txtTrangThaiHang',
-            headerName: 'Trạng thái',
-            headerAlign: 'center',
-            align: 'center',
-            minWidth: 130,
-            flex: 1,
-            renderCell: (params) => (
-                <Box
-                    className={
-                        params.row.trangThai === 1
-                            ? 'data-grid-cell-trangthai-active'
-                            : 'data-grid-cell-trangthai-notActive'
-                    }>
-                    {params.value || ''}
-                </Box>
-            ),
-            renderHeader: (params) => <Box component={'span'}>{params.colDef.headerName}</Box>
-        },
-        {
-            field: 'actions',
-            headerName: '#',
-            headerAlign: 'center',
-            maxWidth: 60,
-            flex: 1,
-            disableColumnMenu: true,
-            renderCell: (params) => (
-                <ActionRow2Button handleClickAction={(type: number) => doActionRow(type, params.row)} />
-            ),
+            {
+                field: 'txtTrangThaiHang',
+                headerName: 'Trạng thái',
+                minWidth: 130,
+                flex: 1
+            },
+            {
+                field: 'actions',
+                headerName: '#',
+                headerAlign: 'center',
+                maxWidth: 60,
+                disableColumnMenu: true,
+                renderCell: (params) => (
+                    <ActionRow2Button handleClickAction={(type: number) => doActionRow(type, params.row)} />
+                )
+            }
+        ];
 
-            // renderCell: (params) => (
-            //     <ActionViewEditDelete
-            //         lstOption={
-            //             [
-            //                 {
-            //                     id: '0',
-            //                     color: '#009EF7',
-            //                     icon: <Info sx={{ color: '#009EF7' }} />,
-            //                     text: 'Xem',
-            //                     isShow: true
-            //                 },
-            //                 {
-            //                     id: '1',
-            //                     text: 'Sửa',
-            //                     color: '#009EF7',
-            //                     icon: <Edit sx={{ color: '#009EF7' }} />,
-            //                     isShow: abpCustom.isGrandPermission('Pages.DM_HangHoa.Edit')
-            //                 },
-            //                 {
-            //                     id: '2',
-            //                     text: 'Xóa',
-            //                     color: '#F1416C',
-            //                     icon: <DeleteForever sx={{ color: '#F1416C' }} />,
-            //                     isShow: abpCustom.isGrandPermission('Pages.DM_HangHoa.Delete')
-            //                 }
-            //             ] as IList[]
-            //         }
-            //         handleAction={(action: any) => doActionRow(action, params.row)}
-            //     />
-            // ),
-            renderHeader: (params) => <Box component={'span'}>{params.colDef.headerName}</Box>
+        // 👉 CHỖ QUAN TRỌNG: condition column
+        if (filterPageProduct.idLoaiHangHoa === LoaiHangHoa.HANG_HOA) {
+            baseColumns.splice(
+                3,
+                0,
+                {
+                    field: 'soLuongTon',
+                    headerName: 'SL tồn',
+                    minWidth: 50,
+                    renderHeader: (params) => <Box component="span">{params.colDef.headerName}</Box>
+                },
+                {
+                    field: 'theKho',
+                    headerName: 'Thẻ kho',
+                    minWidth: 90,
+                    sortable: false,
+                    filterable: false,
+                    renderHeader: (params) => <Box component="span">{params.colDef.headerName}</Box>,
+                    renderCell: (params) => (
+                        <VisibilityOutlinedIcon
+                            style={{ cursor: 'pointer', fontSize: 18, color: '#1976d2' }}
+                            titleAccess="Xem thẻ kho"
+                            onClick={() => handleOpenTheKho(params.row)}
+                        />
+                    )
+                }
+            );
         }
-    ];
+        return baseColumns;
+    }, [filterPageProduct.idLoaiHangHoa, rowSelectionModel, checkAllRow]);
     const filterContent = (
         <Box
             className="page-box-left"
@@ -788,6 +806,7 @@ const PageProduct = () => {
         <>
             <ModalNhomHangHoa trigger={triggerModalNhomHang} handleSave={saveNhomHang}></ModalNhomHangHoa>
             <ModalHangHoa trigger={triggerModalProduct} handleSave={saveProduct}></ModalHangHoa>
+            <ModalTheKho open={openTheKho} onClose={() => setOpenTheKho(false)} data={theKhoData} />
             <ConfirmDelete
                 isShow={inforDeleteProduct.show}
                 title={inforDeleteProduct.title}
@@ -830,7 +849,7 @@ const PageProduct = () => {
                     <Grid container item xs={12} spacing={1} md={6} lg={6} alignItems="center">
                         <Grid container spacing={1} item alignItems="center">
                             <Grid item xs={6} sm={6} lg={4} md={4}>
-                                <span className="page-title"> Danh mục dịch vụ</span>
+                                <span className="page-title"> Danh mục hàng hóa, dịch vụ</span>
                             </Grid>
                             <Grid item xs={6} sm={6} lg={6} md={6}>
                                 <TextField
@@ -920,11 +939,61 @@ const PageProduct = () => {
                                 display: abpCustom.isGrandPermission('Pages.DM_HangHoa.Create') ? '' : 'none'
                             }}
                             startIcon={<Add />}
-                            onClick={() => showModalAddProduct()}>
+                            onClick={() => showModalAddProduct(undefined, '', 1)}>
+                            Thêm hàng hóa
+                        </Button>
+                        <Button
+                            size="small"
+                            variant="contained"
+                            className=" btn-container-hover"
+                            sx={{
+                                minWidth: '143px',
+                                fontSize: '14px',
+                                display: abpCustom.isGrandPermission('Pages.DM_HangHoa.Create') ? '' : 'none'
+                            }}
+                            startIcon={<Add />}
+                            onClick={() => showModalAddProduct(undefined, '', 2)}>
                             Thêm dịch vụ
                         </Button>
                     </Grid>
                 </Grid>
+                <Tabs
+                    value={tabValue}
+                    onChange={handleChangeTab}
+                    sx={{
+                        borderBottom: '1px solid rgba(0,0,0,0.12)',
+
+                        '& .MuiTab-root': {
+                            textTransform: 'none',
+                            minHeight: 42,
+                            gap: '4px',
+                            color: '#666'
+                        },
+
+                        '& .MuiTab-iconWrapper': {
+                            marginRight: '2px !important'
+                        },
+
+                        '& .MuiSvgIcon-root': {
+                            fontSize: 18,
+                            color: 'rgba(26, 25, 25, 0.45)'
+                        },
+
+                        '& .Mui-selected': {
+                            color: '#1976d2',
+                            fontWeight: 600
+                        },
+
+                        '& .Mui-selected .MuiSvgIcon-root': {
+                            color: '#1976d2' // tab active icon xanh
+                        }
+                    }}>
+                    <Tab icon={<AppsIcon />} iconPosition="start" label="Tất cả" />
+
+                    <Tab icon={<ShoppingCartIcon />} iconPosition="start" label="Hàng Hóa" />
+
+                    <Tab icon={<VerifiedIcon />} iconPosition="start" label="Dịch vụ" />
+                </Tabs>
                 <Grid container item spacing={2} paddingTop={1} columns={13}>
                     <Grid item lg={2} md={2} sm={3} xs={13} display={window.screen.width <= 600 ? 'none' : ''}>
                         {filterContent}

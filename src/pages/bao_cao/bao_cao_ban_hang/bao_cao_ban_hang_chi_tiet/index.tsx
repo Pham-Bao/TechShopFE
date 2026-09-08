@@ -77,7 +77,7 @@ export default function BaoCaoBanHangChiTiet({ onChangePage, onChangePageSize }:
         { columnId: 'ngayLapHoaDon', columnText: 'Ngày lập' },
         { columnId: 'tenKhachHang', columnText: 'Tên khách hàng' },
         { columnId: 'soDienThoai', columnText: 'Số điện thoại' },
-        { columnId: 'tenNhomHang', columnText: 'Tên nhóm DV' },
+        { columnId: 'noiDung', columnText: 'Nội Dung' },
         { columnId: 'maHangHoa', columnText: 'Mã dịch vụ' },
         { columnId: 'tenHangHoa', columnText: 'Tên dịch vụ' },
         { columnId: 'soLuong', columnText: 'Số lượng', align: 'center' },
@@ -173,8 +173,8 @@ export default function BaoCaoBanHangChiTiet({ onChangePage, onChangePageSize }:
                                             <TableCell
                                                 className="lableOverflow"
                                                 sx={{ maxWidth: 150 }}
-                                                title={row?.tenNhomHang}>
-                                                {row?.tenNhomHang}
+                                                title={row?.noiDung}>
+                                                {row?.noiDung}
                                             </TableCell>
                                             <TableCell sx={{ maxWidth: 150 }} title={row?.maHangHoa}>
                                                 {row?.maHangHoa}

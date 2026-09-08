@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useEffect, useRef, useState, useContext } from 'react';
-import { Box, Grid, TextField, IconButton, Button, SelectChangeEvent, Stack } from '@mui/material';
+import { Box, Grid, TextField, IconButton, Button, SelectChangeEvent, Stack, Tabs, Tab } from '@mui/material';
 import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
 
 import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
@@ -43,6 +43,11 @@ import uploadFileService from '../../../services/uploadFileService';
 import ButtonOnlyIcon from '../../../components/Button/ButtonOnlyIcon';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import BuildIcon from '@mui/icons-material/Build';
+import VerifiedIcon from '@mui/icons-material/Verified';
+import AppsIcon from '@mui/icons-material/Apps';
 const GiaoDichThanhToan: React.FC = () => {
     const today = new Date();
     const firstLoad = useRef(true);
@@ -61,7 +66,7 @@ const GiaoDichThanhToan: React.FC = () => {
     const [paramSearch, setParamSearch] = useState<HoaDonRequestDto>({
         textSearch: '',
         idChiNhanhs: [idChiNhanhCookies],
-        idLoaiChungTus: [LoaiChungTu.HOA_DON_BAN_LE],
+        idLoaiChungTus: [LoaiChungTu.HOA_DON_BAN_LE, LoaiChungTu.HOA_DON_SUA_CHUA, LoaiChungTu.HOA_DON_BAO_HANH],
         currentPage: 1,
         pageSize: AppConsts.pageOption[0].value,
         columnSort: 'NgayLapHoaDon',
@@ -147,7 +152,6 @@ const GiaoDichThanhToan: React.FC = () => {
         PageLoad();
     }, []);
 
-    // avoid call multiple GetListHoaDon
     const [prevItems, setPrevItems] = useState(paramSearch);
     if (paramSearch !== prevItems) {
         setPrevItems(paramSearch);
@@ -546,7 +550,43 @@ const GiaoDichThanhToan: React.FC = () => {
             }
         }
     ];
+    const [tabValue, setTabValue] = useState(0);
+    const handleChangeTab = (event: React.SyntheticEvent, newValue: number) => {
+        setTabValue(newValue);
 
+        let arrLoaiChungTu: number[] = [];
+
+        switch (newValue) {
+            case 0:
+                arrLoaiChungTu = [
+                    LoaiChungTu.HOA_DON_BAN_LE,
+                    LoaiChungTu.HOA_DON_SUA_CHUA,
+                    LoaiChungTu.HOA_DON_BAO_HANH
+                ];
+                break;
+
+            case 1:
+                arrLoaiChungTu = [LoaiChungTu.HOA_DON_BAN_LE];
+                break;
+
+            case 2:
+                arrLoaiChungTu = [LoaiChungTu.HOA_DON_SUA_CHUA];
+                break;
+
+            case 3:
+                arrLoaiChungTu = [LoaiChungTu.HOA_DON_BAO_HANH];
+                break;
+
+            default:
+                break;
+        }
+
+        setParamSearch((prev) => ({
+            ...prev,
+            currentPage: 1,
+            idLoaiChungTus: arrLoaiChungTu
+        }));
+    };
     const [anchorElFilter, setAnchorElFilter] = useState<SVGSVGElement | null>(null);
     const ApplyFilter = (paramFilter: HoaDonRequestDto) => {
         setAnchorElFilter(null);
@@ -676,7 +716,45 @@ const GiaoDichThanhToan: React.FC = () => {
                         </Box>
                     </Grid>
                 </Grid>
+                <Tabs
+                    value={tabValue}
+                    onChange={handleChangeTab}
+                    sx={{
+                        borderBottom: '1px solid rgba(0,0,0,0.12)',
 
+                        '& .MuiTab-root': {
+                            textTransform: 'none',
+                            minHeight: 42,
+                            gap: '4px',
+                            color: '#666'
+                        },
+
+                        '& .MuiTab-iconWrapper': {
+                            marginRight: '2px !important'
+                        },
+
+                        '& .MuiSvgIcon-root': {
+                            fontSize: 18,
+                            color: 'rgba(26, 25, 25, 0.45)'
+                        },
+
+                        '& .Mui-selected': {
+                            color: '#1976d2',
+                            fontWeight: 600
+                        },
+
+                        '& .Mui-selected .MuiSvgIcon-root': {
+                            color: '#1976d2' // tab active icon xanh
+                        }
+                    }}>
+                    <Tab icon={<AppsIcon />} iconPosition="start" label="Tất cả" />
+
+                    <Tab icon={<ShoppingCartIcon />} iconPosition="start" label="HD bán" />
+
+                    <Tab icon={<BuildIcon />} iconPosition="start" label="HD sửa" />
+
+                    <Tab icon={<VerifiedIcon />} iconPosition="start" label="HD bảo hành" />
+                </Tabs>
                 {rowSelectionModel.length > 0 && (
                     <div style={{ marginTop: '24px' }}>
                         <ActionRowSelect

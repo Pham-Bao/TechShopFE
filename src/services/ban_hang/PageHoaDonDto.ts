@@ -8,6 +8,7 @@ import { LoaiChungTu } from '../../lib/appconst';
 export default class PageHoaDonDto extends HoaDonDto {
     maKhachHang = '';
     tenKhachHang = '';
+    tenHangHoa = '';
     soDienThoai!: string;
     nhomKhach!: string;
     tongTichDiem = 0;
@@ -39,6 +40,7 @@ export default class PageHoaDonDto extends HoaDonDto {
         idChiNhanh = '',
         maKhachHang = '',
         tenKhachHang = '',
+        tenHangHoa = '',
         soDienThoai = '',
         tongTichDiem = 0,
         txtTrangThaiHD = 'Hoàn thành',
@@ -67,6 +69,7 @@ export default class PageHoaDonDto extends HoaDonDto {
         });
         this.maKhachHang = maKhachHang;
         this.tenKhachHang = tenKhachHang;
+        this.tenHangHoa = tenHangHoa;
         this.soDienThoai = soDienThoai;
         this.tongTichDiem = tongTichDiem;
         this.txtTrangThaiHD = txtTrangThaiHD;

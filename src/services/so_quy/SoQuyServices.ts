@@ -132,24 +132,6 @@ class SoQuyServices {
             tenKhachHang: ''
         }
     }): Promise<QuyHoaDonDto | null> => {
-        // console.log('Input Parameters:');
-        // console.log('phaiTT:', phaiTT);
-        // console.log('tienDiem:', tienDiem);
-        // console.log('tienmat hjhj:', tienmat);
-        // console.log('tienPOS:', tienPOS);
-        // console.log('tienCK:', tienCK);
-        // console.log('thegiatri:', thegiatri);
-        // console.log('tiencoc:', tiencoc);
-        // console.log('maPhieuThu:', maPhieuThu);
-        // console.log('idQuyHDhjj:', idQuyHD);
-        // console.log('idChiNhanh:', idChiNhanh);
-        // console.log('idLoaiChungTu:', idLoaiChungTu);
-        // console.log('idTaiKhoanChuyenKhoan:', idTaiKhoanChuyenKhoan);
-        // console.log('idTaiKhoanPOS:', idTaiKhoanPOS);
-        // console.log('noiDungThu:', noiDungThu);
-        // console.log('hachToanKinhDoanh:', hachToanKinhDoanh);
-        // console.log('ngayLapHoaDon:', ngayLapHoaDon);
-        // console.log('hoadon:', hoadon);
         const lstQuyCT_After: QuyChiTietDto[] = [];
         const shareMoney = this.ShareMoney_QuyHD({
             phaiTT: phaiTT,
@@ -394,17 +376,16 @@ class SoQuyServices {
         let tienMat = 0,
             tienPos = 0,
             tienCK = 0;
-        let idTaiKhoanPos = null,
-            idTaiKhoanCK = null;
+        let idTaiKhoanPos: string | null = null;
+        let idTaiKhoanCK: string | null = null;
         const itemPos = lstQuyCT.filter((x: QuyChiTietDto) => x.hinhThucThanhToan === HINH_THUC_THANH_TOAN.QUYET_THE);
         const itemCK = lstQuyCT.filter((x: QuyChiTietDto) => x.hinhThucThanhToan === HINH_THUC_THANH_TOAN.CHUYEN_KHOAN);
         if (itemPos.length > 0) {
-            idTaiKhoanPos = itemPos[0].idTaiKhoanNganHang;
+            idTaiKhoanPos = itemPos[0].idTaiKhoanNganHang ?? null;
         }
         if (itemCK.length > 0) {
-            idTaiKhoanCK = itemCK[0].idTaiKhoanNganHang;
+            idTaiKhoanCK = itemCK[0].idTaiKhoanNganHang ?? null;
         }
-
         for (let i = 0; i < lstQuyCT.length; i++) {
             const itFor = lstQuyCT[i];
             switch (itFor.hinhThucThanhToan) {

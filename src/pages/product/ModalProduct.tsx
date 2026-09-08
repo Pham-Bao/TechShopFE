@@ -76,51 +76,59 @@ const ModalHangHoa = ({ handleSave, trigger }: any) => {
     const showModal = async (id: string) => {
         if (id) {
             const obj = await ProductService.GetDetailProduct(id);
+
+            obj.laHangHoa = obj.idLoaiHangHoa === 1;
+            obj.tenLoaiHangHoa = obj.idLoaiHangHoa === 1 ? 'Hàng hóa' : 'Dịch vụ';
+
             setProduct(obj);
             setInforOldProduct(obj);
 
-            setProduct((old: ModelHangHoaDto) => {
-                return {
-                    ...old,
-                    laHangHoa: old.idLoaiHangHoa === 1
-                };
-            });
+            // tìm nhóm hàng
+            const nhom = nhomHangHoaStore.listAllNhomHang?.filter((x) => x.id === obj.idNhomHangHoa);
 
-            // find nhomhang
-            const nhom = nhomHangHoaStore.listAllNhomHang?.filter((x) => x.id == obj.idNhomHangHoa);
             if (nhom.length > 0) {
                 setNhomChosed(nhom[0]);
             } else {
                 setNhomChosed(null);
             }
 
-            // get image (from imgur)
+            // ảnh
             const imgur_image = ImgurAPI.GetInforImage_fromDataImage(obj.image ?? '');
-            setImgur_imageId(imgur_image?.id);
+
+            setImgur_imageId(imgur_image?.id ?? '');
 
             const imgData = await ImgurAPI.GetFile_fromId(imgur_image?.id ?? '');
+
             setProductImage(imgData?.link ?? '');
         } else {
-            setProduct(new ModelHangHoaDto());
-            setProductImage('');
+            const idLoaiHangHoa = trigger.idLoaiHangHoa ?? 2;
 
-            if (trigger.item.idNhomHangHoa !== undefined) {
-                const nhom = nhomHangHoaStore.listAllNhomHang?.filter((x) => x.id == trigger.item.idNhomHangHoa);
-                if (nhom.length > 0) {
-                    setNhomChosed(nhom[0]);
-                    setProduct((old: ModelHangHoaDto) => {
-                        return {
-                            ...old,
-                            idNhomHangHoa: nhom[0].id,
-                            tenNhomHang: nhom[0].tenNhomHang
-                        };
-                    });
+            const obj = new ModelHangHoaDto(utils.GuidEmpty, idLoaiHangHoa);
+
+            obj.idLoaiHangHoa = idLoaiHangHoa;
+            obj.laHangHoa = idLoaiHangHoa === 1;
+            obj.tenLoaiHangHoa = idLoaiHangHoa === 1 ? 'Hàng hóa' : 'Dịch vụ';
+
+            obj.trangThai = 1;
+
+            // nếu mở từ nhóm hàng
+            if (trigger?.item?.idNhomHangHoa) {
+                const nhom = nhomHangHoaStore.listAllNhomHang?.find((x) => x.id === trigger.item.idNhomHangHoa);
+
+                if (nhom) {
+                    obj.idNhomHangHoa = nhom.id;
+                    obj.tenNhomHang = nhom.tenNhomHang;
+
+                    setNhomChosed(nhom);
                 } else {
                     setNhomChosed(null);
                 }
             } else {
                 setNhomChosed(null);
             }
+
+            setProduct(obj);
+            setProductImage('');
         }
     };
 
@@ -529,71 +537,78 @@ const ModalHangHoa = ({ handleSave, trigger }: any) => {
                                         onClick={() => showModalAddNhomHang()}
                                     />
                                 </Stack>
-                                <NumericFormat
-                                    size="small"
-                                    fullWidth
-                                    label="Giá bán"
-                                    value={product.giaBan}
-                                    thousandSeparator={'.'}
-                                    decimalSeparator={','}
-                                    customInput={TextField}
-                                    onChange={(event) => editGiaBan(event)}
-                                />
-                                <NumericFormat
-                                    size="small"
-                                    fullWidth
-                                    label="Giá vốn"
-                                    value={product.giaVon}
-                                    thousandSeparator={'.'}
-                                    decimalSeparator={','}
-                                    customInput={TextField}
-                                    onChange={(event) => editGiaVon(event)}
-                                />
+                                <Box display="flex" gap={2}>
+                                    <NumericFormat
+                                        size="small"
+                                        fullWidth
+                                        label="Giá bán"
+                                        value={product.giaBan}
+                                        thousandSeparator="."
+                                        decimalSeparator=","
+                                        customInput={TextField}
+                                        onChange={(event) => editGiaBan(event)}
+                                    />
+
+                                    <NumericFormat
+                                        size="small"
+                                        fullWidth
+                                        label="Giá vốn"
+                                        value={product.giaVon}
+                                        thousandSeparator="."
+                                        decimalSeparator=","
+                                        customInput={TextField}
+                                        onChange={(event) => editGiaVon(event)}
+                                    />
+                                </Box>
                             </Stack>
                         </Grid>
                     </Grid>
                     <Grid container>
+                        {product.idLoaiHangHoa !== 1 && (
+                            <>
+                                <Grid item xs={0} sm={4} md={4} lg={4}></Grid>
+
+                                <Grid item xs={12} sm={8} md={8} lg={8} paddingTop={2} pl={{ sm: 0, md: 0.5 }}>
+                                    <TextField
+                                        variant="outlined"
+                                        size="small"
+                                        fullWidth
+                                        label="Số phút thực hiện"
+                                        placeholder="0"
+                                        type="number"
+                                        value={product.soPhutThucHien}
+                                        onChange={(event) =>
+                                            setProduct((itemOlds) => ({
+                                                ...itemOlds,
+                                                soPhutThucHien: event.target.value
+                                            }))
+                                        }
+                                    />
+                                </Grid>
+                            </>
+                        )}
+
                         <Grid item xs={0} sm={4} md={4} lg={4}></Grid>
-                        <Grid item xs={12} sm={8} md={8} lg={8} paddingTop={2} pl={{ sm: 0, md: 0.5 }}>
-                            <TextField
-                                variant="outlined"
-                                size="small"
-                                fullWidth
-                                label="Số phút thực hiện"
-                                placeholder="0"
-                                type="number"
-                                value={product.soPhutThucHien}
-                                onChange={(event) =>
-                                    setProduct((itemOlds) => {
-                                        return {
-                                            ...itemOlds,
-                                            soPhutThucHien: event.target.value
-                                        };
-                                    })
-                                }
-                            />
-                        </Grid>
-                        <Grid item xs={0} sm={4} md={4} lg={4}></Grid>
+
                         <Grid item xs={12} sm={8} md={8} lg={8} paddingTop={2} pl={{ sm: 0, md: 0.5 }}>
                             <TextField
                                 variant="outlined"
                                 fullWidth
                                 multiline
-                                rows="2"
+                                rows={2}
                                 label="Ghi chú"
                                 value={product?.moTa ?? ''}
                                 onChange={(event) =>
-                                    setProduct((itemOlds) => {
-                                        return {
-                                            ...itemOlds,
-                                            moTa: event.target.value
-                                        };
-                                    })
+                                    setProduct((itemOlds) => ({
+                                        ...itemOlds,
+                                        moTa: event.target.value
+                                    }))
                                 }
                             />
                         </Grid>
+
                         <Grid item xs={12}>
-                            <Grid item xs={12} sm={12} md={12} lg={12} style={{ display: 'none' }}>
+                            <Grid item xs={12} sm={12} md={12} lg={12} sx={{ display: 'none' }}>
                                 <FormGroup>
                                     <FormControlLabel
                                         control={
@@ -601,16 +616,12 @@ const ModalHangHoa = ({ handleSave, trigger }: any) => {
                                                 size="small"
                                                 checked={product.laHangHoa}
                                                 onChange={(event) => {
-                                                    setProduct((olds: ModelHangHoaDto) => {
-                                                        return {
-                                                            ...olds,
-                                                            laHangHoa: event.target.checked,
-                                                            idLoaiHangHoa: event.target.checked ? 2 : 1,
-                                                            tenLoaiHangHoa: event.target.checked
-                                                                ? 'hàng hóa'
-                                                                : 'dịch vụ'
-                                                        };
-                                                    });
+                                                    setProduct((olds: ModelHangHoaDto) => ({
+                                                        ...olds,
+                                                        laHangHoa: event.target.checked,
+                                                        idLoaiHangHoa: event.target.checked ? 2 : 1,
+                                                        tenLoaiHangHoa: event.target.checked ? 'hàng hóa' : 'dịch vụ'
+                                                    }));
                                                 }}
                                                 sx={{
                                                     color: '#7C3367',

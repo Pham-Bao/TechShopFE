@@ -55,6 +55,7 @@ import { useRef, useContext } from 'react';
 import { AppContext } from '../../../services/chi_nhanh/ChiNhanhContext';
 import AppConsts, { DateType, LoaiChungTu } from '../../../lib/appconst';
 import { TrangThaiHoaDon } from '../../../services/ban_hang/HoaDonConst';
+import TabThanhToan from './TabThanhToan';
 
 export interface IScreenCustomerInfor {
     khachHangId?: string;
@@ -317,7 +318,7 @@ const CustomerInfor2 = ({ khachHangId, onClose }: IScreenCustomerInfor) => {
                 }
             />
             <Grid container paddingTop={2} spacing={1}>
-                <Grid item xs={12} md={4} lg={4} sx={{ position: 'relative' }}>
+                <Grid item xs={12} md={3} lg={3} sx={{ position: 'relative' }}>
                     <Stack
                         padding={2}
                         spacing={2}
@@ -405,16 +406,7 @@ const CustomerInfor2 = ({ khachHangId, onClose }: IScreenCustomerInfor) => {
                                 <Grid item xs={7} lg={8}>
                                     <Typography variant="body2">{cusEdit?.tenNhomKhach}</Typography>
                                 </Grid>
-                                <Grid item xs={5} lg={4}>
-                                    <Typography variant="body2" fontWeight={600}>
-                                        Số dư thẻ giá trị
-                                    </Typography>
-                                </Grid>
-                                <Grid item xs={7} lg={8}>
-                                    <Typography variant="body2">
-                                        {new Intl.NumberFormat('vi-VN').format(soDuTheGiaTri)} đ
-                                    </Typography>{' '}
-                                </Grid>
+
                                 <Grid item xs={12}>
                                     <Stack spacing={1} direction={'row'} justifyContent={'center'}>
                                         <Button
@@ -509,7 +501,7 @@ const CustomerInfor2 = ({ khachHangId, onClose }: IScreenCustomerInfor) => {
                         </Stack>
                     </Stack>
                 </Grid>
-                <Grid item xs={12} md={8} lg={8}>
+                <Grid item xs={12} md={9} lg={9}>
                     <Stack padding={2} className="page-full" sx={{ border: '1px solid #cccc', borderRadius: '4px' }}>
                         <TabContext value={tabActive}>
                             <Grid container alignItems={'center'}>
@@ -522,38 +514,8 @@ const CustomerInfor2 = ({ khachHangId, onClose }: IScreenCustomerInfor) => {
                                             gap: 1
                                         }}>
                                         <Tab
-                                            label="Gói dịch vụ"
+                                            label="Mua hàng"
                                             value="1"
-                                            sx={{
-                                                padding: '4px 8px',
-                                                fontSize: { xs: '12px', sm: '13px' },
-                                                minWidth: '70px',
-                                                textTransform: 'none'
-                                            }}
-                                        />
-                                        <Tab
-                                            label="Nhật ký gói"
-                                            value="2"
-                                            sx={{
-                                                padding: '4px 8px',
-                                                fontSize: { xs: '9px', sm: '13px' },
-                                                minWidth: '70px',
-                                                textTransform: 'none'
-                                            }}
-                                        />
-                                        <Tab
-                                            label="Thẻ giá trị"
-                                            value="7"
-                                            sx={{
-                                                padding: '4px 8px',
-                                                fontSize: { xs: '9px', sm: '13px' },
-                                                minWidth: '70px',
-                                                textTransform: 'none'
-                                            }}
-                                        />
-                                        <Tab
-                                            label="Nhật ký thẻ giá trị"
-                                            value="3"
                                             sx={{
                                                 padding: '4px 8px',
                                                 fontSize: { xs: '9px', sm: '13px' },
@@ -563,7 +525,7 @@ const CustomerInfor2 = ({ khachHangId, onClose }: IScreenCustomerInfor) => {
                                         />
                                         <Tab
                                             label="Cuộc hẹn"
-                                            value="4"
+                                            value="2"
                                             sx={{
                                                 padding: '4px 8px',
                                                 fontSize: { xs: '9px', sm: '13px' },
@@ -572,18 +534,8 @@ const CustomerInfor2 = ({ khachHangId, onClose }: IScreenCustomerInfor) => {
                                             }}
                                         />
                                         <Tab
-                                            label="Mua hàng"
-                                            value="5"
-                                            sx={{
-                                                padding: '4px 8px',
-                                                fontSize: { xs: '9px', sm: '13px' },
-                                                minWidth: '80px',
-                                                textTransform: 'none'
-                                            }}
-                                        />
-                                        <Tab
-                                            label="Ảnh liệu trình"
-                                            value="6"
+                                            label="Đã trả"
+                                            value="3"
                                             sx={{
                                                 padding: '4px 8px',
                                                 fontSize: { xs: '9px', sm: '13px' },
@@ -608,301 +560,13 @@ const CustomerInfor2 = ({ khachHangId, onClose }: IScreenCustomerInfor) => {
                                 </Grid>
                             </Grid>
                             <TabPanel value="1" sx={{ padding: 0 }}>
-                                <Grid container>
-                                    <Grid item xs={12}>
-                                        <RadioGroup
-                                            row
-                                            value={paramSearch?.trangThais?.[0]}
-                                            onChange={(e) =>
-                                                setParamSearch({
-                                                    ...paramSearch,
-                                                    trangThais: [parseInt(e.target.value)]
-                                                })
-                                            }>
-                                            {arrTrangThai?.map((x, index) => (
-                                                <FormControlLabel
-                                                    key={index}
-                                                    label={x.text}
-                                                    value={x.value}
-                                                    control={<Radio />}></FormControlLabel>
-                                            ))}
-                                        </RadioGroup>
-                                    </Grid>
-                                    <Grid item xs={12}>
-                                        <TextField
-                                            size="small"
-                                            variant="outlined"
-                                            placeholder="Tìm kiếm mã gói dịch vụ, tên dịch vụ"
-                                            fullWidth
-                                            InputProps={{ startAdornment: <SearchOutlinedIcon /> }}
-                                            onChange={(e) =>
-                                                setParamSearch({ ...paramSearch, textSearch: e.target.value })
-                                            }
-                                        />
-                                    </Grid>
-                                    <Grid
-                                        container
-                                        sx={{
-                                            backgroundColor: ' var(--color-header-table)'
-                                        }}
-                                        className="grid-table grid-table-header">
-                                        <Grid item xs={1.5}>
-                                            <Typography variant="body2">Mã DV</Typography>
-                                        </Grid>
-                                        <Grid item xs={4}>
-                                            <Typography variant="body2">Tên dịch vụ</Typography>
-                                        </Grid>
-                                        <Grid item xs={1}>
-                                            <Typography variant="body2">Số lượng</Typography>
-                                        </Grid>
-                                        <Grid item xs={1}>
-                                            <Typography variant="body2">Đơn giá</Typography>
-                                        </Grid>
-                                        <Grid item xs={2}>
-                                            <Typography variant="body2">Thành tiền</Typography>
-                                        </Grid>
-                                        <Grid item xs={1}>
-                                            <Typography variant="body2">Sử dụng</Typography>
-                                        </Grid>
-
-                                        <Grid item xs={1}>
-                                            <Typography variant="body2">Còn lại</Typography>
-                                        </Grid>
-                                        <Grid item xs={0.5}>
-                                            <Checkbox onChange={(e) => changeCheckAll(e.target.checked)} />
-                                        </Grid>
-                                    </Grid>
-                                    <Grid container style={{ overflow: 'auto', maxHeight: '60vh' }}>
-                                        {lstChiTietGDV?.map((x, index) => (
-                                            <Grid item xs={12} key={index}>
-                                                <Grid container sx={{ backgroundColor: 'var(--color-bg)' }}>
-                                                    <Grid item xs={12} padding={1}>
-                                                        <Stack
-                                                            spacing={2}
-                                                            direction="row"
-                                                            alignItems="center"
-                                                            justifyContent={'center'}>
-                                                            <Typography> {x?.maHoaDon}</Typography>
-                                                            <Typography>
-                                                                {' - '}
-                                                                {format(new Date(x?.ngayLapHoaDon), 'dd/MM/yyyy')}
-                                                            </Typography>
-                                                        </Stack>
-                                                    </Grid>
-                                                </Grid>
-                                                {x?.chitiets?.map((ct, index) => (
-                                                    <div key={index}>
-                                                        <Grid container className="grid-table grid-content">
-                                                            <Grid item xs={1.5} textAlign={'center'}>
-                                                                <Typography variant="body2">
-                                                                    {' '}
-                                                                    {ct?.maHangHoa}
-                                                                </Typography>
-                                                            </Grid>
-                                                            <Grid item xs={4}>
-                                                                <Typography variant="body2">
-                                                                    {' '}
-                                                                    {ct?.tenHangHoa}
-                                                                </Typography>
-                                                            </Grid>
-                                                            <Grid item xs={1} textAlign={'center'}>
-                                                                <Typography variant="body2">
-                                                                    {' '}
-                                                                    {ct?.soLuongMua}
-                                                                </Typography>
-                                                            </Grid>
-                                                            <Grid item xs={1} textAlign={'center'}>
-                                                                <Typography variant="body2">
-                                                                    {' '}
-                                                                    {new Intl.NumberFormat('vi-VN').format(
-                                                                        ct?.donGiaSauCK ?? 0
-                                                                    )}
-                                                                </Typography>
-                                                            </Grid>
-                                                            <Grid item xs={2} textAlign={'center'}>
-                                                                <Typography variant="body2">
-                                                                    {new Intl.NumberFormat('vi-VN').format(
-                                                                        ct?.thanhTienSauCK ?? 0
-                                                                    )}
-                                                                </Typography>
-                                                            </Grid>
-                                                            <Grid item xs={1} textAlign={'center'}>
-                                                                <Typography variant="body2">
-                                                                    {' '}
-                                                                    {ct?.soLuongDung}
-                                                                </Typography>
-                                                            </Grid>
-                                                            <Grid item xs={1} textAlign={'center'}>
-                                                                <Typography variant="body2">
-                                                                    {' '}
-                                                                    {ct?.soLuongConLai}
-                                                                </Typography>
-                                                            </Grid>
-                                                            <Grid item xs={0.5} textAlign={'center'}>
-                                                                <Checkbox
-                                                                    onChange={(e) => choseItem(e.target.checked, ct)}
-                                                                    checked={arrIdChiTietChosed?.includes(
-                                                                        ct?.idChiTietHoaDon
-                                                                    )}
-                                                                />
-                                                            </Grid>
-                                                        </Grid>
-                                                    </div>
-                                                ))}
-                                            </Grid>
-                                        ))}
-                                    </Grid>
-                                </Grid>{' '}
-                            </TabPanel>
-                            <TabPanel value="2" sx={{ padding: 0 }}>
-                                <TabNhatKySuDungGDV idCustomer={khachHangId ?? ''} />
-                            </TabPanel>
-                            <TabPanel value="3" sx={{ padding: 0 }}>
-                                <PageBCNhatKySuDungTGTTGT
-                                    onChangePage={handlePageChange}
-                                    onChangePageSize={changePageSize}
-                                    maKhachHang={cusEdit.maKhachHang}
-                                    onUpdateBalance={handleUpdateBalance}
-                                />{' '}
-                            </TabPanel>
-                            <TabPanel value="4" sx={{ padding: 0 }}>
-                                <TabCuocHen khachHangId={khachHangId} />
-                            </TabPanel>
-                            <TabPanel value="5" sx={{ padding: 0 }}>
                                 <TabMuaHang khachHangId={khachHangId} />
                             </TabPanel>
-                            <TabPanel value="6" sx={{ padding: 0 }}>
-                                <TabAnhLieuTrinh khachHangId={khachHangId ?? ''} />
+                            <TabPanel value="2" sx={{ padding: 0 }}>
+                                <TabCuocHen khachHangId={khachHangId} />
                             </TabPanel>
-                            <TabPanel value="7">
-                                <Grid item lg={12} md={12} sm={12} width="100%">
-                                    <Stack className="page-box-right">
-                                        <TableContainer>
-                                            <Table>
-                                                <TableHead>
-                                                    <TableRow>
-                                                        {listColumnHeader.map((header) => (
-                                                            <TableCell
-                                                                key={header.columnId}
-                                                                align={header.align || 'left'}
-                                                                sx={{ whiteSpace: 'nowrap' }} // Ngăn chữ xuống dòng
-                                                            >
-                                                                {header.columnText}
-                                                            </TableCell>
-                                                        ))}
-                                                    </TableRow>
-                                                </TableHead>
-                                                <TableBody>
-                                                    {pageDataHoaDon.items.length > 0 ? (
-                                                        pageDataHoaDon.items.map((row, index) => (
-                                                            <TableRow key={index}>
-                                                                <TableCell>{row.maHoaDon}</TableCell>
-                                                                <TableCell>
-                                                                    {format(new Date(row.ngayLapHoaDon), 'dd/MM/yyyy')}
-                                                                </TableCell>
-                                                                <TableCell>{row.maKhachHang}</TableCell>
-                                                                <TableCell>{row.soDienThoai}</TableCell>
-                                                                <TableCell>{row.tenKhachHang}</TableCell>
-                                                                <TableCell align="right">
-                                                                    {new Intl.NumberFormat('vi-VN').format(
-                                                                        row.tongTienHang || 0
-                                                                    )}
-                                                                </TableCell>
-                                                                <TableCell align="right">
-                                                                    {new Intl.NumberFormat('vi-VN').format(
-                                                                        row.tongGiamGiaHD || 0
-                                                                    )}
-                                                                </TableCell>
-                                                                <TableCell align="right">
-                                                                    {new Intl.NumberFormat('vi-VN').format(
-                                                                        row.tongThanhToan || 0
-                                                                    )}
-                                                                </TableCell>
-                                                                <TableCell align="right">
-                                                                    {new Intl.NumberFormat('vi-VN').format(
-                                                                        row.daThanhToan || 0
-                                                                    )}
-                                                                </TableCell>
-                                                                <TableCell align="right">
-                                                                    {new Intl.NumberFormat('vi-VN').format(
-                                                                        row.conNo || 0
-                                                                    )}
-                                                                </TableCell>
-                                                                <TableCell>{row.ghiChuHD}</TableCell>
-                                                            </TableRow>
-                                                        ))
-                                                    ) : (
-                                                        <TableRow>
-                                                            <TableCell colSpan={listColumnHeader.length} align="center">
-                                                                Không có dữ liệu
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    )}
-                                                </TableBody>
-                                                {pageDataHoaDon.totalCount > 0 && (
-                                                    <TableFooter>
-                                                        {(() => {
-                                                            const totals = pageDataHoaDon.items.reduce(
-                                                                (acc, curr) => {
-                                                                    acc.tongTienHang += curr.tongTienHang || 0;
-                                                                    acc.tongGiamGiaHD += curr.tongGiamGiaHD || 0;
-                                                                    acc.tongThanhToan += curr.tongThanhToan || 0;
-                                                                    acc.daThanhToan += curr.daThanhToan || 0;
-                                                                    acc.conNo += curr.conNo || 0;
-                                                                    return acc;
-                                                                },
-                                                                {
-                                                                    tongTienHang: 0,
-                                                                    tongGiamGiaHD: 0,
-                                                                    tongThanhToan: 0,
-                                                                    daThanhToan: 0,
-                                                                    conNo: 0
-                                                                }
-                                                            );
-
-                                                            return (
-                                                                <TableRow>
-                                                                    <TableCell
-                                                                        colSpan={5}
-                                                                        align="right"
-                                                                        style={{ fontWeight: 'bold' }}>
-                                                                        Tổng:
-                                                                    </TableCell>
-                                                                    <TableCell align="right">
-                                                                        {new Intl.NumberFormat('vi-VN').format(
-                                                                            totals.tongTienHang
-                                                                        )}
-                                                                    </TableCell>
-                                                                    <TableCell align="right">
-                                                                        {new Intl.NumberFormat('vi-VN').format(
-                                                                            totals.tongGiamGiaHD
-                                                                        )}
-                                                                    </TableCell>
-                                                                    <TableCell align="right">
-                                                                        {new Intl.NumberFormat('vi-VN').format(
-                                                                            totals.tongThanhToan
-                                                                        )}
-                                                                    </TableCell>
-                                                                    <TableCell align="right">
-                                                                        {new Intl.NumberFormat('vi-VN').format(
-                                                                            totals.daThanhToan
-                                                                        )}
-                                                                    </TableCell>
-                                                                    <TableCell align="right">
-                                                                        {new Intl.NumberFormat('vi-VN').format(
-                                                                            totals.conNo
-                                                                        )}
-                                                                    </TableCell>
-                                                                    <TableCell align="right"></TableCell>
-                                                                </TableRow>
-                                                            );
-                                                        })()}
-                                                    </TableFooter>
-                                                )}
-                                            </Table>
-                                        </TableContainer>
-                                    </Stack>
-                                </Grid>
+                            <TabPanel value="3" sx={{ padding: 0 }}>
+                                <TabThanhToan khachHangId={khachHangId} />
                             </TabPanel>
                         </TabContext>
                     </Stack>

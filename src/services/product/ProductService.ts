@@ -5,6 +5,7 @@ import Utils from '../../utils/utils';
 import { IFileDto } from '../dto/FileDto';
 import { FileUpload } from '../dto/FileUpload';
 import { aW } from '@fullcalendar/core/internal-common';
+import { DM_TheKhoDto, DM_TheKhoViewDto } from '../the_kho/dto';
 
 class ProductService {
     CheckExistsMaHangHoa = async (maHangHoa: string, id?: string) => {
@@ -59,6 +60,14 @@ class ProductService {
     Get_DMHangHoa = async (input: PagedProductSearchDto): Promise<PagedResultDto<ModelHangHoaDto>> => {
         const xx = await http
             .post(`api/services/app/HangHoa/GetDMHangHoa`, input)
+            .then((res: { data: { result: any } }) => {
+                return res.data.result;
+            });
+        return xx;
+    };
+    Get_DMHangHoaTheKho = async (idHangHoa: string): Promise<PagedResultDto<DM_TheKhoDto>> => {
+        const xx = await http
+            .post(`api/services/app/HangHoa/GetDMHangHoaTheKho`, idHangHoa)
             .then((res: { data: { result: any } }) => {
                 return res.data.result;
             });
@@ -149,8 +158,14 @@ class ProductService {
         return xx;
     };
     GetIphoneConnectPC = async () => {
-        const res = await http.get('api/services/app/Iphone/GetIphoneInfo');
-        return res.data.result;
+        try {
+            const res = await fetch('http://localhost:6789/api/iphone/info');
+            const data = await res.json();
+            return data;
+        } catch (error) {
+            console.error('GetIphoneConnectPC error:', error);
+            return null;
+        }
     };
 }
 export default new ProductService();

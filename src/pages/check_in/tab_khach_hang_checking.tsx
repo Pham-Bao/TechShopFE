@@ -116,7 +116,6 @@ export default function TabKhachHangChecking(props: IPropsTabKhachHangCheckIn) {
     }, [txtSearch]);
 
     const addHoaDon = async (cusItem: PageKhachHangCheckInDto) => {
-        console.log(cusItem?.idHangHoa);
         onClickAddHoaDon(cusItem?.idKhachHang ?? '', cusItem?.idCheckIn ?? '', cusItem?.idHangHoa ?? '');
     };
 
@@ -323,7 +322,7 @@ export default function TabKhachHangChecking(props: IPropsTabKhachHangCheckIn) {
 
                                     <Stack direction="row" alignItems="center" justifyContent="space-between">
                                         <Stack direction="column" spacing={0.2}>
-                                            {cusItem?.loaiHoaDon !== LoaiChungTu.GOI_DICH_VU ? (
+                                            {cusItem?.loaiHoaDon !== LoaiChungTu.HOA_DON_SUA_CHUA ? (
                                                 <Typography
                                                     sx={{
                                                         color: '#1976d2',
@@ -332,7 +331,7 @@ export default function TabKhachHangChecking(props: IPropsTabKhachHangCheckIn) {
                                                             cursor: 'pointer'
                                                         }
                                                     }}>
-                                                    Hóa đơn sửa
+                                                    Hóa đơn bán
                                                 </Typography>
                                             ) : (
                                                 <Typography
@@ -343,7 +342,7 @@ export default function TabKhachHangChecking(props: IPropsTabKhachHangCheckIn) {
                                                             cursor: 'pointer'
                                                         }
                                                     }}>
-                                                    Gói dịch vụ
+                                                    Hóa đơn sửa chữa
                                                 </Typography>
                                             )}
 

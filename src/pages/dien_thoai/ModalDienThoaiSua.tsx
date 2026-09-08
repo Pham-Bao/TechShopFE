@@ -1,6 +1,8 @@
 import * as React from 'react';
 import { useEffect, useState, useContext } from 'react';
 import { NumericFormat } from 'react-number-format';
+import PhoneIphoneIcon from '@mui/icons-material/PhoneIphone';
+import CircularProgress from '@mui/material/CircularProgress';
 import {
     Dialog,
     DialogTitle,
@@ -56,6 +58,11 @@ import { CreateOrEditKhachHangDto } from '../../services/khach-hang/dto/CreateOr
 import { IList } from '../../services/dto/IList';
 import { TypeSearchfromDB } from '../../enum/TypeSearch_fromDB';
 import khachHangService from '../../services/khach-hang/khachHangService';
+import CreateOrEditCustomerDialog from '../customer/components/create-or-edit-customer-modal';
+import { KhachHangDto } from '../../services/khach-hang/dto/KhachHangDto';
+import { PHONE_SUGGEST } from '../../lib/phoneSuggest';
+import { COLOR_SUGGEST } from '../../lib/mauSacSuggest';
+import { STORAGE_SUGGEST } from '../../lib/dungLuongSugget';
 
 const ModalHangHoaDienThoaiSua = ({ handleSave, trigger }: any) => {
     const appContext = useContext(AppContext);
@@ -70,6 +77,8 @@ const ModalHangHoaDienThoaiSua = ({ handleSave, trigger }: any) => {
     const tenantName = Cookies.get('TenantName') ?? 'HOST';
     const [productImage, setProductImage] = useState(''); // url of imge
     const [fileImage, setFileImage] = useState<File>({} as File); // file image
+    const [isShowModalAddCus, setIsShowModalAddCus] = useState(false);
+    const [newCus, setNewCus] = useState<CreateOrEditKhachHangDto>({} as CreateOrEditKhachHangDto);
 
     const [errTenHangHoa, setErrTenHangHoa] = useState(false);
     const [errChuSoHuu, setErrChuSoHuu] = useState(false);
@@ -354,7 +363,7 @@ const ModalHangHoaDienThoaiSua = ({ handleSave, trigger }: any) => {
         objNew.loi = productPhone.loi;
         objNew.matKhau = productPhone.matKhau;
         objNew.idChuSoHuu = customerChosed.id;
-        objNew.idLoaiHangHoa = 4;
+        objNew.idLoaiHangHoa = 5;
 
         objNew.donViQuiDois = [
             {
@@ -367,9 +376,7 @@ const ModalHangHoaDienThoaiSua = ({ handleSave, trigger }: any) => {
                 laDonViTinhChuan: objNew.laDonViTinhChuan
             }
         ];
-        console.log('test ở đây');
         const data = await ProductService.CreateOrEditProductPhone(objNew);
-        console.log('test ở đây' + data);
 
         objNew.id = data.id;
         objNew.idHangHoa = data.id;
@@ -426,7 +433,22 @@ const ModalHangHoaDienThoaiSua = ({ handleSave, trigger }: any) => {
         // }
         await AgreeRemoveCustomer();
     };
-
+    const showModalAddCustomer = () => {
+        setIsShowModalAddCus(true);
+        setNewCus({
+            ...newCus,
+            id: Guid.EMPTY,
+            maKhachHang: '',
+            tenKhachHang: '',
+            soDienThoai: '',
+            diaChi: '',
+            idNhomKhach: '',
+            idNguonKhach: '',
+            gioiTinhNam: false,
+            moTa: '',
+            idLoaiKhach: 1
+        });
+    };
     const AgreeRemoveCustomer = async () => {
         // const idCheckinDelete = hoadon?.idCheckIn ?? Guid.EMPTY;
         // await CheckinService.UpdateTrangThaiCheckin(idCheckinDelete, TrangThaiCheckin.DELETED);
@@ -449,8 +471,60 @@ const ModalHangHoaDienThoaiSua = ({ handleSave, trigger }: any) => {
         //     .equals(hoadon?.id)
         //     .modify((o: PageHoaDonDto) => (o.idKhachHang = null));
     };
+    const [loading, setLoading] = useState(false);
+
+    const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'empty' | 'error'>('idle');
+
+    const handleGetIphone = async () => {
+        try {
+            setLoading(true);
+            setStatus('loading');
+
+            const data = await ProductService.GetIphoneConnectPC();
+
+            if (!data) {
+                setStatus('empty');
+                return;
+            }
+
+            setProductPhone((prev) => ({
+                ...prev,
+                tenHangHoa: data.dongMay ?? prev.tenHangHoa,
+                dungLuong: data.dungLuong?.replace('GB', '') ?? prev.dungLuong,
+                mau: data.mau ?? prev.mau,
+                imel: data.imei ?? prev.imel,
+                pin: data.batteryHealth ?? prev.pin
+            }));
+
+            setStatus('success');
+        } catch (err) {
+            setStatus('error');
+        } finally {
+            setLoading(false);
+        }
+    };
+    const changeCustomer_fromModalAdd = async (customer?: KhachHangDto) => {
+        setIsShowModalAddCus(false);
+        if (customer) {
+            setCustomerChosed({
+                ...customerChosed,
+                id: customer?.id?.toString(),
+                maKhachHang: customer?.maKhachHang,
+                tenKhachHang: customer?.tenKhachHang ?? 'Chưa chọn khách',
+                soDienThoai: customer?.soDienThoai ?? ''
+            });
+        }
+    };
+
     return (
         <>
+            <CreateOrEditCustomerDialog
+                visible={isShowModalAddCus}
+                onCancel={() => setIsShowModalAddCus(false)}
+                onOk={changeCustomer_fromModalAdd}
+                title="Thêm mới khách hàng"
+                formRef={newCus}
+            />
             <ConfirmDelete
                 isShow={inforDeleteProduct.show}
                 title={inforDeleteProduct.title}
@@ -520,7 +594,7 @@ const ModalHangHoaDienThoaiSua = ({ handleSave, trigger }: any) => {
                                                 title="Thêm khách hàng mới"
                                                 onClick={(event) => {
                                                     event.stopPropagation();
-                                                    // showModalAddCustomer();
+                                                    showModalAddCustomer();
                                                 }}>
                                                 <AddOutlinedIcon color="info" sx={{ width: 20 }} />
                                             </IconButton>
@@ -558,123 +632,149 @@ const ModalHangHoaDienThoaiSua = ({ handleSave, trigger }: any) => {
                         />
                     </Stack>
                     <Grid container spacing={2} paddingTop={2}>
-                        <Grid item xs={12} sm={4} md={4} lg={4}>
-                            <Box
+                        <Grid
+                            item
+                            xs={12}
+                            sm={4}
+                            md={4}
+                            lg={4}
+                            display="flex"
+                            flexDirection="column"
+                            alignItems="center"
+                            justifyContent="center">
+                            <Button
+                                fullWidth
+                                variant="contained"
+                                startIcon={
+                                    loading ? <CircularProgress size={18} color="inherit" /> : <PhoneIphoneIcon />
+                                }
+                                onClick={handleGetIphone}
+                                disabled={loading}
                                 sx={{
-                                    border: '1px solid #cccc',
-                                    p: 1,
-                                    height: '100%',
-                                    textAlign: 'center',
-                                    position: 'relative'
+                                    textTransform: 'none',
+                                    fontWeight: 600,
+                                    borderRadius: '12px',
+                                    py: 1.2,
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                    background: 'linear-gradient(135deg, #1976d2, #42a5f5)',
+                                    '&:hover': {
+                                        background: 'linear-gradient(135deg, #1565c0, #1e88e5)',
+                                        boxShadow: '0 6px 16px rgba(0,0,0,0.15)'
+                                    }
                                 }}>
-                                {!utils.checkNull(productImage) ? (
-                                    <Box sx={{ position: 'relative', height: '100%' }}>
-                                        <img src={productImage} style={{ width: '100%', height: '100%' }} />
-                                    </Box>
-                                ) : (
-                                    <>
-                                        <Stack spacing={1} paddingTop={2}>
-                                            <Box>
-                                                <InsertDriveFileIcon className="icon-size" />
-                                            </Box>
+                                {loading ? 'Đang lấy dữ liệu...' : 'Lấy nhanh'}
+                            </Button>
 
-                                            <Box>
-                                                <CloudDoneIcon
-                                                    style={{
-                                                        paddingRight: '5px',
-                                                        color: 'var(--color-main)'
-                                                    }}
-                                                />
-                                                <Link underline="always" fontSize={'13px'}>
-                                                    Tải ảnh lên
-                                                </Link>
-                                            </Box>
-                                            <Typography variant="caption">File định dạng jpeg, png</Typography>
-                                        </Stack>
-                                    </>
-                                )}
-                                <TextField
-                                    type="file"
-                                    sx={{
-                                        position: 'absolute',
-                                        top: 0,
-                                        left: 0,
-                                        width: '100%',
-                                        height: '100%',
-                                        opacity: 0,
-                                        '& input': {
-                                            height: '100%'
-                                        },
-                                        '& div': {
-                                            height: '100%'
-                                        }
-                                    }}
-                                    onChange={choseImage}
-                                />
-                            </Box>
+                            <Typography
+                                variant="caption"
+                                mt={1}
+                                textAlign="center" // 👈 căn giữa chữ cho đẹp
+                                sx={{
+                                    color:
+                                        status === 'success'
+                                            ? 'green'
+                                            : status === 'error' || status === 'empty'
+                                            ? 'red'
+                                            : 'text.secondary'
+                                }}>
+                                {status === 'loading' && 'Đang lấy dữ liệu...'}
+                                {status === 'success' && '✅ Lấy thông tin thành công'}
+                                {status === 'empty' && '⚠️ Không có thông tin thiết bị'}
+                                {status === 'error' && '❌ Không phát hiện iPhone'}
+                            </Typography>
                         </Grid>
                         <Grid item xs={12} sm={8} md={8} lg={8}>
                             <Stack spacing={2}>
-                                <Stack direction="row" spacing={2}>
-                                    <TextField
-                                        variant="outlined"
-                                        size="small"
-                                        autoFocus
-                                        sx={{ flex: 2 }}
-                                        label={
-                                            <Typography variant="body2">
-                                                Tên {productPhone.tenLoaiHangHoa?.toLocaleLowerCase()}
-                                                <span className="text-danger"> *</span>
-                                            </Typography>
-                                        }
-                                        error={wasClickSave && errTenHangHoa}
-                                        helperText={
-                                            wasClickSave && errTenHangHoa
-                                                ? `Vui lòng nhập tên ${productPhone.tenLoaiHangHoa?.toLocaleLowerCase()}`
-                                                : ''
-                                        }
-                                        value={productPhone.tenHangHoa}
-                                        onChange={(event) => {
+                                <Stack direction="row" spacing={2} alignItems="flex-start">
+                                    <Autocomplete
+                                        freeSolo
+                                        sx={{ flex: 4 }}
+                                        options={PHONE_SUGGEST}
+                                        value={productPhone.tenHangHoa || ''}
+                                        filterOptions={(options, state) => {
+                                            const keyword = state.inputValue.toLowerCase().replace(/\s/g, '');
+
+                                            return options.filter((x) =>
+                                                x.toLowerCase().replace(/\s/g, '').includes(keyword)
+                                            );
+                                        }}
+                                        onInputChange={(event, newValue) => {
                                             setProductPhone((itemOlds) => ({
                                                 ...itemOlds,
-                                                tenHangHoa: event.target.value
+                                                tenHangHoa: newValue
                                             }));
+
                                             setErrTenHangHoa(false);
                                             setWasClickSave(false);
                                         }}
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                variant="outlined"
+                                                size="small"
+                                                autoFocus
+                                                error={wasClickSave && errTenHangHoa}
+                                                helperText={
+                                                    wasClickSave && errTenHangHoa
+                                                        ? `Vui lòng nhập tên ${productPhone.tenLoaiHangHoa?.toLocaleLowerCase()}`
+                                                        : ''
+                                                }
+                                                label={
+                                                    <Typography variant="body2">
+                                                        Tên {productPhone.tenLoaiHangHoa?.toLocaleLowerCase()}
+                                                        <span className="text-danger"> *</span>
+                                                    </Typography>
+                                                }
+                                            />
+                                        )}
                                     />
-                                    <TextField
-                                        variant="outlined"
-                                        size="small"
+
+                                    <Autocomplete
                                         sx={{ flex: 1 }}
-                                        label="GB"
-                                        value={productPhone.dungLuong || ''}
-                                        onChange={(e) =>
+                                        options={STORAGE_SUGGEST}
+                                        value={STORAGE_SUGGEST.find((x) => x.value === productPhone.dungLuong) || null}
+                                        getOptionLabel={(option) => option.label}
+                                        onChange={(event, newValue) => {
                                             setProductPhone((prev) => ({
                                                 ...prev,
-                                                dungLuong: e.target.value
-                                            }))
-                                        }
+                                                dungLuong: newValue?.value || 0
+                                            }));
+                                        }}
+                                        renderInput={(params) => (
+                                            <TextField {...params} variant="outlined" size="small" label="Dung lượng" />
+                                        )}
                                     />
-                                    <TextField
-                                        variant="outlined"
-                                        size="small"
+                                    <Autocomplete
+                                        freeSolo
                                         sx={{ flex: 1 }}
-                                        label="Màu sắc"
+                                        options={COLOR_SUGGEST}
+                                        getOptionLabel={(option: any) =>
+                                            typeof option === 'string' ? option : option.label
+                                        }
+                                        filterOptions={(options, state) => {
+                                            const keyword = state.inputValue.toLowerCase().replace(/\s/g, '');
+
+                                            return options.filter((item) =>
+                                                item.search.some((x: string) => x.includes(keyword))
+                                            );
+                                        }}
                                         value={productPhone.mau || ''}
-                                        onChange={(e) =>
+                                        onInputChange={(event, newValue) => {
                                             setProductPhone((prev) => ({
                                                 ...prev,
-                                                mau: e.target.value
-                                            }))
-                                        }
+                                                mau: newValue
+                                            }));
+                                        }}
+                                        renderInput={(params) => (
+                                            <TextField {...params} variant="outlined" size="small" label="Màu sắc" />
+                                        )}
                                     />
                                 </Stack>
                                 <TextField
                                     variant="outlined"
                                     size="small"
                                     sx={{ flex: 1 }}
-                                    label="Nội dung"
+                                    label="Nội dung cần sửa"
                                     value={productPhone.noiDung || ''}
                                     onChange={(e) =>
                                         setProductPhone((prev) => ({
@@ -795,7 +895,7 @@ const ModalHangHoaDienThoaiSua = ({ handleSave, trigger }: any) => {
                                 variant="outlined"
                                 size="small"
                                 fullWidth
-                                label="Lỗi"
+                                label="Lỗi cần báo khách trước khi sửa chữa"
                                 placeholder="Nhập mô tả lỗi"
                                 value={productPhone.loi || ''}
                                 onChange={(event) =>

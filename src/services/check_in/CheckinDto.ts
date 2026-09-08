@@ -7,20 +7,24 @@ export class KHCheckInDto {
     id = '';
     idKhachHang = '';
     idChiNhanh = '';
+    id_LoaiChungTu?: number | null;
     idHangHoa: string | null = null;
     dateTimeCheckIn = format(new Date(), 'yyyy-MM-dd HH:mm:ss.SSS');
     ghiChu = '';
-    trangThai = TrangThaiCheckin.WAITING; // default
+    trangThai = TrangThaiCheckin.WAITING;
+
     constructor({
         id = Guid.EMPTY,
         idKhachHang = '',
+        id_LoaiChungTu = null,
         idChiNhanh = '',
         dateTimeCheckIn = format(new Date(), 'yyyy-MM-dd HH:mm:ss.SSS'),
         trangThai = TrangThaiCheckin.WAITING
-    }) {
+    }: Partial<KHCheckInDto> = {}) {
         this.id = id;
         this.idKhachHang = idKhachHang;
         this.idChiNhanh = idChiNhanh;
+        this.id_LoaiChungTu = id_LoaiChungTu;
         this.dateTimeCheckIn = dateTimeCheckIn;
         this.trangThai = trangThai;
     }
@@ -36,11 +40,13 @@ export class PageKhachHangCheckInDto {
     idKhachHang: string | null = null;
     idHangHoa: string | null = null;
     idChiNhanh: string | null = null;
+    idLoaiChungTu: number | null = null;
     idCheckIn = Guid.EMPTY;
     maKhachHang: string | null = null;
     tenKhachHang = '';
     soDienThoai = '';
     tenHangHoa = '';
+    tenLoaiChungTu = '';
     noiDung = '';
     avatar? = '';
     tongTichDiem? = 0;
@@ -55,32 +61,38 @@ export class PageKhachHangCheckInDto {
     timeCheckIn? = '';
     tenKhach_KiTuDau? = '';
 
-    constructor({
-        idKhachHang = Guid.EMPTY,
-        idHangHoa = Guid.EMPTY,
-        idChiNhanh = null,
-        idCheckIn = Guid.EMPTY,
-        dateTimeCheckIn = format(new Date(), 'yyyy-MM-dd'),
-        maKhachHang = '',
-        tenKhachHang = '',
-        soDienThoai = '',
-        tongTichDiem = 0,
-        ghiChu = '',
-        txtTrangThaiCheckIn = 'Đã sửa xong',
-        trangThaiCheckIn = 1
-    }) {
+    constructor(data: Partial<PageKhachHangCheckInDto> = {}) {
+        const {
+            idKhachHang = Guid.EMPTY,
+            idHangHoa = Guid.EMPTY,
+            idChiNhanh = null,
+            idLoaiChungTu = null,
+            idCheckIn = Guid.EMPTY,
+            dateTimeCheckIn = format(new Date(), 'yyyy-MM-dd'),
+            maKhachHang = '',
+            tenKhachHang = '',
+            tenLoaiChungTu = '',
+            soDienThoai = '',
+            tongTichDiem = 0,
+            ghiChu = '',
+            txtTrangThaiCheckIn = 'Đã sửa xong',
+            trangThaiCheckIn = 1
+        } = data;
+
         this.idKhachHang = idKhachHang;
         this.idHangHoa = idHangHoa;
         this.idChiNhanh = idChiNhanh;
         this.idCheckIn = idCheckIn;
         this.maKhachHang = maKhachHang;
         this.tenKhachHang = tenKhachHang;
+        this.tenLoaiChungTu = tenLoaiChungTu;
         this.soDienThoai = soDienThoai;
         this.tongTichDiem = tongTichDiem;
         this.dateTimeCheckIn = dateTimeCheckIn;
         this.ghiChu = ghiChu;
         this.txtTrangThaiCheckIn = txtTrangThaiCheckIn;
         this.trangThaiCheckIn = trangThaiCheckIn;
+        this.idLoaiChungTu = idLoaiChungTu;
 
         this._tenKhach_KiTuDau = utils.getFirstLetter(this.tenKhachHang);
         this._dateCheckIn = format(new Date(this.dateTimeCheckIn), 'yyyy-MM-dd');

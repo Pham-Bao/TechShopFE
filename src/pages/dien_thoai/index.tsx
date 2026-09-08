@@ -139,10 +139,6 @@ const PageProduct = () => {
         await nhomHangHoaStore.getAllNhomHang();
     };
 
-    const GetIphoneConnectPC = async () => {
-        await ProductService.GetIphoneConnectPC();
-    };
-
     const GetTreeNhomHangHoa = async () => {
         // used to tree at menu left
         const list = await GroupProductService.GetTreeNhomHangHoa();
@@ -176,7 +172,9 @@ const PageProduct = () => {
         filterPageProduct.idNhomHangHoas,
         filterPageProduct.idLoaiHangHoa
     ]);
-
+    useEffect(() => {
+        GetListHangHoa();
+    }, [filterPageProduct]);
     function showModalAddNhomHang(id = '') {
         setTriggerModalNhomHang({
             isShow: true,
@@ -591,16 +589,9 @@ window.onload=function(){
             }
         }
     };
-    const TrangThaiText: any = {
-        1: 'Chưa bán',
-        2: 'Đã bán',
-        3: 'Khách hẹn',
-        4: 'Cho mượn',
-        5: 'Khác'
-    };
+
     const handleOpenLichHen = (row: any) => {
         setRowSelected(row);
-        console.log('đơn vị quy đổi', row);
         bookingStore.createOrEditBookingDto.idDonViQuiDoi = row.idDonViQuyDoi;
 
         setOpenLichHen(true);
@@ -616,14 +607,46 @@ window.onload=function(){
     const GetAllKyThuatVien = async () => {
         await suggestStore.getSuggestKyThuatVien();
     };
+    const handleChangeTrangThai = async (row: any, newStatus: number) => {
+        setPageDataProduct((old) => ({
+            ...old,
+            items: old.items.map((x) =>
+                x.idHangHoa === row.idHangHoa
+                    ? {
+                          ...x,
+                          trangThai: newStatus
+                      }
+                    : x
+            )
+        }));
 
-    const handleChangeTrangThai = (row: any, newStatus: number) => {
-        if (row.trangThai !== 3 && newStatus === 3) {
-            bookingStore.createOrEditBookingDto.idHangHoaDienThoai = row.idHangHoa;
-            bookingStore.createOrEditBookingDto.newTrangThai = newStatus;
+        try {
+            const { trangThai, idHangHoa } = row;
 
-            handleOpenLichHen(row);
-            return;
+            const isOpenLichHen = trangThai !== 3 && newStatus === 3;
+
+            if (isOpenLichHen) {
+                bookingStore.createOrEditBookingDto.idHangHoaDienThoai = idHangHoa;
+                bookingStore.createOrEditBookingDto.newTrangThai = newStatus;
+
+                await handleOpenLichHen(row);
+                return;
+            }
+
+            await ProductService.UpdateTrangThaiDienThoai(idHangHoa, newStatus);
+        } catch (error) {
+            // Nếu lỗi thì trả lại trạng thái cũ
+            setPageDataProduct((old) => ({
+                ...old,
+                items: old.items.map((x) =>
+                    x.idHangHoa === row.idHangHoa
+                        ? {
+                              ...x,
+                              trangThai: row.trangThai
+                          }
+                        : x
+                )
+            }));
         }
     };
     const restoreProduct = async () => {
@@ -816,11 +839,10 @@ window.onload=function(){
                 minWidth: 80
             },
 
-            // ✅ CỘT CHỈ HIỆN KHI LÀ MÁY KHÁCH
             ...(isKhach
                 ? [
                       {
-                          field: 'tenKhach',
+                          field: 'tenChu',
                           headerName: 'Khách hàng',
                           minWidth: 150
                       },
@@ -921,99 +943,19 @@ window.onload=function(){
             }
         ];
     }, [selectedLoaiDienThoai, checkAllRow, rowSelectionModel]);
-    const filterContent = (
-        <Box
-            className="page-box-left"
-            sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>
-            <Box>
-                <Box
-                    display="flex"
-                    justifyContent="space-between"
-                    borderBottom="1px solid #E6E1E6"
-                    padding="12px"
-                    borderRadius={'4px'}
-                    sx={{ backgroundColor: 'var(--color-header-table)' }}>
-                    <Typography fontSize="14px" fontWeight="700">
-                        Nhóm điện thoại
-                    </Typography>
 
-                    <Add
-                        sx={{
-                            transition: '.4s',
-                            height: '32px',
-                            cursor: 'pointer',
-                            width: '32px',
-                            borderRadius: '4px',
-                            padding: '4px 0px',
-                            border: '1px solid #cccc',
-                            display: abpCustom.isGrandPermission('Pages.DM_NhomHangHoa.Create') ? '' : 'none'
-                        }}
-                        onClick={() => showModalAddNhomHang()}
-                    />
-                </Box>
-                <Box
-                    sx={{
-                        overflow: 'auto',
-                        maxHeight: '66vh',
-                        '&::-webkit-scrollbar': {
-                            width: '7px'
-                        },
-                        '&::-webkit-scrollbar-thumb': {
-                            bgcolor: 'rgba(0,0,0,0.1)',
-                            borderRadius: '4px'
-                        },
-                        '&::-webkit-scrollbar-track': {
-                            bgcolor: 'var(--color-bg)'
-                        }
-                    }}>
-                    <Stack spacing={1} paddingTop={1}>
-                        <TextField
-                            variant="standard"
-                            fullWidth
-                            placeholder="Tìm kiếm nhóm"
-                            InputProps={{ startAdornment: <Search /> }}
-                            onChange={(e) => searchNhomHang(e.target.value)}
-                        />
-                        <AccordionNhomHangHoa dataNhomHang={treeSearchNhomHangHoa} clickTreeItem={editNhomHangHoa} />
-                    </Stack>
-                </Box>
-            </Box>
-
-            <Box
-                sx={{
-                    backgroundColor: 'var(--color-bg-light)',
-                    padding: 2,
-                    borderRadius: 1,
-                    boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)',
-                    cursor: 'pointer',
-                    marginTop: 'auto' // Đẩy xuống cuối
-                }}
-                onClick={() => {
-                    GetListHangHoaDaXoa();
-                }}>
-                <Stack direction="row" alignItems="center" spacing={1}>
-                    <DeleteOutline sx={{ fontSize: 24, color: 'red' }} />
-                    <Typography color="red" fontWeight="bold">
-                        Ngừng kinh doanh
-                    </Typography>
-                </Stack>
-            </Box>
-        </Box>
-    );
-    const ApplyFilter = (paramFilter: DienThoaiRequestDto) => {
+    const ApplyFilter = (paramFilter: PagedProductSearchDto) => {
         setAnchorElFilterNangCao(null);
         setFilterPageProduct({
             ...filterPageProduct,
             currentPage: 1,
-            //trangThaiNos: paramFilter.trangThaiNos,
+            dungLuong: Array.isArray(paramFilter.dungLuong) ? paramFilter.dungLuong : [],
+            mau: paramFilter.mau,
             trangThais: paramFilter.trangThais,
             idChiNhanhs: paramFilter.idChiNhanhs
         });
     };
-    const reloadData = async () => {
-        const res = await ProductService.Get_DMHangHoaDienThoai(filterPageProduct);
-        setPageDataProduct(res);
-    };
+
     return (
         <>
             <div id="printArea" style={{ display: 'none' }}></div>
@@ -1023,9 +965,24 @@ window.onload=function(){
                 visible={openLichHen}
                 onCancel={() => setOpenLichHen(false)}
                 idLichHen=""
-                onOk={() => {
+                onOk={async () => {
+                    if (rowSelected) {
+                        await ProductService.UpdateTrangThaiDienThoai(rowSelected.idHangHoa, 3);
+
+                        setPageDataProduct((old) => ({
+                            ...old,
+                            items: old.items.map((x) =>
+                                x.idHangHoa === rowSelected.idHangHoa
+                                    ? {
+                                          ...x,
+                                          trangThai: 3
+                                      }
+                                    : x
+                            )
+                        }));
+                    }
+
                     setOpenLichHen(false);
-                    reloadData();
                 }}
             />
             <div id="printLabel" style={{ display: 'none' }}></div>{' '}
@@ -1110,8 +1067,22 @@ window.onload=function(){
                             </Grid>
                         </Grid>
                     </Grid>
-                    <Grid item xs={12} md={6} lg={6} display="flex" gap="8px" justifyContent="end" alignItems="center">
-                        <FormControl component="fieldset" size="small">
+                    <Grid
+                        item
+                        xs={12}
+                        md={6}
+                        lg={6}
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: {
+                                xs: 'flex-start',
+                                md: 'flex-end'
+                            },
+                            gap: 1,
+                            flexWrap: 'wrap'
+                        }}>
+                        <FormControl component="fieldset">
                             <RadioGroup
                                 row
                                 value={selectedLoaiDienThoai}
@@ -1125,94 +1096,123 @@ window.onload=function(){
                                         idLoaiHangHoa: value,
                                         currentPage: 1
                                     }));
+                                }}
+                                sx={{
+                                    gap: 1,
+                                    flexWrap: 'wrap'
                                 }}>
                                 <FormControlLabel
                                     value={4}
                                     control={<Radio size="small" />}
                                     label="Điện thoại hệ thống"
+                                    sx={{ mr: 0 }}
                                 />
-                                <FormControlLabel value={5} control={<Radio size="small" />} label="Điện thoại khách" />
+
+                                <FormControlLabel
+                                    value={5}
+                                    control={<Radio size="small" />}
+                                    label="Điện thoại khách"
+                                    sx={{ mr: 0 }}
+                                />
                             </RadioGroup>
                         </FormControl>
 
-                        {window.screen.width < 768 ? (
+                        {/* Filter Mobile */}
+                        {window.screen.width < 768 && (
                             <Button
-                                className="btnNhapXuat btn-outline-hover"
                                 aria-describedby="popover-filter"
                                 variant="outlined"
                                 size="small"
+                                onClick={(e) => setAnchorElFilter(e.currentTarget)}
                                 sx={{
-                                    textTransform: 'capitalize',
-                                    fontWeight: '400',
+                                    height: 36,
+                                    minWidth: 36,
+                                    px: 1,
+                                    bgcolor: '#fff',
                                     color: '#666466',
                                     borderColor: '#E6E1E6',
-                                    bgcolor: '#fff!important',
-                                    display: window.screen.width > 500 ? 'none' : 'inherit'
-                                }}
-                                onClick={(e) => {
-                                    setAnchorElFilter(e.currentTarget);
+                                    '&:hover': {
+                                        bgcolor: '#f8f8f8'
+                                    }
                                 }}>
                                 <FilterIcon />
                             </Button>
-                        ) : null}
-                        <ButtonOnlyIcon
-                            icon={
-                                <FilterAltOutlinedIcon
-                                    titleAccess="Lọc nâng cao"
-                                    sx={{ width: 20 }}
-                                    onClick={(event) => setAnchorElFilterNangCao(event.currentTarget)}
-                                />
-                            }
-                            style={{ width: 40, backgroundColor: 'white' }}
-                        />
+                        )}
+
+                        {/* Filter nâng cao */}
+                        <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={(event) => setAnchorElFilterNangCao(event.currentTarget)}
+                            sx={{
+                                minWidth: 36,
+                                width: 36,
+                                height: 36,
+                                p: 0,
+                                bgcolor: '#fff',
+                                color: '#666466',
+                                borderColor: '#E6E1E6',
+                                '&:hover': {
+                                    bgcolor: '#f8f8f8'
+                                }
+                            }}>
+                            <FilterAltOutlinedIcon fontSize="small" />
+                        </Button>
+
+                        {/* Nhập */}
                         <Button
                             size="small"
-                            onClick={onImportShow}
                             variant="outlined"
                             startIcon={<DownIcon />}
+                            onClick={onImportShow}
                             className="btnNhapXuat btn-outline-hover"
                             sx={{
-                                bgcolor: '#fff!important',
+                                height: 36,
+                                minWidth: 95,
+                                bgcolor: '#fff',
                                 color: '#666466',
                                 display: abpCustom.isGrandPermission('Pages.DM_HangHoa.Import') ? '' : 'none'
                             }}>
                             Nhập
                         </Button>
 
+                        {/* Xuất */}
                         <Button
                             size="small"
-                            onClick={exportToExcel}
                             variant="outlined"
                             startIcon={<UploadIcon />}
+                            onClick={exportToExcel}
                             className="btnNhapXuat btn-outline-hover"
                             sx={{
-                                bgcolor: '#fff!important',
+                                height: 36,
+                                minWidth: 95,
+                                bgcolor: '#fff',
                                 color: '#666466',
                                 display: abpCustom.isGrandPermission('Pages.DM_HangHoa.Export') ? '' : 'none'
                             }}>
                             Xuất
                         </Button>
 
+                        {/* Thêm điện thoại */}
                         <Button
                             size="small"
                             variant="contained"
-                            className=" btn-container-hover"
-                            sx={{
-                                minWidth: '143px',
-                                fontSize: '14px',
-                                display: abpCustom.isGrandPermission('Pages.DM_HangHoa.Create') ? '' : 'none'
-                            }}
                             startIcon={<Add />}
-                            onClick={() => showModalAddProduct()}>
+                            onClick={() => showModalAddProduct()}
+                            className="btn-container-hover"
+                            sx={{
+                                height: 36,
+                                minWidth: 160,
+                                fontSize: 14,
+                                whiteSpace: 'nowrap',
+                                display: abpCustom.isGrandPermission('Pages.DM_HangHoa.Create') ? '' : 'none'
+                            }}>
                             Thêm điện thoại
                         </Button>
                     </Grid>
                 </Grid>
                 <Grid container item spacing={2} paddingTop={1} columns={13}>
-                    <Grid item lg={2} md={2} sm={3} xs={13} display={window.screen.width <= 600 ? 'none' : ''}>
-                        {filterContent}
-                    </Grid>
-                    <Grid item lg={11} md={11} sm={10} xs={13}>
+                    <Grid item lg={13} md={13} sm={13} xs={13}>
                         {rowSelectionModel.length > 0 && (
                             <ActionRowSelect
                                 lstOption={[
@@ -1282,20 +1282,6 @@ window.onload=function(){
                                 </Grid>
                             </Grid>
                         </Box>
-                        <Popover
-                            id={'popover-filter'}
-                            open={Boolean(anchorElFilter)}
-                            anchorEl={anchorElFilter}
-                            onClose={() => {
-                                setAnchorElFilter(null);
-                            }}
-                            anchorOrigin={{
-                                vertical: 'bottom',
-                                horizontal: 'center'
-                            }}
-                            sx={{ marginTop: 1 }}>
-                            {filterContent}
-                        </Popover>
                     </Grid>
                 </Grid>
             </Grid>

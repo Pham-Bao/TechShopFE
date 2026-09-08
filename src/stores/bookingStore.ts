@@ -60,12 +60,12 @@ class BookingStore {
         };
     }
     async addDataBooking_toCacheHD(itemBook: BookingDetail_ofCustomerDto, idCheckIn: string) {
-        // always add new cache hoadon
-        const hoadonCT = [];
+        const hoadonCT: PageHoaDonChiTietDto[] = [];
         let tongTienHang = 0;
 
         for (let i = 0; i < itemBook.details.length; i++) {
             const itFor = itemBook.details[i];
+
             const newCT = new PageHoaDonChiTietDto({
                 idDonViQuyDoi: itFor.idDonViQuyDoi as unknown as null,
                 maHangHoa: itFor.maHangHoa,
@@ -75,9 +75,11 @@ class BookingStore {
                 idHangHoa: itFor.idHangHoa as unknown as null,
                 soLuong: 1
             });
+
             hoadonCT.push(newCT);
             tongTienHang += itFor.giaBan;
         }
+
         // create cache hd with new id
         const idChiNhanh = Cookies.get('IdChiNhanh')?.toString() as string;
         const hoadon = new PageHoaDonDto({

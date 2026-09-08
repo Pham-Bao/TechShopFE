@@ -23,7 +23,7 @@ export class ModelHangHoaDto {
     txtTrangThaiHang?: string = 'Đang kinh doanh';
     imel?: string = '';
     mau?: string = '';
-
+    soLuongTon?: number = 0;
     idDonViQuyDoi?: string;
     tenDonViTinh?: string = '';
     maHangHoa?: string = '';
@@ -67,7 +67,7 @@ export class ModelHangHoaDto {
 export class ModelHangHoaDienThoaiDto {
     id?: string | null = Utils.GuidEmpty;
     tenHangHoa?: string = '';
-    dungLuong?: string = '';
+    dungLuong?: number;
     mau?: string = '';
     noiDung?: string = '';
     pin?: string = '';
@@ -88,6 +88,7 @@ export class ModelHangHoaDienThoaiDto {
     tenNhomHang?: string = '';
     tenLoaiHangHoa?: string = 'Điện thoại';
     txtTrangThaiHang?: string = 'Đang kinh doanh';
+    tinhTrang?: string = '';
 
     idDonViQuyDoi?: string;
     tenDonViTinh?: string = '';
@@ -188,8 +189,12 @@ export class ModelNhomHangHoa {
     }
 }
 
-/* search */
 export class PagedProductSearchDto extends ParamSearchDto {
     idNhomHangHoas?: string[];
     idLoaiHangHoa?: number;
+    idLoaiChungTu?: number;
+    mau?: string[];
+    dungLuong?: number[];
+    trangThais?: number[];
+    idChiNhanhs?: string[];
 }

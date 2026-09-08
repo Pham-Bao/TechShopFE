@@ -58,6 +58,8 @@ class CreateOrEditLichHenModal extends Component<ICreateOrEditProps> {
 
     handleSubmit = async (values: any) => {
         try {
+            //console.log(values);
+
             // 🔥 auto chọn nhân viên nếu chưa chọn
             if (!values.idNhanVien || values.idNhanVien === AppConsts.guidEmpty) {
                 const nhanVienRanh = suggestStore.suggestKyThuatVien?.filter((x) => x.trangThai === 1);
@@ -67,8 +69,10 @@ class CreateOrEditLichHenModal extends Component<ICreateOrEditProps> {
                     values.idNhanVien = nhanVienRanh[randomIndex].id;
                 }
             }
-
-            // ✅ 1. Tạo lịch hẹn
+            let startHours = values.startHours;
+            if (!startHours) {
+                startHours = '07:00';
+            }
             const createResult = await bookingStore.onCreateOrEditBooking({
                 id: values.id,
                 bookingCode: values?.bookingCode ?? '',
@@ -76,12 +80,10 @@ class CreateOrEditLichHenModal extends Component<ICreateOrEditProps> {
                 idDonViQuiDoi: values.idDonViQuiDoi,
                 idKhachHang: values.idKhachHang,
                 idNhanVien: values.idNhanVien,
-                startHours: values.startHours,
+                startHours: startHours,
                 startTime: values.startTime,
                 ghiChu: values.ghiChu,
                 trangThai: values.trangThai,
-
-                // 🔥 QUAN TRỌNG
                 idHangHoaDienThoai: values.idHangHoaDienThoai,
                 newTrangThai: values.newTrangThai
             });
@@ -145,7 +147,7 @@ class CreateOrEditLichHenModal extends Component<ICreateOrEditProps> {
                                                     idChosed={values.idKhachHang}
                                                     handleChoseItem={(item: any) => {
                                                         {
-                                                            setFieldValue('idKhachHang', item?.id); // Cập nhật giá trị id trong Formik
+                                                            setFieldValue('idKhachHang', item?.id?.value ?? item?.id);
                                                         }
                                                     }}
                                                     error={(errors.idKhachHang && touched.idKhachHang) as boolean}
@@ -255,12 +257,12 @@ class CreateOrEditLichHenModal extends Component<ICreateOrEditProps> {
                                                     }}
                                                     defaultVal={values.startTime}
                                                     handleChangeDate={(value: string) => {
-                                                        values.startTime = value;
+                                                        setFieldValue('startTime', value);
                                                     }}
                                                 />
                                             </FormGroup>
                                             <Grid container spacing={2} sx={{ marginTop: '4px' }}>
-                                                <Grid item md={12} sm={6} xs={12}>
+                                                <Grid item md={8} sm={6} xs={12}>
                                                     <FormGroup>
                                                         <Autocomplete
                                                             options={suggestStore?.suggestDichVu ?? []}
@@ -313,7 +315,36 @@ class CreateOrEditLichHenModal extends Component<ICreateOrEditProps> {
                                                         />
                                                     </FormGroup>
                                                 </Grid>
-
+                                                <Grid item md={4} xs={12} sm={6}>
+                                                    <FormGroup>
+                                                        <TextField
+                                                            label={
+                                                                <Typography variant="subtitle2" fontSize="14px">
+                                                                    Thời gian bắt đầu{' '}
+                                                                    <span className="text-danger">*</span>
+                                                                </Typography>
+                                                            }
+                                                            error={
+                                                                errors.startHours && touched.startHours ? true : false
+                                                            }
+                                                            helperText={
+                                                                errors.startHours &&
+                                                                touched.startHours && (
+                                                                    <span className="text-danger">
+                                                                        {errors.startHours}
+                                                                    </span>
+                                                                )
+                                                            }
+                                                            InputLabelProps={{
+                                                                shrink: true
+                                                            }}
+                                                            type="time"
+                                                            size="small"
+                                                            name="startHours"
+                                                            value={values.startHours}
+                                                            onChange={handleChange}></TextField>
+                                                    </FormGroup>
+                                                </Grid>
                                                 <Grid container item spacing={[4, 2]}>
                                                     <Grid item md={12} sm={6} xs={12}>
                                                         <FormGroup>

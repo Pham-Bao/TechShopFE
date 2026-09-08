@@ -17,7 +17,7 @@ import LoginModel from '../../../models/Login/loginModel';
 import LoginService from '../../../services/login/loginService';
 import Cookies from 'js-cookie';
 import { useNavigate } from 'react-router-dom';
-import logo from '../../../images/Logo_Lucky_Beauty.svg';
+import logo from '../../../images/TechShopLogo.png';
 import { Link } from 'react-router-dom';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import nhatKyHoatDongService from '../../../services/nhat_ky_hoat_dong/nhatKyHoatDongService';
@@ -227,22 +227,6 @@ const LoginScreen: React.FC = () => {
                                             <span className="text-login">Đăng nhập</span>
                                         )}
                                     </button>
-                                </Grid>
-                                <Grid xs={12} item>
-                                    <p className="text-support">
-                                        Tổng đài hỗ trợ : <span>0247 303 9333 - 0936 363 069</span>
-                                    </p>
-                                </Grid>
-                                <Grid xs={12} item>
-                                    <p className="text-register">
-                                        Bạn chưa có tài khoản?{' '}
-                                        {/* <Link className="a quenMk" to="/register">
-                                            Đăng ký
-                                        </Link> */}
-                                        <a className="a quenMk" href={'https://luckybeauty.vn/dangkydungthu'}>
-                                            Đăng ký
-                                        </a>
-                                    </p>
                                 </Grid>
                             </Grid>
                         </form>

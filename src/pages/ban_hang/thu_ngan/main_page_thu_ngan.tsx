@@ -36,6 +36,7 @@ import ConfirmDelete from '../../../components/AlertDialog/ConfirmDelete';
 import { PropConfirmOKCancel } from '../../../utils/PropParentToChild';
 import CheckinService from '../../../services/check_in/CheckinService';
 import abpCustom from '../../../components/abp-custom';
+import { Console } from 'console';
 
 const TabMain = {
     CHECK_IN: 1,
@@ -52,7 +53,6 @@ export const ThuNganSetting = ({ idChosed, handleChoseChiNhanh }: IPropDropdownC
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const expandDropdownChiNhanh = Boolean(anchorEl);
     const [allChiNhanh_byUser, setAllChiNhanh_byUser] = useState<SuggestChiNhanhDto[]>([]);
-
     const GetChiNhanhByUser = async () => {
         const data = await chiNhanhService.GetChiNhanhByUser();
         setAllChiNhanh_byUser(data);
@@ -376,7 +376,7 @@ export default function MainPageThuNgan() {
     const [pageThuNgan_idChecking, setPageThuNgan_idChecking] = useState<string>(Guid.EMPTY);
     const [pageThuNgan_LoaiHoaDon, setPageThuNgan_LoaiHoaDon] = useState(LoaiChungTu.HOA_DON_BAN_LE);
     const [pageThuNgan_IdInvoiceWaiting, setPageThuNgan_IdInvoiceWaiting] = useState('');
-
+    const [soLuongCheckIn, setSoLuongCheckIn] = useState(0);
     const changeActiveTabMain = async (event: React.SyntheticEvent, tabNew: number) => {
         setTabMainActive(tabNew);
         setIsShowModalAdd(false);
@@ -409,32 +409,14 @@ export default function MainPageThuNgan() {
             idLoaiChungTu: pageThuNgan_LoaiHoaDon,
             idChiNhanh: idChiNhanhChosed,
             maKhachHang: 'KL',
-            tenKhachHang: 'Khách lẻ'
+            tenKhachHang: 'Chưa chọn khách',
+            tenHangHoa: 'chưa chọn hàng hóa'
         });
         await dbDexie.hoaDon.add(newHD);
         setPageThuNgan_IdInvoiceWaiting(newHD?.id);
     };
 
-    // const getMaHoaDonMax = (loaiHoaDon: number): string => {
-    //     const arrMaHD = allInvoiceWaiting
-    //         ?.filter((x) => x.idLoaiChungTu === loaiHoaDon)
-    //         .map((x) => {
-    //             return x?.maHoaDon;
-    //         });
-
-    //     const numbers = arrMaHD
-    //         .flatMap((item) => item.match(/\d+/g)) // Extract arrays of number strings
-    //         .map(Number) // Convert to numbers
-    //         .filter((num) => !isNaN(num));
-    //     const maxNumber = numbers.length > 0 ? Math.max(...numbers) : 1;
-    //     if (maxNumber < 10) {
-    //         return '0' + maxNumber;
-    //     } else {
-    //         return maxNumber.toString();
-    //     }
-    // };
     const onClickAddHoaDon = (customerId: string, idCheckIn?: string, idPhone?: string) => {
-        console.log('Truyền vào:', idPhone);
         setPhoneIdChosed(idPhone ?? '');
         setTabMainActive(TabMain.THU_NGAN);
         setCustomerIdChosed(customerId);
@@ -463,7 +445,24 @@ export default function MainPageThuNgan() {
                                     value={tabMainActive}
                                     onChange={changeActiveTabMain}
                                     aria-label="nav tabs example">
-                                    <Tab label="Check in" value={TabMain.CHECK_IN} />
+                                    <Tab
+                                        value={TabMain.CHECK_IN}
+                                        label={
+                                            <Badge
+                                                badgeContent={soLuongCheckIn}
+                                                color="error"
+                                                max={99}
+                                                sx={{
+                                                    '& .MuiBadge-badge': {
+                                                        fontSize: 11,
+                                                        height: 21,
+                                                        minWidth: 21
+                                                    }
+                                                }}>
+                                                <span style={{ paddingRight: 10 }}>Check in</span>
+                                            </Badge>
+                                        }
+                                    />{' '}
                                     <Tab label="Thu ngân" value={TabMain.THU_NGAN} />
                                 </Tabs>
                             </Stack>
@@ -610,6 +609,7 @@ export default function MainPageThuNgan() {
                         idChiNhanhChosed={idChiNhanhChosed}
                         customerIdChosed={customerIdChosed}
                         phoneIdChosed={phoneIdChosed}
+                        onChangeSoLuongCheckIn={setSoLuongCheckIn}
                         idCheckIn={pageThuNgan_idChecking}
                         idInvoiceWaiting={pageThuNgan_IdInvoiceWaiting}
                         arrIdNhomHangFilter={arrIdNhomHangFilter}

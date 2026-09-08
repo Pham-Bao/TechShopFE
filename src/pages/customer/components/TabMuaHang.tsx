@@ -68,26 +68,7 @@ const TabMuaHang = ({ khachHangId }: any) => {
                 <Box title={params.value}>{new Intl.NumberFormat('vi-VN').format(params.value)}</Box>
             )
         },
-        // {
-        //     field: 'tongGiamGia',
-        //     headerName: 'Tổng giảm giá',
-        //     flex: 1,
-        //     renderHeader: (params: any) => <Box>{params.colDef.headerName}</Box>,
-        //     renderCell: (params: any) => (
-        //         <Box title={params.value} sx={{ width: '100%' }}>
-        //             {new Intl.NumberFormat('vi-VN').format(params.value)}
-        //         </Box>
-        //     )
-        // },
-        // {
-        //     field: 'tongPhaiTra',
-        //     headerName: 'Tổng phải trả',
-        //     flex: 1,
-        //     renderHeader: (params: any) => <Box title={params.value}>{params.colDef.headerName}</Box>,
-        //     renderCell: (params: any) => (
-        //         <Box title={params.value}>{new Intl.NumberFormat('vi-VN').format(params.value)}</Box>
-        //     )
-        // },
+
         {
             field: 'khachDaTra',
             headerName: 'Khách đã trả',
@@ -108,7 +89,9 @@ const TabMuaHang = ({ khachHangId }: any) => {
 
             renderHeader: (params) => <Box title={params.colDef.headerName}>{params.colDef.headerName}</Box>,
             renderCell: (params) => (
-                <Box title={params.value}>{new Intl.NumberFormat('vi-VN').format(params.value)}</Box>
+                <Box title={params.value} sx={{ color: 'red' }}>
+                    {new Intl.NumberFormat('vi-VN').format(params.value)}
+                </Box>
             )
         },
         {
@@ -145,10 +128,10 @@ const TabMuaHang = ({ khachHangId }: any) => {
                     getRowId={(row) => row.maHoaDon}
                     initialState={{
                         pagination: {
-                            paginationModel: { page: 0, pageSize: 5 }
+                            paginationModel: { page: 0, pageSize: 10 }
                         }
                     }}
-                    pageSizeOptions={[5, 10, 20, 50, 100]}
+                    pageSizeOptions={[10, 20, 50, 100]}
                     sortingOrder={['desc', 'asc']}
                     onSortModelChange={(newSortModel) => {
                         if (newSortModel.length > 0) {

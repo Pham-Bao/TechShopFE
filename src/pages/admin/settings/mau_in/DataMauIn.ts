@@ -2,7 +2,7 @@ import PageHoaDonChiTietDto from '../../../../services/ban_hang/PageHoaDonChiTie
 import PageHoaDonDto from '../../../../services/ban_hang/PageHoaDonDto';
 import { ChiNhanhDto } from '../../../../services/chi_nhanh/Dto/chiNhanhDto';
 import { KhachHangItemDto } from '../../../../services/khach-hang/dto/KhachHangItemDto';
-import logoChiNhanh from '../../../../images/logo_Luckybeauty_full.png';
+import logoChiNhanh from '../../../../images/TechShopLogo.png';
 import { CuaHangDto } from '../../../../services/cua_hang/Dto/CuaHangDto';
 import utils from '../../../../utils/utils';
 import { format } from 'date-fns';
@@ -27,10 +27,10 @@ const dv2 = new PageHoaDonChiTietDto({
     giaBan: 80000
 });
 const congty = {
-    tenCongTy: 'MAIANH HAIR SALON',
+    tenCongTy: 'MiniPhone.vn',
     soDienThoai: '0243.565.789',
-    diaChi: 'Số 112, Tây Hồ, Hoàn Kiếm, HN',
-    website: 'MaiAnhHairSalon.luckybeauty.vn',
+    diaChi: 'số 45 ngõ 139 bằng liệt, HN',
+    website: 'miniphone.vn',
     logo: logoChiNhanh
 } as CuaHangDto;
 const chinhanh = {
@@ -116,13 +116,13 @@ class DataMauIn {
         data = data.replaceAll('{TenCuaHang}', this.congty.tenCongTy.toUpperCase());
         data = data.replaceAll(
             '{LogoCuaHang}',
-            `<img style="width: 100%" src=${utils.checkNull(this.congty.logo) ? logoChiNhanh : this.congty.logo} />`
+            `<img style="width: 28%" src=${utils.checkNull(this.congty.logo) ? logoChiNhanh : this.congty.logo} />`
         );
         data = data.replaceAll('{DiaChiCuaHang}', this.congty.diaChi);
         data = data.replaceAll('{DienThoaiCuaHang}', this.congty.soDienThoai);
         data = data.replaceAll(
             '{LogoChiNhanh}',
-            `<img style="width: 100%" src=${utils.checkNull(this.chinhanh.logo) ? logoChiNhanh : this.chinhanh.logo} />`
+            `<img style="width: 28%" src=${utils.checkNull(this.chinhanh.logo) ? logoChiNhanh : this.chinhanh.logo} />`
         );
         data = data.replaceAll('{TenChiNhanh}', this.chinhanh.tenChiNhanh.toUpperCase());
         data = data.replaceAll('{DienThoaiChiNhanh}', this.chinhanh.soDienThoai ?? '');

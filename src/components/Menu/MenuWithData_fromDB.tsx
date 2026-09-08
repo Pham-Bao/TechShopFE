@@ -59,10 +59,23 @@ export default function MenuWithDataFromDB({ open, typeSearch, anchorEl, handleC
             id="menu-with-data-from-db"
             anchorEl={anchorEl}
             open={open}
-            autoFocus={false} /* !important: disable cái này để focus vào txtSearch */
             onClose={handleClose}
-            MenuListProps={{
-                'aria-labelledby': 'basic-button'
+            autoFocus={false}
+            disableAutoFocusItem
+            disablePortal={false}
+            anchorOrigin={{
+                vertical: 'bottom',
+                horizontal: 'left'
+            }}
+            transformOrigin={{
+                vertical: 'top',
+                horizontal: 'left'
+            }}
+            PaperProps={{
+                style: {
+                    marginTop: 4,
+                    maxHeight: 300
+                }
             }}>
             <MenuItem
                 disableRipple={true} /* !important: vô hiệu hóa gợn sóng khi click */

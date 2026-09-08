@@ -15,4 +15,5 @@ export interface BaoCaoBanHangChiTietDto extends IBaoCaoBanHang_SumFooterDto {
     tienChietKhau?: number;
     thanhTienSauCK: number;
     loiNhuan?: number;
+    noiDung?: string;
 }
