@@ -11,8 +11,11 @@ import {
     IconButton,
     CircularProgress,
     Chip,
-    Button
+    Button,
+    useMediaQuery,
+    useTheme
 } from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import MoreOutlinedIcon from '@mui/icons-material/MoreOutlined';
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import CloseIcon from '@mui/icons-material/Close';
@@ -49,7 +52,7 @@ import utils from '../../../utils/utils';
 import { PropConfirmOKCancel, PropModal } from '../../../utils/PropParentToChild';
 import SoQuyServices from '../../../services/so_quy/SoQuyServices';
 import HoaDonService from '../../../services/ban_hang/HoaDonService';
-import AppConsts, { LoaiChungTu, TrangThaiCheckin } from '../../../lib/appconst';
+import AppConsts, { LoaiChungTu, LoaiHangHoa, TrangThaiCheckin } from '../../../lib/appconst';
 import nhatKyHoatDongService from '../../../services/nhat_ky_hoat_dong/nhatKyHoatDongService';
 import { CreateNhatKyThaoTacDto } from '../../../services/nhat_ky_hoat_dong/dto/CreateNhatKyThaoTacDto';
 import { format } from 'date-fns';
@@ -108,6 +111,9 @@ export type IPropsPageThuNgan = {
     onChangeSoLuongCheckIn: (value: number) => void;
     idInvoiceWaiting?: string;
     idCheckIn?: string;
+    // Tăng dần MỖI KHI người dùng bấm tay đổi tab Hóa đơn bán/Hóa đơn sửa (không tăng khi
+    // loaiHoaDon tự đổi theo do mở hóa đơn có sẵn từ check-in/hóa đơn chờ) - dùng để trigger reset.
+    resetTrigger?: number;
     arrIdNhomHangFilter?: string[];
     onSetActiveTabLoaiHoaDon: (idLoaiChungTu: number) => void;
     onAddHoaDon_toCache: () => void;
@@ -124,6 +130,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
         idChiNhanhChosed,
         idInvoiceWaiting,
         idCheckIn,
+        resetTrigger,
         arrIdNhomHangFilter,
         onSetActiveTabLoaiHoaDon,
         onAddHoaDon_toCache,
@@ -131,6 +138,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
     } = props;
     const firstLoad = useRef(true);
     const firstLoad_changeLoaiHD = useRef(true);
+    const firstLoad_resetTab = useRef(true);
     const firstLoad_changeIdInvoiceWaiting = useRef(true);
     const [anchorDropdownCustomer, setAnchorDropdownCustomer] = useState<null | HTMLElement>(null);
     const [anchorDropdownPhone, setAnchorDropdownPhone] = useState<null | HTMLElement>(null);
@@ -139,6 +147,12 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
 
     const [anchorGiamGiaHD, setAnchorGiamGiaHD] = useState<null | HTMLElement | SVGElement>(null);
     const isShowPopoverGiamGia = Boolean(anchorGiamGiaHD);
+
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    // Mobile: tách 2 màn hình - 'browse' (chọn dịch vụ/máy) và 'cart' (xem giỏ hàng + thanh toán).
+    // Desktop vẫn hiển thị cả 2 phần cùng lúc như cũ, không phụ thuộc state này.
+    const [mobileStep, setMobileStep] = useState<'browse' | 'cart'>('browse');
 
     const [isLoadingData, setIsLoadingData] = useState(false);
     const [isSavingHoaDon, setIsSavingHoaDon] = useState(false);
@@ -201,12 +215,12 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
         setArrIdNhomHangChosed(arrIdNhomHangChosed?.filter((x) => x !== idNhomHang));
         const arrIdNhom = arrIdNhomHangChosed?.filter((x) => x !== idNhomHang);
         GetListNhomHangHoa_byId(arrIdNhom ?? []);
-        getListHangHoa_groupbyNhom(txtSearch, arrIdNhom ?? []);
+        getListHangHoa_groupbyNhom(txtSearch, arrIdNhom ?? [], loaiHoaDon);
     };
     const BoChonAllNhomHang = () => {
         setArrIdNhomHangChosed([]);
         GetListNhomHangHoa_byId([]);
-        getListHangHoa_groupbyNhom(txtSearch, []);
+        getListHangHoa_groupbyNhom(txtSearch, [], loaiHoaDon);
     };
 
     const getListHangHoa_groupbyNhom = async (txtSearch: string, arrIdNhomHang: string[] = [], loaiHoaDon?: number) => {
@@ -220,7 +234,23 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
             PageSize: 50
         } as PagedProductSearchDto;
         const data = await ProductService.GetDMHangHoa_groupByNhom(input);
-        setListProduct(data);
+
+        // Hóa đơn sửa: chỉ hiển thị hàng hóa/dịch vụ, không hiển thị Điện thoại (điện thoại để bán,
+        // khác với máy sửa của khách - máy sửa chọn riêng ở khu vực thông tin khách/máy phía trên).
+        const filteredData =
+            loaiHoaDon === LoaiChungTu.HOA_DON_SUA_CHUA
+                ? (data ?? [])
+                      .map((nhom: IHangHoaGroupTheoNhomDto) => ({
+                          ...nhom,
+                          hangHoas: nhom.hangHoas?.filter(
+                              (item) =>
+                                  item.idLoaiHangHoa !== LoaiHangHoa.DIEN_THOAI &&
+                                  item.idLoaiHangHoa !== LoaiHangHoa.DIEN_THOAI_SUA
+                          )
+                      }))
+                      .filter((nhom: IHangHoaGroupTheoNhomDto) => (nhom.hangHoas?.length ?? 0) > 0)
+                : data;
+        setListProduct(filteredData);
 
         setIsLoadingData(false);
     };
@@ -229,7 +259,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
         setArrIdNhomHangChosed(arrIdNhomHangFilter ?? []);
 
         if ((arrIdNhomHangFilter?.length ?? 0) > 0) {
-            getListHangHoa_groupbyNhom(txtSearch, arrIdNhomHangFilter ?? []);
+            getListHangHoa_groupbyNhom(txtSearch, arrIdNhomHangFilter ?? [], loaiHoaDon);
             GetListNhomHangHoa_byId(arrIdNhomHangFilter ?? []);
         }
     }, [arrIdNhomHangFilter]);
@@ -300,34 +330,41 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
     };
 
     const InitData_forHoaDon = async () => {
-        console.log('có chạy ở đây không');
-
         const idCheckInNew = idCheckIn ?? Guid.EMPTY;
-        const hdCache = await dbDexie.hoaDon
-            .where('idCheckIn')
-            .equals(idCheckInNew)
-            .and((x) => x.idChiNhanh === idChiNhanhChosed)
-            .toArray();
-        if (hdCache?.length > 0) {
-            console.log('có chạy ở đây không phoneIdChosed', hdCache);
-            setHoaDon({
-                ...hdCache[0],
-                idHangHoa: phoneIdChosed ?? hdCache[0]?.idHangHoa
-            });
-            setHoaDonChiTiet([...(hdCache[0]?.hoaDonChiTiet ?? [])]);
-            onSetActiveTabLoaiHoaDon(hdCache[0]?.idLoaiChungTu ?? LoaiChungTu.HOA_DON_BAN_LE);
-        } else {
-            onSetActiveTabLoaiHoaDon(LoaiChungTu.HOA_DON_BAN_LE);
 
-            setHoaDon({
-                ...hoadon,
-                idKhachHang: customerIdChosed,
-                idHangHoa: phoneIdChosed,
-                idChiNhanh: idChiNhanhChosed,
-                idLoaiChungTu: loaiHoaDon,
-                idCheckIn: idCheckInNew
-            });
+        // idCheckIn = Guid.EMPTY nghĩa là "chưa gắn với lần check-in cụ thể nào" - có thể có
+        // nhiều hóa đơn nháp khác nhau cùng mang giá trị này trong cache (Dexie), nên KHÔNG được
+        // dùng nó để tra hóa đơn (nếu không sẽ lấy nhầm hóa đơn của khách khác - "nhảy hóa đơn linh tinh").
+        // Chỉ tra theo idCheckIn khi đó là 1 lần check-in thực sự (id cụ thể, luôn ứng với đúng 1 hóa đơn).
+        if (idCheckInNew !== Guid.EMPTY) {
+            const hdCache = await dbDexie.hoaDon
+                .where('idCheckIn')
+                .equals(idCheckInNew)
+                .and((x) => x.idChiNhanh === idChiNhanhChosed)
+                .toArray();
+            if (hdCache?.length > 0) {
+                setHoaDon({
+                    ...hdCache[0],
+                    idHangHoa: phoneIdChosed ?? hdCache[0]?.idHangHoa
+                });
+                setHoaDonChiTiet([...(hdCache[0]?.hoaDonChiTiet ?? [])]);
+                onSetActiveTabLoaiHoaDon(hdCache[0]?.idLoaiChungTu ?? LoaiChungTu.HOA_DON_BAN_LE);
+                return;
+            }
         }
+
+        // Không có hóa đơn nháp nào cho lần check-in này - giữ nguyên loại hóa đơn (tab) đang chọn,
+        // KHÔNG ép về Hóa đơn bán (trước đây ép cứng về đây, sai khi shop chỉ bật Hóa đơn sửa).
+        onSetActiveTabLoaiHoaDon(loaiHoaDon);
+
+        setHoaDon({
+            ...hoadon,
+            idKhachHang: customerIdChosed,
+            idHangHoa: phoneIdChosed,
+            idChiNhanh: idChiNhanhChosed,
+            idLoaiChungTu: loaiHoaDon,
+            idCheckIn: idCheckInNew
+        });
     };
 
     const AddHD_toCache_IfNotExists = async () => {
@@ -366,9 +403,31 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
         // await AgreeChangeLoaiHoaDon();
     };
 
+    const ResetHoaDon_forNewTab = () => {
+        setHoaDon(
+            new PageHoaDonDto({
+                idLoaiChungTu: loaiHoaDon,
+                idChiNhanh: idChiNhanhChosed,
+                maKhachHang: 'KL',
+                tenKhachHang: 'Chưa chọn khách',
+                tenHangHoa: 'chưa chọn hàng hóa'
+            })
+        );
+        setHoaDonChiTiet([]);
+        setCustomerChosed({} as CreateOrEditKhachHangDto);
+        setPhoneChosed(null);
+    };
+
     useEffect(() => {
         InitData_forHoaDon();
     }, [idChiNhanhChosed, idCheckIn, customerIdChosed, phoneIdChosed]);
+
+    useEffect(() => {
+        // Mobile: chỉ quay về màn hình chọn dịch vụ khi chuyển sang 1 hóa đơn khác (hóa đơn đang chờ),
+        // KHÔNG reset khi chỉ đổi tab Hóa đơn bán/Hóa đơn sửa (đang xem hóa đơn hiện tại) - tránh mất
+        // luồng đang xem (giỏ hàng/thanh toán) một cách bất ngờ.
+        setMobileStep('browse');
+    }, [idInvoiceWaiting]);
 
     useEffect(() => {
         // update loaiHoaDon if change tab
@@ -379,6 +438,17 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
         ChangeLoaiHoaDon();
         getListHangHoa_groupbyNhom(txtSearch, arrIdNhomHangFilter, loaiHoaDon);
     }, [loaiHoaDon]);
+
+    useEffect(() => {
+        // Chỉ reset khi người dùng bấm tay đổi tab Hóa đơn bán/Hóa đơn sửa (resetTrigger tăng).
+        // KHÔNG reset khi loaiHoaDon tự đổi theo do mở 1 hóa đơn có sẵn (từ check-in/hóa đơn chờ),
+        // nếu không sẽ xóa mất thông tin khách/máy/giỏ hàng vừa được load lên.
+        if (firstLoad_resetTab.current) {
+            firstLoad_resetTab.current = false;
+            return;
+        }
+        ResetHoaDon_forNewTab();
+    }, [resetTrigger]);
 
     useEffect(() => {
         // get & set HD by IdInvoiceWaiting
@@ -401,6 +471,19 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
     const PageLoad = () => {
         //
     };
+
+    // Mobile: tóm tắt trực quan tối đa 3 dịch vụ đầu (tên + giá), dư thì gộp "+N dịch vụ khác"
+    const MAX_MOBILE_SUMMARY_ITEMS = 3;
+    const mobileSummaryItems = (hoaDonChiTiet ?? []).slice(0, MAX_MOBILE_SUMMARY_ITEMS);
+    const mobileSummaryExtraCount = Math.max((hoaDonChiTiet?.length ?? 0) - MAX_MOBILE_SUMMARY_ITEMS, 0);
+    const mobileSummaryText = mobileSummaryItems
+        .map((item) => {
+            const gia = Intl.NumberFormat('vi-VN').format(item?.thanhTienSauCK ?? item?.donGiaSauCK ?? 0);
+            const soLuong = item?.soLuong && item.soLuong > 1 ? ` x${item.soLuong}` : '';
+            return `${item?.tenHangHoa ?? ''}${soLuong} ${gia}đ`;
+        })
+        .join(', ')
+        .concat(mobileSummaryExtraCount > 0 ? ` +${mobileSummaryExtraCount} dịch vụ khác` : '');
 
     const cthd_SumThanhTienTruocCK = hoaDonChiTiet?.reduce((prevValue: number, item: PageHoaDonChiTietDto) => {
         return (item?.thanhTienTruocCK ?? 0) + prevValue;
@@ -641,6 +724,17 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
     };
 
     const InsertCustomer_toCheckIn = async (customerId: string, idHangHoa?: string): Promise<string> => {
+        // Chỉ tạo check-in cho hóa đơn sửa chữa, hóa đơn bán thường không cần check-in
+        if (loaiHoaDon !== LoaiChungTu.HOA_DON_SUA_CHUA) {
+            return Guid.EMPTY;
+        }
+
+        // Chưa có khách hàng thật (cột IdKhachHang bắt buộc, có khóa ngoại) -> chưa tạo check-in được,
+        // để tránh lỗi 500. Sẽ tạo lại khi khách hàng được gán (chọn/khách thêm mới).
+        if (utils.checkNull_OrEmpty(customerId)) {
+            return Guid.EMPTY;
+        }
+
         const objCheckInNew: Partial<KHCheckInDto> = {
             idKhachHang: customerId,
             idHangHoa: idHangHoa ?? null,
@@ -979,6 +1073,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                             thanhTienTruocCK: isSuDungDV ? 0 : ctUpdate.thanhTienTruocCK,
                             thanhTienSauCK: isSuDungDV ? 0 : ctUpdate.thanhTienSauCK,
                             thanhTienSauVAT: isSuDungDV ? 0 : ctUpdate.thanhTienSauVAT,
+                            soThangBaoHanh: ctUpdate.soThangBaoHanh,
                             nhanVienThucHien: item?.nhanVienThucHien?.map((nv) => {
                                 if (nv.ptChietKhau > 0) {
                                     return {
@@ -1017,6 +1112,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                         thanhTienTruocCK: isSuDungDV ? 0 : ctUpdate.thanhTienTruocCK,
                         thanhTienSauCK: isSuDungDV ? 0 : ctUpdate.thanhTienSauCK,
                         thanhTienSauVAT: isSuDungDV ? 0 : ctUpdate.thanhTienSauVAT,
+                        soThangBaoHanh: ctUpdate.soThangBaoHanh,
                         nhanVienThucHien: item?.nhanVienThucHien?.map((nv) => {
                             if (nv.ptChietKhau > 0) {
                                 return {
@@ -1343,6 +1439,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
         DataMauIn.hoadon.maHoaDon = mahoadon;
 
         DataMauIn.maySua.tenHangHoa = phoneChosed?.tenHangHoa;
+        DataMauIn.maySua.imel = phoneChosed?.imel;
         DataMauIn.maySua.noiDung = phoneChosed?.noiDung;
         DataMauIn.maySua.loi = phoneChosed?.loi;
 
@@ -1648,7 +1745,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                     tenKhachHang: data?.tenKhachHang,
                     maKhachHang: data?.maKhachHang,
                     soDienThoai: data?.soDienThoai,
-                    idLoaiChungTu: 17
+                    idLoaiChungTu: LoaiChungTu.HOA_DON_SUA_CHUA
                 });
                 setObjAlert({ show: true, type: 1, mes: 'Thêm ' + sLoai + ' thành công' });
                 break;
@@ -1762,608 +1859,668 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                 onOk={handleDialogSubmit}
             /> */}
             <Grid container minHeight={'86vh'} maxHeight={'86vh'}>
-                {!isThanhToanTienMat ? (
-                    <Grid item lg={7} md={6} xs={12} zIndex={5}>
-                        <PaymentsForm
-                            tongPhaiTra={hoadon?.tongThanhToan ?? 0}
-                            onClose={() => setIsThanhToanTienMat(true)}
-                            onSaveHoaDon={thanhToanAtPaymentForm}
-                            inforHD={{
-                                maHoaDon: '',
-                                idKhachHang: hoadon?.idKhachHang ?? '',
-                                id: hoadon?.id ?? '',
-                                idChiNhanh: hoadon?.idChiNhanh ?? '',
-                                tenKhachHang: customerChosed?.tenKhachHang ?? ''
-                            }}
-                        />
-                    </Grid>
-                ) : (
-                    <Grid
-                        item
-                        lg={7}
-                        md={6}
-                        xs={12}
-                        sm={5}
-                        borderRight={'1px solid rgb(224, 228, 235)'}
-                        marginTop={{ md: '-64px', sm: '-64px', lg: 0 }}>
-                        <Stack spacing={2} overflow={'auto'} maxHeight={'84vh'}>
-                            {(nhomHangHoaChosed?.length ?? 0) > 0 && (
-                                <Stack spacing={2}>
-                                    <Stack direction={'row'} spacing={2} alignItems={'center'}>
-                                        <Typography fontWeight={500}>Nhóm hàng đã chọn</Typography>
-                                        <Stack
-                                            direction={'row'}
-                                            spacing={1}
-                                            alignItems={'center'}
-                                            color={'brown'}
-                                            sx={{ cursor: 'pointer' }}>
-                                            <Typography fontSize={13} onClick={() => BoChonAllNhomHang()}>
-                                                Bỏ chọn tất cả
-                                            </Typography>
-                                            <CloseOutlinedIcon sx={{ width: 15, height: 15 }} />
-                                        </Stack>
-                                    </Stack>
-                                    <Stack direction={'row'} spacing={1} sx={{ overflowX: 'auto' }}>
-                                        {nhomHangHoaChosed?.map((x, index) => (
-                                            <Stack key={index} padding={1} bgcolor={'#f0e0da'} borderRadius={4}>
-                                                <Stack direction={'row'} spacing={1} alignItems={'center'}>
-                                                    <Typography
-                                                        fontWeight={500}
-                                                        className="lableOverflow"
-                                                        maxWidth={300}
-                                                        title={x?.tenNhomHang ?? ''}>
-                                                        {x?.tenNhomHang}
-                                                    </Typography>
-                                                    <CloseOutlinedIcon
-                                                        sx={{ width: 20, height: 20, cursor: 'pointer' }}
-                                                        onClick={() => BoChon1NhomHang(x?.id ?? '')}
-                                                    />
-                                                </Stack>
-                                            </Stack>
-                                        ))}
-                                    </Stack>
-                                </Stack>
-                            )}
-                            {isLoadingData ? (
-                                <Loading />
-                            ) : (
-                                <>
-                                    {listProduct.map((nhom: IHangHoaGroupTheoNhomDto, index: number) => (
-                                        <Stack key={index}>
-                                            <Typography fontSize={16} fontWeight={500} marginBottom={0.5}>
-                                                {nhom?.tenNhomHang}
-                                            </Typography>
-                                            <Grid container spacing={2} paddingRight={2}>
-                                                {nhom?.hangHoas.map((item, index2) => (
-                                                    <Grid key={index2} item lg={4} md={6} xs={12} sm={12}>
-                                                        <Stack
-                                                            padding={2}
-                                                            title={item.tenHangHoa}
-                                                            sx={{
-                                                                backgroundColor: 'var(--color-bg)',
-                                                                border: '1px solid transparent',
-                                                                '&:hover': {
-                                                                    borderColor: 'var(--color-main)',
-                                                                    cursor: 'pointer'
-                                                                }
-                                                            }}>
-                                                            <Stack spacing={0.5} onClick={() => choseProduct(item)}>
-                                                                <Typography
-                                                                    fontWeight={500}
-                                                                    variant="body2"
-                                                                    sx={{
-                                                                        overflow: 'hidden',
-                                                                        textOverflow: 'ellipsis',
-                                                                        whiteSpace: 'nowrap',
-                                                                        width: '100%'
-                                                                    }}>
-                                                                    {item?.tenHangHoa}, {item?.mau}
-                                                                </Typography>
+                {!isThanhToanTienMat
+                    ? (!isMobile || mobileStep === 'cart') && (
+                          <Grid item lg={7} md={6} xs={12} zIndex={5}>
+                              <PaymentsForm
+                                  tongPhaiTra={hoadon?.tongThanhToan ?? 0}
+                                  onClose={() => setIsThanhToanTienMat(true)}
+                                  onSaveHoaDon={thanhToanAtPaymentForm}
+                                  inforHD={{
+                                      maHoaDon: '',
+                                      idKhachHang: hoadon?.idKhachHang ?? '',
+                                      id: hoadon?.id ?? '',
+                                      idChiNhanh: hoadon?.idChiNhanh ?? '',
+                                      tenKhachHang: customerChosed?.tenKhachHang ?? ''
+                                  }}
+                              />
+                          </Grid>
+                      )
+                    : (!isMobile || mobileStep === 'browse') && (
+                          <Grid
+                              item
+                              lg={7}
+                              md={6}
+                              xs={12}
+                              sm={5}
+                              borderRight={'1px solid rgb(224, 228, 235)'}
+                              marginTop={{ md: '-64px', sm: '-64px', lg: 0 }}>
+                              <Stack spacing={2} overflow={'auto'} maxHeight={'84vh'}>
+                                  {(nhomHangHoaChosed?.length ?? 0) > 0 && (
+                                      <Stack spacing={2}>
+                                          <Stack direction={'row'} spacing={2} alignItems={'center'}>
+                                              <Typography fontWeight={500}>Nhóm hàng đã chọn</Typography>
+                                              <Stack
+                                                  direction={'row'}
+                                                  spacing={1}
+                                                  alignItems={'center'}
+                                                  color={'brown'}
+                                                  sx={{ cursor: 'pointer' }}>
+                                                  <Typography fontSize={13} onClick={() => BoChonAllNhomHang()}>
+                                                      Bỏ chọn tất cả
+                                                  </Typography>
+                                                  <CloseOutlinedIcon sx={{ width: 15, height: 15 }} />
+                                              </Stack>
+                                          </Stack>
+                                          <Stack direction={'row'} spacing={1} sx={{ overflowX: 'auto' }}>
+                                              {nhomHangHoaChosed?.map((x, index) => (
+                                                  <Stack key={index} padding={1} bgcolor={'#f0e0da'} borderRadius={4}>
+                                                      <Stack direction={'row'} spacing={1} alignItems={'center'}>
+                                                          <Typography
+                                                              fontWeight={500}
+                                                              className="lableOverflow"
+                                                              maxWidth={300}
+                                                              title={x?.tenNhomHang ?? ''}>
+                                                              {x?.tenNhomHang}
+                                                          </Typography>
+                                                          <CloseOutlinedIcon
+                                                              sx={{ width: 20, height: 20, cursor: 'pointer' }}
+                                                              onClick={() => BoChon1NhomHang(x?.id ?? '')}
+                                                          />
+                                                      </Stack>
+                                                  </Stack>
+                                              ))}
+                                          </Stack>
+                                      </Stack>
+                                  )}
+                                  {isLoadingData ? (
+                                      <Loading />
+                                  ) : (
+                                      <>
+                                          {listProduct.map((nhom: IHangHoaGroupTheoNhomDto, index: number) => (
+                                              <Stack key={index}>
+                                                  <Typography fontSize={16} fontWeight={500} marginBottom={0.5}>
+                                                      {nhom?.tenNhomHang}
+                                                  </Typography>
+                                                  <Grid container spacing={2} paddingRight={2}>
+                                                      {nhom?.hangHoas.map((item, index2) => (
+                                                          <Grid key={index2} item lg={4} md={6} xs={12} sm={12}>
+                                                              <Stack
+                                                                  padding={2}
+                                                                  title={item.tenHangHoa}
+                                                                  sx={{
+                                                                      backgroundColor: 'var(--color-bg)',
+                                                                      border: '1px solid transparent',
+                                                                      '&:hover': {
+                                                                          borderColor: 'var(--color-main)',
+                                                                          cursor: 'pointer'
+                                                                      }
+                                                                  }}>
+                                                                  <Stack
+                                                                      spacing={0.5}
+                                                                      onClick={() => choseProduct(item)}>
+                                                                      <Typography
+                                                                          fontWeight={500}
+                                                                          variant="body2"
+                                                                          sx={{
+                                                                              overflow: 'hidden',
+                                                                              textOverflow: 'ellipsis',
+                                                                              whiteSpace: 'nowrap',
+                                                                              width: '100%'
+                                                                          }}>
+                                                                          {item?.tenHangHoa}
+                                                                      </Typography>
 
-                                                                <Typography variant="caption" sx={{ lineHeight: 1 }}>
-                                                                    {item?.imel}
-                                                                </Typography>
+                                                                      {item?.idLoaiHangHoa ===
+                                                                          LoaiHangHoa.DIEN_THOAI && (
+                                                                          <>
+                                                                              <Typography
+                                                                                  variant="caption"
+                                                                                  sx={{ lineHeight: 1 }}>
+                                                                                  {item?.mau}
+                                                                                  {item?.dungLuong
+                                                                                      ? ` - ${item.dungLuong}GB`
+                                                                                      : ''}
+                                                                              </Typography>
+                                                                              <Typography
+                                                                                  variant="caption"
+                                                                                  sx={{ lineHeight: 1 }}>
+                                                                                  IMEI: {item?.imel}
+                                                                              </Typography>
+                                                                          </>
+                                                                      )}
 
-                                                                <Typography variant="caption">
-                                                                    {Intl.NumberFormat('vi-VN').format(
-                                                                        item?.giaBan as number
-                                                                    )}
-                                                                </Typography>
-                                                            </Stack>
-                                                        </Stack>
-                                                    </Grid>
-                                                ))}
-                                            </Grid>
-                                        </Stack>
-                                    ))}
-                                </>
-                            )}
-                        </Stack>
-                    </Grid>
-                )}
+                                                                      <Typography variant="caption">
+                                                                          {Intl.NumberFormat('vi-VN').format(
+                                                                              item?.giaBan as number
+                                                                          )}
+                                                                      </Typography>
+                                                                  </Stack>
+                                                              </Stack>
+                                                          </Grid>
+                                                      ))}
+                                                  </Grid>
+                                              </Stack>
+                                          ))}
+                                      </>
+                                  )}
+                              </Stack>
 
-                <Grid item lg={5} md={6} xs={12} sm={7}>
-                    <Stack marginLeft={2} position={'relative'} height={'100%'}>
-                        <Stack>
-                            {loaiHoaDon === LoaiChungTu.HOA_DON_BAN_LE ? (
-                                // UI hóa đơn bán lẻ
+                              {isMobile && (
+                                  <Stack
+                                      direction="row"
+                                      alignItems="center"
+                                      justifyContent="space-between"
+                                      spacing={2}
+                                      sx={{
+                                          position: 'sticky',
+                                          bottom: 0,
+                                          left: 0,
+                                          right: 0,
+                                          mt: 1,
+                                          p: 1.5,
+                                          backgroundColor: 'rgb(245 241 241)',
+                                          borderTop: '1px solid rgb(224, 228, 235)',
+                                          boxSizing: 'border-box'
+                                      }}>
+                                      <Stack spacing={0.2} minWidth={0} flex={1}>
+                                          {phoneChosed?.tenHangHoa && (
+                                              <Typography variant="caption" fontWeight={600} noWrap>
+                                                  {[phoneChosed.tenHangHoa, phoneChosed.dungLuong, phoneChosed.mau]
+                                                      .filter(Boolean)
+                                                      .join(', ')}
+                                              </Typography>
+                                          )}
+                                          {(hoaDonChiTiet?.length ?? 0) > 0 ? (
+                                              <Typography
+                                                  variant="caption"
+                                                  color="text.secondary"
+                                                  title={mobileSummaryText}
+                                                  sx={{
+                                                      overflow: 'hidden',
+                                                      textOverflow: 'ellipsis',
+                                                      whiteSpace: 'nowrap'
+                                                  }}>
+                                                  {mobileSummaryText}
+                                              </Typography>
+                                          ) : (
+                                              <Typography variant="caption" color="text.secondary">
+                                                  Chưa chọn dịch vụ nào
+                                              </Typography>
+                                          )}
+                                          <Typography variant="body2" fontWeight={600} noWrap>
+                                              {Intl.NumberFormat('vi-VN').format(hoadon?.tongThanhToan ?? 0)}đ
+                                          </Typography>
+                                      </Stack>
+                                      <Button
+                                          variant="contained"
+                                          sx={{ flexShrink: 0 }}
+                                          disabled={(hoaDonChiTiet?.length ?? 0) === 0}
+                                          onClick={() => setMobileStep('cart')}>
+                                          Tiếp tục
+                                      </Button>
+                                  </Stack>
+                              )}
+                          </Grid>
+                      )}
+
+                {(!isMobile || mobileStep === 'cart') && (
+                    <Grid item lg={5} md={6} xs={12} sm={7}>
+                        <Stack marginLeft={isMobile ? 0 : 2} height={'100%'}>
+                            {isMobile && (
                                 <Stack
                                     direction="row"
                                     alignItems="center"
-                                    justifyContent="space-between"
-                                    paddingBottom={2}
-                                    sx={{
-                                        borderBottom: '1px solid #eee'
-                                    }}>
-                                    {/* LEFT: Thông tin khách */}
+                                    spacing={1}
+                                    sx={{ cursor: 'pointer', pb: 1 }}
+                                    onClick={() => setMobileStep('browse')}>
+                                    <ArrowBackIcon fontSize="small" />
+                                    <Typography variant="body2" fontWeight={500}>
+                                        Quay lại chọn dịch vụ
+                                    </Typography>
+                                </Stack>
+                            )}
+                            <Stack flex={isMobile ? undefined : 1} minHeight={isMobile ? undefined : 0}>
+                                {loaiHoaDon === LoaiChungTu.HOA_DON_BAN_LE ? (
+                                    // UI hóa đơn bán lẻ
                                     <Stack
                                         direction="row"
-                                        spacing={1.5}
                                         alignItems="center"
-                                        sx={{ cursor: 'pointer', flex: 1 }}
-                                        onClick={(event) => setAnchorDropdownCustomer(event.currentTarget)}>
-                                        <Avatar sx={{ width: 36, height: 36 }} />
+                                        justifyContent="space-between"
+                                        paddingBottom={2}
+                                        sx={{
+                                            borderBottom: '1px solid #eee'
+                                        }}>
+                                        {/* LEFT: Thông tin khách */}
+                                        <Stack
+                                            direction="row"
+                                            spacing={1.5}
+                                            alignItems="center"
+                                            sx={{ cursor: 'pointer', flex: 1 }}
+                                            onClick={(event) => setAnchorDropdownCustomer(event.currentTarget)}>
+                                            <Avatar sx={{ width: 36, height: 36 }} />
 
-                                        <Stack spacing={0.3} minWidth={0}>
-                                            {/* Tên + nhóm */}
-                                            <Typography variant="body2" fontWeight={500} noWrap>
-                                                {customerChosed?.tenKhachHang ?? 'Chưa chọn khách hàng'}
-                                            </Typography>
-
-                                            {customerChosed?.isShow && (
-                                                <Typography variant="caption" color="text.secondary" noWrap>
-                                                    Nhóm: {customerChosed?.tenNhomKhach}
+                                            <Stack spacing={0.3} minWidth={0}>
+                                                {/* Tên + nhóm */}
+                                                <Typography variant="body2" fontWeight={500} noWrap>
+                                                    {customerChosed?.tenKhachHang ?? 'Chưa chọn khách hàng'}
                                                 </Typography>
-                                            )}
 
-                                            {/* Công nợ + SĐT */}
-                                            {customerChosed?.isShow && (
-                                                <Stack direction="row" spacing={2}>
-                                                    {customerChosed?.conNo !== 0 && (
-                                                        <Typography variant="caption" fontWeight={500}>
-                                                            Nợ:{' '}
-                                                            {Intl.NumberFormat('vi-VN').format(
-                                                                customerChosed?.conNo ?? 0
-                                                            )}
-                                                            đ
-                                                        </Typography>
-                                                    )}
-
-                                                    <Typography variant="caption" color="text.secondary">
-                                                        {customerChosed?.soDienThoai}
+                                                {customerChosed?.isShow && (
+                                                    <Typography variant="caption" color="text.secondary" noWrap>
+                                                        Nhóm: {customerChosed?.tenNhomKhach}
                                                     </Typography>
-                                                </Stack>
-                                            )}
-                                        </Stack>
-                                    </Stack>
+                                                )}
 
-                                    <Button
-                                        variant="contained"
-                                        size="small"
-                                        color={
-                                            customerChosed?.id && customerChosed?.id !== Guid.EMPTY
-                                                ? 'error'
-                                                : 'primary'
-                                        }
-                                        onClick={() => {
-                                            if (customerChosed?.id && customerChosed?.id !== Guid.EMPTY) {
-                                                handleRemoveCustomer();
-                                            } else {
-                                                showModalAddCustomer();
-                                            }
-                                        }}>
-                                        {customerChosed?.id && customerChosed?.id !== Guid.EMPTY
-                                            ? '✕'
-                                            : 'Thêm khách hàng'}
-                                    </Button>
-                                    {/* Dropdown */}
-                                    <MenuWithDataFromDB
-                                        open={expandSearchCus}
-                                        anchorEl={anchorDropdownCustomer}
-                                        handleClose={() => setAnchorDropdownCustomer(null)}
-                                        typeSearch={TypeSearchfromDB.CUSTOMER}
-                                        handleChoseItem={changeCustomer}
-                                    />
-                                </Stack>
-                            ) : (
-                                <Stack
-                                    direction="row"
-                                    alignItems="center"
-                                    justifyContent="space-between"
-                                    sx={{
-                                        borderBottom: '1px solid #eee',
-                                        pb: 2
-                                    }}>
-                                    <Stack
-                                        direction="row"
-                                        spacing={1.5}
-                                        alignItems="flex-start"
-                                        sx={{ cursor: 'pointer', flex: 1 }}
-                                        onClick={(event) => {
-                                            setAnchorDropdownPhone(event.currentTarget);
-                                        }}>
-                                        <Avatar sx={{ width: 36, height: 36 }} />
-
-                                        <Stack spacing={1} flex={1}>
-                                            {/* 2 cột */}
-                                            <Stack
-                                                direction="row"
-                                                spacing={3}
-                                                justifyContent="space-between"
-                                                alignItems="flex-start">
-                                                <Stack spacing={0.3} minWidth={140}>
-                                                    <Typography variant="caption" fontWeight={600}>
-                                                        {customerChosed?.tenKhachHang || 'Khách lẻ'}
-                                                    </Typography>
-
-                                                    <Typography variant="caption">
-                                                        {customerChosed?.soDienThoai || '---'}
-                                                    </Typography>
-
-                                                    {!phoneChosed && (
-                                                        <Typography
-                                                            variant="caption"
-                                                            color="text.secondary"
-                                                            fontStyle="italic">
-                                                            Chưa chọn máy
-                                                        </Typography>
-                                                    )}
-                                                </Stack>
-
-                                                <Stack spacing={0.3} flex={1} minWidth={0}>
-                                                    {phoneChosed?.tenHangHoa && (
-                                                        <Typography variant="body2" fontWeight={500} noWrap>
-                                                            {[
-                                                                phoneChosed.tenHangHoa,
-                                                                phoneChosed.dungLuong,
-                                                                phoneChosed.mau
-                                                            ]
-                                                                .filter(Boolean)
-                                                                .join(', ')}
-                                                        </Typography>
-                                                    )}
-
-                                                    {phoneChosed?.imel && (
-                                                        <Typography variant="caption" color="text.secondary" noWrap>
-                                                            IMEI: {phoneChosed?.imel}
-                                                        </Typography>
-                                                    )}
-                                                </Stack>
-                                            </Stack>
-
-                                            {/* Nội dung + lỗi */}
-                                            {phoneChosed && (
-                                                <Stack spacing={0.5}>
-                                                    <Typography variant="caption">
-                                                        <strong>Nội dung:</strong> {phoneChosed?.noiDung}
-                                                    </Typography>
-
-                                                    <Typography variant="caption">
-                                                        <strong>Lỗi trước sửa:</strong> {phoneChosed?.loi}
-                                                    </Typography>
-                                                </Stack>
-                                            )}
-                                        </Stack>
-                                    </Stack>
-                                    <Button
-                                        variant="contained"
-                                        size="small"
-                                        color={phoneChosed ? 'error' : 'primary'}
-                                        onClick={() => {
-                                            if (phoneChosed) {
-                                                handleRemovePhone();
-                                            } else {
-                                                showModalAddProduct(1);
-                                            }
-                                        }}>
-                                        {phoneChosed ? '✕' : 'Thêm máy sửa chữa'}
-                                    </Button>
-                                    <MenuWithDataFromPhone
-                                        open={expandSearchCusPhone}
-                                        anchorEl={anchorDropdownPhone}
-                                        handleClose={() => setAnchorDropdownPhone(null)}
-                                        typeSearch={TypeSearchfromDB.CUSTOMER}
-                                        handleChoseItem={changePhone}
-                                    />
-                                </Stack>
-                            )}
-
-                            <Stack overflow={'auto'} maxHeight={'calc(84vh - 280px)!important'} zIndex={3}>
-                                {hoaDonChiTiet
-                                    ?.sort((x, y) => {
-                                        const a = x.stt;
-                                        const b = y.stt;
-                                        return a > b ? -1 : a < b ? 1 : 0;
-                                    })
-                                    .map((cthd, index) => (
-                                        <Grid
-                                            container
-                                            key={index}
-                                            borderBottom={'1px solid #cccc'}
-                                            alignItems={'center'}
-                                            padding={'8px 0px'}>
-                                            <Grid item xs={12} lg={6} md={5}>
-                                                <Grid item xs={12} lg={6} md={5}>
-                                                    <Stack direction="row" spacing={1} alignItems="flex-start">
-                                                        <PersonAddOutlinedIcon
-                                                            titleAccess="Chọn nhân viên thực hiện"
-                                                            sx={{ cursor: 'pointer', mt: '2px' }}
-                                                            onClick={() => showPopNhanVienThucHien(cthd)}
-                                                        />
-
-                                                        <Stack spacing={0}>
-                                                            <Typography
-                                                                className="lableOverflow"
-                                                                title={cthd?.tenHangHoa}>
-                                                                {cthd?.tenHangHoa}, {cthd?.mau}
-                                                            </Typography>
-
-                                                            <Typography
-                                                                variant="caption"
-                                                                className="lableOverflow"
-                                                                title={cthd?.imel}>
-                                                                {cthd?.imel}
-                                                            </Typography>
-                                                        </Stack>
-                                                    </Stack>
-                                                </Grid>
-                                            </Grid>
-                                            <Grid item xs={12} lg={6} md={7}>
-                                                <Grid container alignItems={'center'}>
-                                                    <Grid item xs={6}>
-                                                        <Stack
-                                                            spacing={1}
-                                                            direction={'row'}
-                                                            justifyContent={'end'}
-                                                            title="Cập nhật giỏ hàng"
-                                                            onClick={() => showPopChiTietGioHang(cthd?.id ?? '')}>
-                                                            <Stack
-                                                                direction={'row'}
-                                                                spacing={1}
-                                                                flex={1}
-                                                                justifyContent={'end'}
-                                                                alignItems={'center'}>
-                                                                <Typography fontWeight={500} className="text-cursor">
-                                                                    {cthd?.soLuong}
-                                                                </Typography>
-
-                                                                <Typography>x</Typography>
-                                                            </Stack>
-                                                            <Stack flex={3}>
-                                                                <Typography className="text-cursor" textAlign={'left'}>
-                                                                    {Intl.NumberFormat('vi-VN').format(
-                                                                        cthd?.donGiaTruocCK ?? 0
-                                                                    )}
-                                                                </Typography>
-                                                            </Stack>
-                                                        </Stack>
-                                                    </Grid>
-                                                    <Grid item xs={6}>
-                                                        <Stack
-                                                            spacing={0.5}
-                                                            direction={'row'}
-                                                            textAlign={'right'}
-                                                            justifyContent={'end'}
-                                                            alignItems={'center'}>
-                                                            <Typography fontWeight={500}>
+                                                {/* Công nợ + SĐT */}
+                                                {customerChosed?.isShow && (
+                                                    <Stack direction="row" spacing={2}>
+                                                        {customerChosed?.conNo !== 0 && (
+                                                            <Typography variant="caption" fontWeight={500}>
+                                                                Nợ:{' '}
                                                                 {Intl.NumberFormat('vi-VN').format(
-                                                                    cthd?.thanhTienSauCK ?? 0
+                                                                    customerChosed?.conNo ?? 0
                                                                 )}
+                                                                đ
                                                             </Typography>
-                                                            <IconButton
-                                                                aria-label="Xóa chi tiết hóa đơn"
-                                                                title="Xóa chi tiết hóa đơn"
-                                                                onClick={() => removeCTHD(cthd)}>
-                                                                <DeleteOutlinedIcon color="error" />
-                                                            </IconButton>
-                                                        </Stack>
-                                                    </Grid>
-                                                </Grid>
-                                            </Grid>
-
-                                            <Grid item xs={12} lg={6} md={5}>
-                                                {(cthd?.nhanVienThucHien?.length ?? 0) > 0 && (
-                                                    <Stack direction={'row'} spacing={1}>
-                                                        {cthd?.nhanVienThucHien
-                                                            ?.filter((x, index) => index < 2)
-                                                            ?.map((nv, indexNV) => (
-                                                                <Chip
-                                                                    key={indexNV}
-                                                                    sx={{
-                                                                        backgroundColor: 'var(--color-bg)',
-                                                                        '& .MuiChip-deleteIcon:hover': {
-                                                                            color: 'red'
-                                                                        }
-                                                                    }}
-                                                                    label={nv?.tenNhanVien}
-                                                                    deleteIcon={<CloseIcon sx={{ width: 20 }} />}
-                                                                    onDelete={() => RemoveNVThucHien(cthd, nv)}
-                                                                />
-                                                            ))}
-                                                        {(cthd?.nhanVienThucHien?.length ?? 0) > 2 && (
-                                                            <Chip
-                                                                sx={{ backgroundColor: 'var(--color-bg)' }}
-                                                                label={`${(cthd?.nhanVienThucHien?.length ?? 0) - 2} +`}
-                                                            />
                                                         )}
+
+                                                        <Typography variant="caption" color="text.secondary">
+                                                            {customerChosed?.soDienThoai}
+                                                        </Typography>
                                                     </Stack>
                                                 )}
-                                            </Grid>
+                                            </Stack>
+                                        </Stack>
 
-                                            <Grid item xs={12} lg={6} md={7}>
-                                                <Grid container>
-                                                    <Grid item lg={12} width={'100%'}>
-                                                        <Stack
-                                                            spacing={1}
-                                                            direction={'row'}
-                                                            alignItems={'center'}
-                                                            marginTop={'-12px'}>
-                                                            <Stack flex={1} textAlign={'center'} component={'span'}>
-                                                                {(cthd?.soLuongConLai ?? 0) > 0 && (
-                                                                    <Typography
-                                                                        fontWeight={500}
-                                                                        variant="body2"
-                                                                        component={'span'}>
-                                                                        <span>{'/'}</span>
-                                                                        <span>{cthd?.soLuongConLai}</span>
-                                                                    </Typography>
-                                                                )}
-                                                            </Stack>
-                                                            <Stack flex={6}>
-                                                                {(cthd?.tienChietKhau ?? 0) > 0 && (
-                                                                    <Typography
-                                                                        variant="caption"
-                                                                        fontStyle={'italic'}
-                                                                        color={'var( --color-text-secondary)'}
-                                                                        component={'span'}>
-                                                                        Giảm{' '}
-                                                                        <Typography
-                                                                            component={'span'}
-                                                                            variant="caption">
-                                                                            {Intl.NumberFormat('vi-VN').format(
-                                                                                cthd?.tienChietKhau ?? 0
-                                                                            )}
-                                                                        </Typography>
-                                                                    </Typography>
-                                                                )}
+                                        <Button
+                                            variant="contained"
+                                            size="small"
+                                            color={
+                                                customerChosed?.id && customerChosed?.id !== Guid.EMPTY
+                                                    ? 'error'
+                                                    : 'primary'
+                                            }
+                                            onClick={() => {
+                                                if (customerChosed?.id && customerChosed?.id !== Guid.EMPTY) {
+                                                    handleRemoveCustomer();
+                                                } else {
+                                                    showModalAddCustomer();
+                                                }
+                                            }}>
+                                            {customerChosed?.id && customerChosed?.id !== Guid.EMPTY
+                                                ? '✕'
+                                                : 'Thêm khách hàng'}
+                                        </Button>
+                                        {/* Dropdown */}
+                                        <MenuWithDataFromDB
+                                            open={expandSearchCus}
+                                            anchorEl={anchorDropdownCustomer}
+                                            handleClose={() => setAnchorDropdownCustomer(null)}
+                                            typeSearch={TypeSearchfromDB.CUSTOMER}
+                                            handleChoseItem={changeCustomer}
+                                        />
+                                    </Stack>
+                                ) : (
+                                    <Stack
+                                        direction="row"
+                                        alignItems="center"
+                                        justifyContent="space-between"
+                                        sx={{
+                                            borderBottom: '1px solid #eee',
+                                            pb: 2
+                                        }}>
+                                        <Stack
+                                            direction="row"
+                                            spacing={1.5}
+                                            alignItems="flex-start"
+                                            sx={{ cursor: 'pointer', flex: 1 }}
+                                            onClick={(event) => {
+                                                setAnchorDropdownPhone(event.currentTarget);
+                                            }}>
+                                            <Avatar sx={{ width: 36, height: 36 }} />
+
+                                            <Stack spacing={1} flex={1}>
+                                                {/* 2 cột */}
+                                                <Stack
+                                                    direction="row"
+                                                    spacing={3}
+                                                    justifyContent="space-between"
+                                                    alignItems="flex-start">
+                                                    <Stack spacing={0.3} minWidth={140}>
+                                                        <Typography variant="caption" fontWeight={600}>
+                                                            {customerChosed?.tenKhachHang || 'Khách lẻ'}
+                                                        </Typography>
+
+                                                        <Typography variant="caption">
+                                                            {customerChosed?.soDienThoai || '---'}
+                                                        </Typography>
+
+                                                        {!phoneChosed && (
+                                                            <Typography
+                                                                variant="caption"
+                                                                color="text.secondary"
+                                                                fontStyle="italic">
+                                                                Chưa chọn máy
+                                                            </Typography>
+                                                        )}
+                                                    </Stack>
+
+                                                    <Stack spacing={0.3} flex={1} minWidth={0}>
+                                                        {phoneChosed?.tenHangHoa && (
+                                                            <Typography variant="body2" fontWeight={500} noWrap>
+                                                                {[
+                                                                    phoneChosed.tenHangHoa,
+                                                                    phoneChosed.dungLuong,
+                                                                    phoneChosed.mau
+                                                                ]
+                                                                    .filter(Boolean)
+                                                                    .join(', ')}
+                                                            </Typography>
+                                                        )}
+
+                                                        {phoneChosed?.imel && (
+                                                            <Typography variant="caption" color="text.secondary" noWrap>
+                                                                IMEI: {phoneChosed?.imel}
+                                                            </Typography>
+                                                        )}
+                                                    </Stack>
+                                                </Stack>
+
+                                                {/* Nội dung + lỗi */}
+                                                {phoneChosed && (
+                                                    <Stack spacing={0.5}>
+                                                        <Typography variant="caption">
+                                                            <strong>Nội dung:</strong> {phoneChosed?.noiDung}
+                                                        </Typography>
+
+                                                        <Typography variant="caption">
+                                                            <strong>Lỗi trước sửa:</strong> {phoneChosed?.loi}
+                                                        </Typography>
+                                                    </Stack>
+                                                )}
+                                            </Stack>
+                                        </Stack>
+                                        <Button
+                                            variant="contained"
+                                            size="small"
+                                            color={phoneChosed ? 'error' : 'primary'}
+                                            onClick={() => {
+                                                if (phoneChosed) {
+                                                    handleRemovePhone();
+                                                } else {
+                                                    showModalAddProduct(1);
+                                                }
+                                            }}>
+                                            {phoneChosed ? '✕' : 'Thêm máy sửa chữa'}
+                                        </Button>
+                                        <MenuWithDataFromPhone
+                                            open={expandSearchCusPhone}
+                                            anchorEl={anchorDropdownPhone}
+                                            handleClose={() => setAnchorDropdownPhone(null)}
+                                            typeSearch={TypeSearchfromDB.CUSTOMER}
+                                            handleChoseItem={changePhone}
+                                        />
+                                    </Stack>
+                                )}
+
+                                <Stack
+                                    overflow={'auto'}
+                                    flex={isMobile ? '0 1 auto' : 1}
+                                    minHeight={isMobile ? undefined : 0}
+                                    maxHeight={isMobile ? '45vh' : undefined}>
+                                    {hoaDonChiTiet
+                                        ?.sort((x, y) => {
+                                            const a = x.stt;
+                                            const b = y.stt;
+                                            return a > b ? -1 : a < b ? 1 : 0;
+                                        })
+                                        .map((cthd, index) => (
+                                            <Grid
+                                                container
+                                                key={index}
+                                                borderBottom={'1px solid #cccc'}
+                                                alignItems={'center'}
+                                                padding={'8px 0px'}>
+                                                <Grid item xs={12} lg={6} md={5}>
+                                                    <Grid item xs={12} lg={6} md={5}>
+                                                        <Stack direction="row" spacing={1} alignItems="flex-start">
+                                                            <PersonAddOutlinedIcon
+                                                                titleAccess="Chọn nhân viên thực hiện"
+                                                                sx={{ cursor: 'pointer', mt: '2px' }}
+                                                                onClick={() => showPopNhanVienThucHien(cthd)}
+                                                            />
+
+                                                            <Stack spacing={0}>
+                                                                <Typography
+                                                                    className="lableOverflow"
+                                                                    title={cthd?.tenHangHoa}>
+                                                                    {cthd?.tenHangHoa}, {cthd?.mau}
+                                                                </Typography>
+
+                                                                <Typography
+                                                                    variant="caption"
+                                                                    className="lableOverflow"
+                                                                    title={cthd?.imel}>
+                                                                    {cthd?.imel}
+                                                                </Typography>
+
+                                                                <Typography
+                                                                    variant="caption"
+                                                                    color="var(--color-text-secondary)">
+                                                                    BH: {cthd?.soThangBaoHanh ?? 0} tháng
+                                                                </Typography>
                                                             </Stack>
                                                         </Stack>
                                                     </Grid>
                                                 </Grid>
+                                                <Grid item xs={12} lg={6} md={7}>
+                                                    <Grid container alignItems={'center'}>
+                                                        <Grid item xs={6}>
+                                                            <Stack
+                                                                spacing={1}
+                                                                direction={'row'}
+                                                                justifyContent={'end'}
+                                                                title="Cập nhật giỏ hàng"
+                                                                onClick={() => showPopChiTietGioHang(cthd?.id ?? '')}>
+                                                                <Stack
+                                                                    direction={'row'}
+                                                                    spacing={1}
+                                                                    flex={1}
+                                                                    justifyContent={'end'}
+                                                                    alignItems={'center'}>
+                                                                    <Typography
+                                                                        fontWeight={500}
+                                                                        className="text-cursor">
+                                                                        {cthd?.soLuong}
+                                                                    </Typography>
+
+                                                                    <Typography>x</Typography>
+                                                                </Stack>
+                                                                <Stack flex={3}>
+                                                                    <Typography
+                                                                        className="text-cursor"
+                                                                        textAlign={'left'}>
+                                                                        {Intl.NumberFormat('vi-VN').format(
+                                                                            cthd?.donGiaTruocCK ?? 0
+                                                                        )}
+                                                                    </Typography>
+                                                                </Stack>
+                                                            </Stack>
+                                                        </Grid>
+                                                        <Grid item xs={6}>
+                                                            <Stack
+                                                                spacing={0.5}
+                                                                direction={'row'}
+                                                                textAlign={'right'}
+                                                                justifyContent={'end'}
+                                                                alignItems={'center'}>
+                                                                <Typography fontWeight={500}>
+                                                                    {Intl.NumberFormat('vi-VN').format(
+                                                                        cthd?.thanhTienSauCK ?? 0
+                                                                    )}
+                                                                </Typography>
+                                                                <IconButton
+                                                                    aria-label="Xóa chi tiết hóa đơn"
+                                                                    title="Xóa chi tiết hóa đơn"
+                                                                    onClick={() => removeCTHD(cthd)}>
+                                                                    <DeleteOutlinedIcon color="error" />
+                                                                </IconButton>
+                                                            </Stack>
+                                                        </Grid>
+                                                    </Grid>
+                                                </Grid>
+
+                                                <Grid item xs={12} lg={6} md={5}>
+                                                    {(cthd?.nhanVienThucHien?.length ?? 0) > 0 && (
+                                                        <Stack direction={'row'} spacing={1}>
+                                                            {cthd?.nhanVienThucHien
+                                                                ?.filter((x, index) => index < 2)
+                                                                ?.map((nv, indexNV) => (
+                                                                    <Chip
+                                                                        key={indexNV}
+                                                                        sx={{
+                                                                            backgroundColor: 'var(--color-bg)',
+                                                                            '& .MuiChip-deleteIcon:hover': {
+                                                                                color: 'red'
+                                                                            }
+                                                                        }}
+                                                                        label={nv?.tenNhanVien}
+                                                                        deleteIcon={<CloseIcon sx={{ width: 20 }} />}
+                                                                        onDelete={() => RemoveNVThucHien(cthd, nv)}
+                                                                    />
+                                                                ))}
+                                                            {(cthd?.nhanVienThucHien?.length ?? 0) > 2 && (
+                                                                <Chip
+                                                                    sx={{ backgroundColor: 'var(--color-bg)' }}
+                                                                    label={`${
+                                                                        (cthd?.nhanVienThucHien?.length ?? 0) - 2
+                                                                    } +`}
+                                                                />
+                                                            )}
+                                                        </Stack>
+                                                    )}
+                                                </Grid>
+
+                                                <Grid item xs={12} lg={6} md={7}>
+                                                    <Grid container>
+                                                        <Grid item lg={12} width={'100%'}>
+                                                            <Stack
+                                                                spacing={1}
+                                                                direction={'row'}
+                                                                alignItems={'center'}
+                                                                marginTop={'-12px'}>
+                                                                <Stack flex={1} textAlign={'center'} component={'span'}>
+                                                                    {(cthd?.soLuongConLai ?? 0) > 0 && (
+                                                                        <Typography
+                                                                            fontWeight={500}
+                                                                            variant="body2"
+                                                                            component={'span'}>
+                                                                            <span>{'/'}</span>
+                                                                            <span>{cthd?.soLuongConLai}</span>
+                                                                        </Typography>
+                                                                    )}
+                                                                </Stack>
+                                                                <Stack flex={6}>
+                                                                    {(cthd?.tienChietKhau ?? 0) > 0 && (
+                                                                        <Typography
+                                                                            variant="caption"
+                                                                            fontStyle={'italic'}
+                                                                            color={'var( --color-text-secondary)'}
+                                                                            component={'span'}>
+                                                                            Giảm{' '}
+                                                                            <Typography
+                                                                                component={'span'}
+                                                                                variant="caption">
+                                                                                {Intl.NumberFormat('vi-VN').format(
+                                                                                    cthd?.tienChietKhau ?? 0
+                                                                                )}
+                                                                            </Typography>
+                                                                        </Typography>
+                                                                    )}
+                                                                </Stack>
+                                                            </Stack>
+                                                        </Grid>
+                                                    </Grid>
+                                                </Grid>
                                             </Grid>
-                                        </Grid>
-                                    ))}
+                                        ))}
+                                </Stack>
                             </Stack>
-                        </Stack>
-                        <Stack
-                            zIndex={4}
-                            sx={{
-                                backgroundColor: 'rgb(245 241 241)',
-                                position: 'absolute',
-                                bottom: 0,
-                                left: 0,
-                                right: 0,
-                                height: 'auto',
-                                padding: '16px',
-                                boxSizing: 'border-box'
-                            }}>
-                            <Stack spacing={2}>
-                                <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'}>
-                                    <Stack direction={'row'} spacing={1} alignItems={'center'}>
-                                        <Typography sx={{ fontSize: '18px', fontWeight: 500 }}>
-                                            Tổng thanh toán
-                                        </Typography>
-                                        <MoreOutlinedIcon
-                                            titleAccess="Nhập giảm giá hóa đơn"
-                                            sx={{ color: 'var(--color-text-secondary)' }}
-                                            onClick={(e) => openPopoverGiamGia(e)}
-                                        />
-
-                                        {(hoadon?.tongGiamGiaHD ?? 0) > 0 && (
-                                            <Typography variant="body2" color={'var(--color-text-secondary)'}>
-                                                - {Intl.NumberFormat('vi-VN').format(hoadon?.tongGiamGiaHD ?? 0)}
+                            <Stack
+                                flexShrink={0}
+                                sx={{
+                                    backgroundColor: 'rgb(245 241 241)',
+                                    height: 'auto',
+                                    padding: '16px',
+                                    boxSizing: 'border-box'
+                                }}>
+                                <Stack spacing={2}>
+                                    <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'}>
+                                        <Stack direction={'row'} spacing={1} alignItems={'center'}>
+                                            <Typography sx={{ fontSize: '18px', fontWeight: 500 }}>
+                                                Tổng thanh toán
                                             </Typography>
-                                        )}
-                                    </Stack>
-                                    <Stack spacing={1} alignItems={'center'}>
-                                        <Typography sx={{ fontSize: '18px', fontWeight: 500 }}>
-                                            {Intl.NumberFormat('vi-VN').format(hoadon?.tongThanhToan ?? 0)}
-                                        </Typography>
-                                    </Stack>
-                                </Stack>
-                                <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'}>
-                                    <Typography fontWeight={500}>Tiền khách đưa</Typography>
-                                    <RadioGroup
-                                        sx={{ display: 'flex', flexDirection: 'row' }}
-                                        onChange={(event) => {
-                                            const newVal = (event.target as HTMLInputElement).value;
-                                            const isTienMat = newVal?.toLocaleLowerCase() === 'true';
-                                            setIsThanhToanTienMat(isTienMat);
-                                        }}>
-                                        <FormControlLabel
-                                            value={true}
-                                            label={'Tiền mặt'}
-                                            checked={isThanhToanTienMat}
-                                            control={<Radio size="small" />}
-                                        />
-                                        <FormControlLabel
-                                            sx={{
-                                                marginRight: 0
-                                            }}
-                                            value={false}
-                                            label={'Hình thức khác'}
-                                            checked={!isThanhToanTienMat}
-                                            control={<Radio size="small" />}
-                                        />
-                                    </RadioGroup>
-                                </Stack>
-                                <NumericFormat
-                                    size="small"
-                                    fullWidth
-                                    value={sumTienKhachTra}
-                                    decimalSeparator=","
-                                    thousandSeparator="."
-                                    sx={{
-                                        '& input': {
-                                            textAlign: 'right',
-                                            fontWeight: '700',
-                                            color: '#3D475C',
-                                            fontSize: '18px',
-                                            padding: '12px'
-                                        }
-                                    }}
-                                    customInput={TextField}
-                                    onChange={(event) => {
-                                        setSumTienKhachTra(utils.formatNumberToFloat(event.target.value));
-                                    }}
-                                />
+                                            <MoreOutlinedIcon
+                                                titleAccess="Nhập giảm giá hóa đơn"
+                                                sx={{ color: 'var(--color-text-secondary)' }}
+                                                onClick={(e) => openPopoverGiamGia(e)}
+                                            />
 
-                                <Stack direction="row" spacing={2}>
-                                    {/* Nút In Báo Giá - nhỏ gọn */}
-                                    <Stack
-                                        sx={{
-                                            backgroundColor: '#6c757d',
-                                            borderRadius: '8px',
-                                            justifyContent: 'center',
-                                            alignItems: 'center',
-                                            color: 'white',
-                                            px: 2,
-                                            py: 1,
-                                            cursor: 'pointer',
-                                            whiteSpace: 'nowrap'
-                                        }}
-                                        direction="row"
-                                        onClick={handleBaoGia}
-                                        spacing={1}>
-                                        <PrintOutlinedIcon fontSize="small" />
-                                        <Typography fontSize="14px" fontWeight={500}>
-                                            IN BÁO GIÁ
-                                        </Typography>
-                                    </Stack>
-
-                                    {isSavingHoaDon ? (
-                                        <Stack
-                                            sx={{
-                                                backgroundColor: isThanhToanTienMat ? '#1976d2' : '#e5ebed',
-                                                borderRadius: '8px',
-                                                justifyContent: 'center',
-                                                alignItems: 'center',
-                                                color: 'white',
-                                                px: 2,
-                                                py: 1,
-                                                flex: 1
-                                            }}
-                                            direction="row"
-                                            spacing={1}>
-                                            <CircularProgress size={20} color="inherit" />
-                                            <Typography fontSize="16px" padding={1}>
-                                                ĐANG LƯU
+                                            {(hoadon?.tongGiamGiaHD ?? 0) > 0 && (
+                                                <Typography variant="body2" color={'var(--color-text-secondary)'}>
+                                                    - {Intl.NumberFormat('vi-VN').format(hoadon?.tongGiamGiaHD ?? 0)}
+                                                </Typography>
+                                            )}
+                                        </Stack>
+                                        <Stack spacing={1} alignItems={'center'}>
+                                            <Typography sx={{ fontSize: '18px', fontWeight: 500 }}>
+                                                {Intl.NumberFormat('vi-VN').format(hoadon?.tongThanhToan ?? 0)}
                                             </Typography>
                                         </Stack>
-                                    ) : (
+                                    </Stack>
+                                    <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'}>
+                                        <Typography fontWeight={500}>Tiền khách đưa</Typography>
+                                        <RadioGroup
+                                            sx={{ display: 'flex', flexDirection: 'row' }}
+                                            onChange={(event) => {
+                                                const newVal = (event.target as HTMLInputElement).value;
+                                                const isTienMat = newVal?.toLocaleLowerCase() === 'true';
+                                                setIsThanhToanTienMat(isTienMat);
+                                            }}>
+                                            <FormControlLabel
+                                                value={true}
+                                                label={'Tiền mặt'}
+                                                checked={isThanhToanTienMat}
+                                                control={<Radio size="small" />}
+                                            />
+                                            <FormControlLabel
+                                                sx={{
+                                                    marginRight: 0
+                                                }}
+                                                value={false}
+                                                label={'Hình thức khác'}
+                                                checked={!isThanhToanTienMat}
+                                                control={<Radio size="small" />}
+                                            />
+                                        </RadioGroup>
+                                    </Stack>
+                                    <NumericFormat
+                                        size="small"
+                                        fullWidth
+                                        value={sumTienKhachTra}
+                                        decimalSeparator=","
+                                        thousandSeparator="."
+                                        sx={{
+                                            '& input': {
+                                                textAlign: 'right',
+                                                fontWeight: '700',
+                                                color: '#3D475C',
+                                                fontSize: '18px',
+                                                padding: '12px'
+                                            }
+                                        }}
+                                        customInput={TextField}
+                                        onChange={(event) => {
+                                            setSumTienKhachTra(utils.formatNumberToFloat(event.target.value));
+                                        }}
+                                    />
+
+                                    <Stack direction="row" spacing={2}>
+                                        {/* Nút In Báo Giá - nhỏ gọn */}
                                         <Stack
                                             sx={{
-                                                backgroundColor: isThanhToanTienMat ? '#1976d2' : '#e5ebed',
+                                                backgroundColor: '#6c757d',
                                                 borderRadius: '8px',
                                                 justifyContent: 'center',
                                                 alignItems: 'center',
@@ -2371,22 +2528,64 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                                                 px: 2,
                                                 py: 1,
                                                 cursor: 'pointer',
-                                                flex: 1
+                                                whiteSpace: 'nowrap'
                                             }}
                                             direction="row"
-                                            spacing={1}
-                                            onClick={saveHoaDon}>
-                                            <CheckOutlinedIcon />
-                                            <Typography fontSize="16px" padding={1} fontWeight={500}>
-                                                THANH TOÁN
+                                            onClick={handleBaoGia}
+                                            spacing={1}>
+                                            <PrintOutlinedIcon fontSize="small" />
+                                            <Typography fontSize="14px" fontWeight={500}>
+                                                IN BÁO GIÁ
                                             </Typography>
                                         </Stack>
-                                    )}
+
+                                        {isSavingHoaDon ? (
+                                            <Stack
+                                                sx={{
+                                                    backgroundColor: isThanhToanTienMat ? '#1976d2' : '#e5ebed',
+                                                    borderRadius: '8px',
+                                                    justifyContent: 'center',
+                                                    alignItems: 'center',
+                                                    color: 'white',
+                                                    px: 2,
+                                                    py: 1,
+                                                    flex: 1
+                                                }}
+                                                direction="row"
+                                                spacing={1}>
+                                                <CircularProgress size={20} color="inherit" />
+                                                <Typography fontSize="16px" padding={1}>
+                                                    ĐANG LƯU
+                                                </Typography>
+                                            </Stack>
+                                        ) : (
+                                            <Stack
+                                                sx={{
+                                                    backgroundColor: isThanhToanTienMat ? '#1976d2' : '#e5ebed',
+                                                    borderRadius: '8px',
+                                                    justifyContent: 'center',
+                                                    alignItems: 'center',
+                                                    color: 'white',
+                                                    px: 2,
+                                                    py: 1,
+                                                    cursor: 'pointer',
+                                                    flex: 1
+                                                }}
+                                                direction="row"
+                                                spacing={1}
+                                                onClick={saveHoaDon}>
+                                                <CheckOutlinedIcon />
+                                                <Typography fontSize="16px" padding={1} fontWeight={500}>
+                                                    THANH TOÁN
+                                                </Typography>
+                                            </Stack>
+                                        )}
+                                    </Stack>
                                 </Stack>
                             </Stack>
                         </Stack>
-                    </Stack>
-                </Grid>
+                    </Grid>
+                )}
             </Grid>
         </>
     );

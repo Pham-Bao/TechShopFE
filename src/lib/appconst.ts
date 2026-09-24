@@ -37,7 +37,7 @@ export const LoaiChungTu = {
     PHIEU_THU: 11,
     PHIEU_CHI: 12,
     PHIEU_DIEU_CHINH_TGT: 16,
-    HOA_DON_SUA_CHUA: 17,
+    HOA_DON_SUA_CHUA: 19,
     HOA_DON_BAO_HANH: 18,
     PHIEU_KIEM_KE: 9
 };

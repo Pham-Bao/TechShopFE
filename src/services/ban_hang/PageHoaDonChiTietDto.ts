@@ -29,7 +29,8 @@ export default class PageHoaDonChiTietDto extends HoaDonChiTietDto {
         expanded = false,
         trangThai = 3,
         imel = '',
-        mau = ''
+        mau = '',
+        soThangBaoHanh = null
     }) {
         super({
             id: id,
@@ -37,7 +38,8 @@ export default class PageHoaDonChiTietDto extends HoaDonChiTietDto {
             soLuong: soLuong,
             donGiaTruocCK: giaBan,
             giaVon: giaVon,
-            trangThai: trangThai
+            trangThai: trangThai,
+            soThangBaoHanh: soThangBaoHanh
         });
 
         this.maHangHoa = maHangHoa;

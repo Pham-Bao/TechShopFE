@@ -6,6 +6,7 @@ import { ReactComponent as CartIcon } from '../../../images/icons/setting_page/s
 import { ReactComponent as UserIcon } from '../../../images/icons/setting_page/user_active_blue.svg';
 import { ReactComponent as ArrowRightIcon } from '../../../images/icons/setting_page/arrow_right.svg';
 import { Link } from 'react-router-dom';
+import LoaiHoaDonSetting from './LoaiHoaDonSetting';
 class SettingPages extends Component {
     render(): ReactNode {
         return (
@@ -237,6 +238,8 @@ class SettingPages extends Component {
                                             Voucher
                                         </ListItemText>
                                     </ListItem>
+                                    <Divider />
+                                    <LoaiHoaDonSetting />
                                 </List>
                             </Box>
                         </Grid>

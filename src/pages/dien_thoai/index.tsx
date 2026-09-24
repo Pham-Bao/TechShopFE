@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { observer } from 'mobx-react';
 import JsBarcode from 'jsbarcode';
+import { format } from 'date-fns';
 import { useState, useEffect, useContext } from 'react';
 import { DataGrid, GridColDef, GridRenderCellParams, GridRowId, GridRowSelectionModel } from '@mui/x-data-grid';
 import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
@@ -37,7 +38,12 @@ import ModalHangHoaDienThoai from './ModalPhone';
 import { PagedResultDto } from '../../services/dto/pagedResultDto';
 import ProductService from '../../services/product/ProductService';
 import GroupProductService from '../../services/product/GroupProductService';
-import { ModelNhomHangHoa, ModelHangHoaDto, PagedProductSearchDto } from '../../services/product/dto';
+import {
+    ModelNhomHangHoa,
+    ModelHangHoaDto,
+    PagedProductSearchDto,
+    SoLuongTheoTrangThaiBanHangDto
+} from '../../services/product/dto';
 import { ReactComponent as UploadIcon } from '../../images/upload.svg';
 import { ReactComponent as DownIcon } from '../../images/download.svg';
 import Utils from '../../utils/utils'; // func common
@@ -104,8 +110,10 @@ const PageProduct = () => {
         pageSize: AppConsts.pageOption[0].value,
         columnSort: '',
         typeSort: '',
-        idLoaiHangHoa: 4
+        idLoaiHangHoa: 4,
+        trangThais: [1]
     });
+    const [soLuongTheoTrangThai, setSoLuongTheoTrangThai] = useState<SoLuongTheoTrangThaiBanHangDto[]>([]);
 
     const GetListHangHoa = async () => {
         const list = await ProductService.Get_DMHangHoaDienThoai(filterPageProduct);
@@ -114,6 +122,7 @@ const PageProduct = () => {
             totalPage: Utils.getTotalPage(list.totalCount, filterPageProduct.pageSize),
             items: list.items
         });
+        setSoLuongTheoTrangThai(list.soLuongTheoTrangThai ?? []);
 
         const arrIdThisPage = list.items?.map((x) => {
             return x.id ?? '';
@@ -901,6 +910,13 @@ window.onload=function(){
                 )
             },
             {
+                field: 'ngayNhap',
+                headerName: 'Ngày nhập',
+                minWidth: 110,
+                flex: 1,
+                renderCell: (params) => (params.value ? format(new Date(params.value), 'dd/MM/yyyy') : '')
+            },
+            {
                 field: 'loi',
                 headerName: 'Lỗi',
                 minWidth: 180,
@@ -1028,6 +1044,7 @@ window.onload=function(){
                 paramFilter={filterPageProduct}
                 handleClose={() => setAnchorElFilterNangCao(null)}
                 handleApply={ApplyFilter}
+                soLuongTheoTrangThai={soLuongTheoTrangThai}
             />
             <Grid container className="dich-vu-page" spacing={1} gap={4} paddingTop={2}>
                 <Grid item container alignItems="center" spacing={1} justifyContent="space-between">

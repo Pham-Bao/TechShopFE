@@ -127,6 +127,22 @@ const ModalEditChiTietGioHang: React.FC<{
         );
     };
 
+    const handleChangeBaoHanh = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, id: string) => {
+        const soThangNew = event.target.value === '' ? null : Utils.formatNumberToFloat(event.target.value);
+        setLstCTHoaDon(
+            lstCTHoaDon.map((item) => {
+                if (item.id === id) {
+                    return {
+                        ...item,
+                        soThangBaoHanh: soThangNew
+                    };
+                } else {
+                    return item;
+                }
+            })
+        );
+    };
+
     const handleChangeSoLuong = (
         event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
         itemCTHD: PageHoaDonChiTietDto
@@ -588,9 +604,9 @@ const ModalEditChiTietGioHang: React.FC<{
                                     </Grid>
                                     <Grid
                                         item
-                                        lg={7}
-                                        sm={7}
-                                        md={7}
+                                        lg={5}
+                                        sm={5}
+                                        md={5}
                                         xs={12}
                                         sx={{
                                             display: itemVisibility[index] ? '' : 'none'
@@ -655,10 +671,10 @@ const ModalEditChiTietGioHang: React.FC<{
 
                                     <Grid
                                         item
-                                        lg={5}
-                                        sm={5}
-                                        md={5}
-                                        xs={12}
+                                        lg={4}
+                                        sm={4}
+                                        md={4}
+                                        xs={8}
                                         sx={{
                                             display: itemVisibility[index] ? '' : 'none'
                                         }}>
@@ -677,6 +693,26 @@ const ModalEditChiTietGioHang: React.FC<{
                                                 decimalSeparator=","
                                                 thousandSeparator="."
                                                 customInput={TextField}
+                                            />
+                                        </Stack>
+                                    </Grid>
+                                    <Grid
+                                        item
+                                        lg={3}
+                                        sm={3}
+                                        md={3}
+                                        xs={4}
+                                        sx={{
+                                            display: itemVisibility[index] ? '' : 'none'
+                                        }}>
+                                        <Stack direction="column" spacing={1}>
+                                            <Typography variant="body2">Bảo hành (tháng)</Typography>
+                                            <TextField
+                                                size="small"
+                                                fullWidth
+                                                type="number"
+                                                value={ct.soThangBaoHanh ?? ''}
+                                                onChange={(event) => handleChangeBaoHanh(event, ct.id)}
                                             />
                                         </Stack>
                                     </Grid>

@@ -462,6 +462,7 @@ const ThuNganTabRight: FC<{
                             thanhTienTruocCK: isSuDungDV ? 0 : ctUpdate.thanhTienTruocCK,
                             thanhTienSauCK: isSuDungDV ? 0 : ctUpdate.thanhTienSauCK,
                             thanhTienSauVAT: isSuDungDV ? 0 : ctUpdate.thanhTienSauVAT,
+                            soThangBaoHanh: ctUpdate.soThangBaoHanh,
                             nhanVienThucHien: item?.nhanVienThucHien?.map((nv) => {
                                 if (nv.ptChietKhau > 0) {
                                     return {
@@ -501,6 +502,7 @@ const ThuNganTabRight: FC<{
                         thanhTienTruocCK: isSuDungDV ? 0 : ctUpdate.thanhTienTruocCK,
                         thanhTienSauCK: isSuDungDV ? 0 : ctUpdate.thanhTienSauCK,
                         thanhTienSauVAT: isSuDungDV ? 0 : ctUpdate.thanhTienSauVAT,
+                        soThangBaoHanh: ctUpdate.soThangBaoHanh,
                         nhanVienThucHien: item?.nhanVienThucHien?.map((nv) => {
                             if (nv.ptChietKhau > 0) {
                                 return {
@@ -954,6 +956,9 @@ const ThuNganTabRight: FC<{
                                                         {cthd?.tenHangHoa}
                                                     </Typography>
                                                 </Stack>
+                                                <Typography variant="caption" color="var(--color-text-secondary)">
+                                                    BH: {cthd?.soThangBaoHanh ?? 0} tháng
+                                                </Typography>
                                             </Stack>
                                         </Grid>
                                         <Grid item xs={12} lg={6} md={7}>

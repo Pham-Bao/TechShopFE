@@ -249,6 +249,7 @@ class DataMauIn {
         data = data.replaceAll('{DiaChiKhachHang}', this.khachhang.diaChi ?? '');
         data = data.replaceAll('{DienThoaiKhachHang}', this.khachhang.soDienThoai ?? '');
         data = data.replaceAll('{TenMay}', this.maySua.tenHangHoa ?? '');
+        data = data.replaceAll('{Imel}', this.maySua.imel ?? '');
         data = data.replaceAll('{NoiDung}', this.maySua.noiDung ?? '');
         data = data.replaceAll('{Loi}', this.maySua.loi ?? '');
 
@@ -345,6 +346,7 @@ class DataMauIn {
                     '{ThanhTienSauCK}',
                     new Intl.NumberFormat('vi-VN').format(forCTHD.thanhTienSauCK ?? 0)
                 );
+                cthdContent = cthdContent.replaceAll('{BaoHanh}', `${forCTHD.soThangBaoHanh ?? 0} tháng`);
             } else {
                 let newRow = cthdContentCopy;
                 newRow = newRow.replaceAll('{TenHangHoa}', forCTHD.tenHangHoa);
@@ -357,6 +359,7 @@ class DataMauIn {
                     '{ThanhTienSauCK}',
                     new Intl.NumberFormat('vi-VN').format(forCTHD.thanhTienSauCK ?? 0)
                 );
+                newRow = newRow.replaceAll('{BaoHanh}', `${forCTHD.soThangBaoHanh ?? 0} tháng`);
                 cthdContent = cthdContent.concat(newRow);
             }
         }

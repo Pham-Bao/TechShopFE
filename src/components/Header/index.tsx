@@ -141,12 +141,15 @@ const Header: React.FC<HeaderProps> = (
                         handleChangeChiNhanh({ id: idChiNhanh, tenChiNhanh: tenChiNhanh });
                     } else {
                         // if chinhanh was change: set this
-                        setCurrentChiNhanh(idChiNhanh);
                         tenChiNhanh = listChiNhanh[0].tenChiNhanh;
                         const cnMacDinh = listChiNhanh.filter((x: SuggestChiNhanhDto) => x.id === idChiNhanh);
                         if (cnMacDinh.length > 0) {
                             tenChiNhanh = cnMacDinh[0].tenChiNhanh;
+                        } else {
+                            // cookie đang lưu 1 chi nhánh không còn tồn tại/không hợp lệ --> quay về chi nhánh đầu tiên hợp lệ
+                            idChiNhanh = listChiNhanh[0].id;
                         }
+                        setCurrentChiNhanh(idChiNhanh);
                         handleChangeChiNhanh({ id: idChiNhanh, tenChiNhanh: tenChiNhanh });
 
                         Cookies.set('IdChiNhanh', idChiNhanh, {

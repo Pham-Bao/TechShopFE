@@ -76,6 +76,16 @@ export default function TabInfo({ hoadon, chitietHoaDon, onSaveOKNVThucHienDV, o
             )
         },
         {
+            field: 'soThangBaoHanh',
+            headerName: 'Bảo hành',
+            headerAlign: 'center',
+            align: 'center',
+            minWidth: 90,
+            flex: 0.4,
+            renderHeader: (params) => <Box>{params.colDef.headerName}</Box>,
+            renderCell: (params) => <Box>{params.value ?? 0} tháng</Box>
+        },
+        {
             field: 'tenNVThucHiens',
             headerName: 'NV thực hiện',
             minWidth: 100,

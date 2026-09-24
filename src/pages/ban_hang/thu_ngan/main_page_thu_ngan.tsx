@@ -37,6 +37,7 @@ import { PropConfirmOKCancel } from '../../../utils/PropParentToChild';
 import CheckinService from '../../../services/check_in/CheckinService';
 import abpCustom from '../../../components/abp-custom';
 import { Console } from 'console';
+import CauHinhHoaDonService from '../../../services/cau_hinh_hoa_don/CauHinhHoaDonService';
 
 const TabMain = {
     CHECK_IN: 1,
@@ -67,6 +68,10 @@ export const ThuNganSetting = ({ idChosed, handleChoseChiNhanh }: IPropDropdownC
                     text: itemCN[0]?.tenChiNhanh
                 };
                 handleChoseChiNhanh(itemChosed);
+            } else if (data?.length > 0) {
+                // idChosed (từ cookie) không còn hợp lệ --> quay về chi nhánh đầu tiên hợp lệ
+                setLblChiNhanh(data[0]?.tenChiNhanh);
+                handleChoseChiNhanh({ id: data[0]?.id, text: data[0]?.tenChiNhanh } as IList);
             }
         } else {
             setLblChiNhanh(data[0]?.tenChiNhanh);
@@ -375,8 +380,34 @@ export default function MainPageThuNgan() {
     const [phoneIdChosed, setPhoneIdChosed] = useState<string>('');
     const [pageThuNgan_idChecking, setPageThuNgan_idChecking] = useState<string>(Guid.EMPTY);
     const [pageThuNgan_LoaiHoaDon, setPageThuNgan_LoaiHoaDon] = useState(LoaiChungTu.HOA_DON_BAN_LE);
+    // Chỉ tăng khi người dùng BẤM TAY vào tab Hóa đơn bán/Hóa đơn sửa - dùng để phân biệt với
+    // trường hợp pageThuNgan_LoaiHoaDon tự đổi theo do mở 1 hóa đơn có sẵn (từ check-in/hóa đơn chờ),
+    // vì trường hợp đó KHÔNG được reset dữ liệu đang xem.
+    const [manualChangeLoaiHoaDon, setManualChangeLoaiHoaDon] = useState(0);
     const [pageThuNgan_IdInvoiceWaiting, setPageThuNgan_IdInvoiceWaiting] = useState('');
     const [soLuongCheckIn, setSoLuongCheckIn] = useState(0);
+    // Mặc định bật (true) khi tenant chưa có dòng cấu hình nào (chưa từng vào Cài đặt để đổi)
+    // - giữ nguyên hành vi hiện tại (hiện đủ cả 2 tab).
+    const [hienThiHoaDonBan, setHienThiHoaDonBan] = useState(true);
+    const [hienThiHoaDonSua, setHienThiHoaDonSua] = useState(true);
+
+    useEffect(() => {
+        (async () => {
+            const data = await CauHinhHoaDonService.GetAll();
+            const rowBan = data?.find((x: any) => x.loaiHoaDon === LoaiChungTu.HOA_DON_BAN_LE);
+            const rowSua = data?.find((x: any) => x.loaiHoaDon === LoaiChungTu.HOA_DON_SUA_CHUA);
+            const batTatBan = rowBan?.batTat ?? true;
+            const batTatSua = rowSua?.batTat ?? true;
+            setHienThiHoaDonBan(batTatBan);
+            setHienThiHoaDonSua(batTatSua);
+
+            // Nếu tab đang mặc định chọn (Hóa đơn bán) bị tắt, phải chuyển sang tab còn lại đang bật,
+            // nếu không nội dung hiển thị (tạo khách mua) sẽ không khớp với tab thực sự đang xem được.
+            if (!batTatBan && batTatSua) {
+                setPageThuNgan_LoaiHoaDon(LoaiChungTu.HOA_DON_SUA_CHUA);
+            }
+        })();
+    }, []);
     const changeActiveTabMain = async (event: React.SyntheticEvent, tabNew: number) => {
         setTabMainActive(tabNew);
         setIsShowModalAdd(false);
@@ -384,6 +415,7 @@ export default function MainPageThuNgan() {
     };
     const changeTabHoaDon = async (event: React.SyntheticEvent, tabNew: number) => {
         setPageThuNgan_LoaiHoaDon(tabNew);
+        setManualChangeLoaiHoaDon((v) => v + 1);
     };
 
     const onAgreeFilterNhomHang = (arrIdNhomHang: string[]) => {
@@ -540,9 +572,11 @@ export default function MainPageThuNgan() {
                                             label="Hóa đơn bán"
                                             value={LoaiChungTu.HOA_DON_BAN_LE}
                                             sx={{
-                                                display: abpCustom.isGrandPermission('Pages.HoaDon.Create')
-                                                    ? ''
-                                                    : 'none'
+                                                display:
+                                                    abpCustom.isGrandPermission('Pages.HoaDon.Create') &&
+                                                    hienThiHoaDonBan
+                                                        ? ''
+                                                        : 'none'
                                             }}
                                         />
                                         <Tab
@@ -551,7 +585,8 @@ export default function MainPageThuNgan() {
                                             sx={{
                                                 display:
                                                     (isHost || isShowFeatureGDV) &&
-                                                    abpCustom.isGrandPermission('Pages.GoiDichVu.Create')
+                                                    abpCustom.isGrandPermission('Pages.GoiDichVu.Create') &&
+                                                    hienThiHoaDonSua
                                                         ? ''
                                                         : 'none'
                                             }}
@@ -612,6 +647,7 @@ export default function MainPageThuNgan() {
                         onChangeSoLuongCheckIn={setSoLuongCheckIn}
                         idCheckIn={pageThuNgan_idChecking}
                         idInvoiceWaiting={pageThuNgan_IdInvoiceWaiting}
+                        resetTrigger={manualChangeLoaiHoaDon}
                         arrIdNhomHangFilter={arrIdNhomHangFilter}
                         onSetActiveTabLoaiHoaDon={onSetActiveTabLoaiHoaDon}
                         onAddHoaDon_toCache={() => setIsAddInvoiceToCache(() => isAddInvoiceToCache + 1)}

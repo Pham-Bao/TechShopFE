@@ -12,23 +12,21 @@ import {
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { IPropsPopoverFilter } from '../../services/dto/IPropsComponent';
-import { PagedProductSearchDto } from '../../services/product/dto';
+import { PagedProductSearchDto, SoLuongTheoTrangThaiBanHangDto } from '../../services/product/dto';
+import { listTrangThai } from './TrangThaiHangSelect';
 
 // ===== OPTIONS =====
-const TRANG_THAI_OPTIONS = [
-    { value: 1, text: 'Chưa bán' },
-    { value: 2, text: 'Đã bán' },
-    { value: 3, text: 'Khách hẹn' },
-    { value: 4, text: 'Cho mượn' },
-    { value: 5, text: 'Khác' }
-];
-
 const DUNG_LUONG_OPTIONS = ['16', '32', '64', '128', '256', '512'];
 
 const MAU_OPTIONS = ['Đen', 'Đỏ', 'Hồng', 'Trắng', 'Vàng'];
 
-export default function PopoverFilterDienThoai(props: IPropsPopoverFilter<PagedProductSearchDto>) {
-    const { id, anchorEl, handleClose, handleApply, paramFilter } = props;
+export default function PopoverFilterDienThoai(
+    props: IPropsPopoverFilter<PagedProductSearchDto> & { soLuongTheoTrangThai?: SoLuongTheoTrangThaiBanHangDto[] }
+) {
+    const { id, anchorEl, handleClose, handleApply, paramFilter, soLuongTheoTrangThai } = props;
+
+    const getSoLuong = (trangThai: number) =>
+        soLuongTheoTrangThai?.find((x) => x.trangThai === trangThai)?.soLuong ?? 0;
 
     const [filter, setFilter] = useState<PagedProductSearchDto>(new PagedProductSearchDto({}));
 
@@ -67,8 +65,9 @@ export default function PopoverFilterDienThoai(props: IPropsPopoverFilter<PagedP
                             value={filter.trangThais ?? []}
                             renderValue={(selected) =>
                                 (selected as number[]).length
-                                    ? TRANG_THAI_OPTIONS.filter((x) => (selected as number[]).includes(x.value))
-                                          .map((x) => x.text)
+                                    ? listTrangThai
+                                          .filter((x) => (selected as number[]).includes(x.value))
+                                          .map((x) => x.label)
                                           .join(', ')
                                     : 'Trạng thái'
                             }
@@ -78,10 +77,13 @@ export default function PopoverFilterDienThoai(props: IPropsPopoverFilter<PagedP
                                     trangThais: e.target.value as number[]
                                 })
                             }>
-                            {TRANG_THAI_OPTIONS.map((item) => (
+                            {listTrangThai.map((item) => (
                                 <MenuItem key={item.value} value={item.value}>
                                     <Checkbox checked={filter.trangThais?.includes(item.value) ?? false} />
-                                    <ListItemText primary={item.text} />
+                                    <ListItemText
+                                        primary={`${item.label} (${getSoLuong(item.value)})`}
+                                        primaryTypographyProps={{ sx: { color: item.color, fontWeight: 500 } }}
+                                    />
                                 </MenuItem>
                             ))}
                         </Select>

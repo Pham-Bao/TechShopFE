@@ -23,6 +23,7 @@ export class ModelHangHoaDto {
     txtTrangThaiHang?: string = 'Đang kinh doanh';
     imel?: string = '';
     mau?: string = '';
+    dungLuong?: number;
     soLuongTon?: number = 0;
     idDonViQuyDoi?: string;
     tenDonViTinh?: string = '';
@@ -100,6 +101,7 @@ export class ModelHangHoaDienThoaiDto {
     idHangHoa?: string;
     laHangHoa?: boolean;
     image? = '';
+    ngayNhap?: string | null;
 
     khachHang?: {
         id: string;
@@ -197,4 +199,9 @@ export class PagedProductSearchDto extends ParamSearchDto {
     dungLuong?: number[];
     trangThais?: number[];
     idChiNhanhs?: string[];
+}
+
+export interface SoLuongTheoTrangThaiBanHangDto {
+    trangThai: number;
+    soLuong: number;
 }

@@ -38,6 +38,7 @@ export default class HoaDonChiTietDto {
     private _thanhTienSauVAT?: number;
 
     idChiTietHoaDon?: string | null;
+    soThangBaoHanh?: number | null;
 
     nhanVienThucHien?: NhanVienThucHienDto[];
 
@@ -55,7 +56,8 @@ export default class HoaDonChiTietDto {
         tienThue = 0,
         ghiChu = '',
         trangThai = 3,
-        idChiTietHoaDon = null
+        idChiTietHoaDon = null,
+        soThangBaoHanh = null
     }) {
         this.id = id;
         this.idHoaDon = idHoaDon;
@@ -71,6 +73,7 @@ export default class HoaDonChiTietDto {
         this.ghiChu = ghiChu;
         this.trangThai = trangThai;
         this.idChiTietHoaDon = idChiTietHoaDon;
+        this.soThangBaoHanh = soThangBaoHanh;
         this.nhanVienThucHien = [];
 
         Object.defineProperties(this, {

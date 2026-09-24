@@ -1,6 +1,12 @@
 import http from '../httpService';
 import { PagedResultDto } from '../dto/pagedResultDto';
-import { IHangHoaGroupTheoNhomDto, ModelHangHoaDienThoaiDto, ModelHangHoaDto, PagedProductSearchDto } from './dto';
+import {
+    IHangHoaGroupTheoNhomDto,
+    ModelHangHoaDienThoaiDto,
+    ModelHangHoaDto,
+    PagedProductSearchDto,
+    SoLuongTheoTrangThaiBanHangDto
+} from './dto';
 import Utils from '../../utils/utils';
 import { IFileDto } from '../dto/FileDto';
 import { FileUpload } from '../dto/FileUpload';
@@ -73,7 +79,9 @@ class ProductService {
             });
         return xx;
     };
-    Get_DMHangHoaDienThoai = async (input: PagedProductSearchDto): Promise<PagedResultDto<ModelHangHoaDto>> => {
+    Get_DMHangHoaDienThoai = async (
+        input: PagedProductSearchDto
+    ): Promise<PagedResultDto<ModelHangHoaDto> & { soLuongTheoTrangThai: SoLuongTheoTrangThaiBanHangDto[] }> => {
         const xx = await http
             .post(`api/services/app/HangHoa/GetDMHangHoaDienThoai`, input)
             .then((res: { data: { result: any } }) => {

@@ -1,6 +1,6 @@
 import { MenuItem, Select } from '@mui/material';
 
-const listTrangThai = [
+export const listTrangThai = [
     { value: 1, label: 'Chưa bán', color: '#2e7d32', bg: '#edf7ed' },
     { value: 2, label: 'Đã bán', color: '#c62828', bg: '#fdecea' },
     { value: 3, label: 'Khách hẹn', color: '#ed6c02', bg: '#fff4e5' },
