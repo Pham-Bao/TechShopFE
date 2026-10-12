@@ -141,6 +141,19 @@ const ModalHangHoaDienThoaiSua = ({ handleSave, trigger }: any) => {
             setProductPhone(new ModelHangHoaDienThoaiDto());
             setProductImage('');
 
+            // Thêm mới máy sửa: mặc định chủ máy là "Khách lẻ" (khách hàng thật dùng chung,
+            // không phải id rỗng) để không cần bắt buộc chọn khách mới lưu/tạo check-in được.
+            const khachLe = await khachHangService.GetOrCreate_KhachLe();
+            setCustomerChosed({
+                id: khachLe?.id ?? Guid.EMPTY,
+                maKhachHang: khachLe?.maKhachHang ?? 'KL',
+                tenKhachHang: khachLe?.tenKhachHang ?? 'Khách lẻ',
+                soDienThoai: '',
+                conNo: 0,
+                tenNhomKhach: '',
+                isShow: false
+            } as CreateOrEditKhachHangDto);
+
             if (trigger.item.idNhomHangHoa !== undefined) {
                 const nhom = nhomHangHoaStore.listAllNhomHang?.filter((x) => x.id == trigger.item.idNhomHangHoa);
                 if (nhom.length > 0) {
@@ -243,10 +256,16 @@ const ModalHangHoaDienThoaiSua = ({ handleSave, trigger }: any) => {
             setErrTenHangHoa(true);
             return false;
         }
-        // if (utils.checkNull(productPhone.idChuSoHuu ?? '')) {
-        //     setErrChuSoHuu(true);
-        //     return false;
-        // }
+        // máy sửa bắt buộc chọn khách (chủ máy), khách được chọn nằm ở customerChosed (gửi lên làm idChuSoHuu)
+        if (utils.checkNull_OrEmpty(customerChosed?.id)) {
+            setObjAlert({
+                show: true,
+                type: 2,
+                mes: 'Vui lòng chọn khách hàng. Nếu không có thông tin khách, hãy chọn "Khách lẻ"'
+            });
+            setWasClickSave(false);
+            return false;
+        }
         if (!utils.checkNull(productPhone.maHangHoa ?? '')) {
             const exists = await ProductService.CheckExistsMaHangHoa(
                 productPhone.maHangHoa ?? '',
@@ -358,7 +377,10 @@ const ModalHangHoaDienThoaiSua = ({ handleSave, trigger }: any) => {
         objNew.dungLuong = productPhone.dungLuong;
         objNew.mau = productPhone.mau;
         objNew.noiDung = productPhone.noiDung;
-        objNew.pin = productPhone.pin;
+        // Backend lưu Pin dạng số (int?) - nếu bỏ trống/không phải số thì gửi 0 thay vì chuỗi rỗng
+        // (chuỗi rỗng khiến Backend lưu lỗi, không thêm được máy).
+        const pinNumber = parseInt(productPhone.pin ?? '', 10);
+        objNew.pin = (isNaN(pinNumber) ? 0 : pinNumber) as unknown as string;
         objNew.imel = productPhone.imel;
         objNew.loi = productPhone.loi;
         objNew.matKhau = productPhone.matKhau;
@@ -376,7 +398,14 @@ const ModalHangHoaDienThoaiSua = ({ handleSave, trigger }: any) => {
                 laDonViTinhChuan: objNew.laDonViTinhChuan
             }
         ];
-        const data = await ProductService.CreateOrEditProductPhone(objNew);
+        let data;
+        try {
+            data = await ProductService.CreateOrEditProductPhone(objNew);
+        } catch {
+            // lỗi từ BE (vd: trùng IMEI) đã được hiển thị qua http interceptor
+            setWasClickSave(false);
+            return;
+        }
 
         objNew.id = data.id;
         objNew.idHangHoa = data.id;
@@ -456,11 +485,15 @@ const ModalHangHoaDienThoaiSua = ({ handleSave, trigger }: any) => {
         // setCustomerHasGDV(false);
         // setConfirmDialog({ ...confirmDialog, show: false });
         // setHoaDon({ ...hoadon, idKhachHang: null });
+
+        // Dùng chung 1 khách hàng "Khách lẻ" thật trong DB (không phải id rỗng) cho mọi trường hợp
+        // không có thông tin khách - để vẫn lưu được máy và vẫn tạo được check-in bình thường.
+        const khachLe = await khachHangService.GetOrCreate_KhachLe();
         setCustomerChosed({
             ...customerChosed,
-            id: Guid.EMPTY,
-            maKhachHang: 'KL', // todo makhachhang
-            tenKhachHang: 'Khách lẻ',
+            id: khachLe?.id ?? Guid.EMPTY,
+            maKhachHang: khachLe?.maKhachHang ?? 'KL',
+            tenKhachHang: khachLe?.tenKhachHang ?? 'Khách lẻ',
             soDienThoai: '',
             conNo: 0,
             tenNhomKhach: '',

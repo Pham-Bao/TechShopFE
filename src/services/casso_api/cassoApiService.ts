@@ -46,7 +46,7 @@ export class cassoApiService {
             body: JSON.stringify({
                 income_only: true,
                 secure_token: '0001',
-                webhook: 'https://api.luckybeauty.vn/api/baokim-payment/webhook/transaction-notification'
+                webhook: 'https://api.techshop.vn/api/baokim-payment/webhook/transaction-notification'
             })
         };
 

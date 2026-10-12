@@ -20,10 +20,10 @@ const objSMS = {
     ngayLapHoaDon: '10:00 04/04/2024',
     daThanhToan: 1000000,
     ptThanhToan: 'Tiền mặt',
-    tenChiNhanh: 'SSOFT HN',
+    tenChiNhanh: 'MiniPhone HN',
     soDienThoaiChiNhanh: '02437949191',
     diaChiChiNhanh: '31 Lê Văn Lương',
-    tenCuaHang: 'SSOFT Việt Nam',
+    tenCuaHang: 'MiniPhone Việt Nam',
     diaChiCuaHang: 'Dịch Vọng Hậu',
     dienThoaiCuaHang: '0978555444'
 } as CustomerSMSDto;

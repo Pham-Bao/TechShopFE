@@ -17,7 +17,7 @@ class BaoKimPaymentServive {
     };
     TaoGiaoDich_BaoKim2 = async (accNo: string, amount: number): Promise<string> => {
         const xx = await http.get(
-            `https://devtest.baokim.vn/collection/core/Sandbox/Collection/createTrans?accNo=${accNo}&partnerCode=SSOFT&transAmount=${amount}`
+            `https://devtest.baokim.vn/collection/core/Sandbox/Collection/createTrans?accNo=${accNo}&partnerCode=MiniPhone&transAmount=${amount}`
         );
         return xx.data.result;
     };

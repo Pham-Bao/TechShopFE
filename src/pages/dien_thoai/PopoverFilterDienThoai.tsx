@@ -30,6 +30,15 @@ export default function PopoverFilterDienThoai(
 
     const [filter, setFilter] = useState<PagedProductSearchDto>(new PagedProductSearchDto({}));
 
+    const allTrangThaiValues = listTrangThai.map((x) => x.value);
+    const isAllTrangThaiSelected = allTrangThaiValues.every((v) => (filter.trangThais ?? []).includes(v));
+    const toggleSelectAllTrangThai = () => {
+        setFilter({
+            ...filter,
+            trangThais: isAllTrangThaiSelected ? [] : allTrangThaiValues
+        });
+    };
+
     useEffect(() => {
         setFilter({
             ...paramFilter,
@@ -77,6 +86,20 @@ export default function PopoverFilterDienThoai(
                                     trangThais: e.target.value as number[]
                                 })
                             }>
+                            <MenuItem
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleSelectAllTrangThai();
+                                }}>
+                                <Checkbox
+                                    checked={isAllTrangThaiSelected}
+                                    indeterminate={!isAllTrangThaiSelected && (filter.trangThais?.length ?? 0) > 0}
+                                />
+                                <ListItemText
+                                    primary="Chọn tất cả"
+                                    primaryTypographyProps={{ sx: { fontWeight: 500 } }}
+                                />
+                            </MenuItem>
                             {listTrangThai.map((item) => (
                                 <MenuItem key={item.value} value={item.value}>
                                     <Checkbox checked={filter.trangThais?.includes(item.value) ?? false} />

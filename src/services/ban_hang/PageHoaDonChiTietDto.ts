@@ -14,6 +14,7 @@ export default class PageHoaDonChiTietDto extends HoaDonChiTietDto {
     soLuongConLai? = 0;
     imel = '';
     mau = '';
+    idLoaiHangHoa?: number | null = null;
 
     constructor({
         id = Guid.create().toString(),
@@ -30,7 +31,8 @@ export default class PageHoaDonChiTietDto extends HoaDonChiTietDto {
         trangThai = 3,
         imel = '',
         mau = '',
-        soThangBaoHanh = null
+        soThangBaoHanh = null,
+        idLoaiHangHoa = null
     }) {
         super({
             id: id,
@@ -53,5 +55,6 @@ export default class PageHoaDonChiTietDto extends HoaDonChiTietDto {
 
         this.imel = imel;
         this.mau = mau;
+        this.idLoaiHangHoa = idLoaiHangHoa;
     }
 }

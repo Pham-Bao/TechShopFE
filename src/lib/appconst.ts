@@ -150,6 +150,25 @@ export const TrangThaiCheckin = {
     CANCEL: 4
 };
 
+// TrangThaiSuaChua: trạng thái sửa chữa trên trang Check-in, độc lập với TrangThaiCheckin ở trên
+export const TrangThaiSuaChua = {
+    TIEP_NHAN: 1,
+    DANG_SUA: 2,
+    DA_SUA_XONG: 3,
+    SUA_XONG_1_PHAN: 4,
+    HOAN_TRA: 5,
+    HOAN_TRA_KHONG_SUA_DUOC: 6
+};
+
+export const listTrangThaiSuaChua = [
+    { value: TrangThaiSuaChua.TIEP_NHAN, label: 'Tiếp nhận' },
+    { value: TrangThaiSuaChua.DANG_SUA, label: 'Đang sửa' },
+    { value: TrangThaiSuaChua.DA_SUA_XONG, label: 'Đã sửa xong' },
+    { value: TrangThaiSuaChua.SUA_XONG_1_PHAN, label: 'Sửa xong 1 phần' },
+    { value: TrangThaiSuaChua.HOAN_TRA, label: 'Hoàn trả' },
+    { value: TrangThaiSuaChua.HOAN_TRA_KHONG_SUA_DUOC, label: 'Hoàn trả (không sửa được)' }
+];
+
 export const SMS_HinhThucGuiTin = {
     SMS: 1,
     ZALO: 2,

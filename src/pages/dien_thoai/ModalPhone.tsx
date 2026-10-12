@@ -323,7 +323,10 @@ const ModalHangHoaDienThoai = ({ handleSave, trigger }: any) => {
                 mau: productPhone.mau,
                 tinhTrang: productPhone.tinhTrang,
                 noiDung: productPhone.noiDung,
-                pin: productPhone.pin,
+                // Backend lưu Pin dạng số (int?) - nếu bỏ trống/không phải số thì gửi 0 thay vì chuỗi rỗng
+                pin: (isNaN(parseInt(productPhone.pin ?? '', 10))
+                    ? 0
+                    : parseInt(productPhone.pin ?? '', 10)) as unknown as string,
                 imel: productPhone.imel,
                 loi: productPhone.loi,
                 matKhau: productPhone.matKhau,

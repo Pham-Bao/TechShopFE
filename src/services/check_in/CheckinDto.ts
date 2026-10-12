@@ -48,6 +48,9 @@ export class PageKhachHangCheckInDto {
     tenHangHoa = '';
     tenLoaiChungTu = '';
     noiDung = '';
+    imel = '';
+    trangThaiSuaChua = 1;
+    txtTrangThaiSuaChua = '';
     avatar? = '';
     tongTichDiem? = 0;
     dateTimeCheckIn = format(new Date(), 'yyyy-MM-dd');

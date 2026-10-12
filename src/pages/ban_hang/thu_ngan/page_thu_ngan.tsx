@@ -172,6 +172,10 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
     const [newCus, setNewCus] = useState<CreateOrEditKhachHangDto>({} as CreateOrEditKhachHangDto);
     const [customerChosed, setCustomerChosed] = useState<CreateOrEditKhachHangDto>({} as CreateOrEditKhachHangDto);
     const [phoneChosed, setPhoneChosed] = useState<ModelHangHoaDienThoaiDto | null>(null);
+    // sửa nhanh Nội dung / Lỗi trước sửa / Mật khẩu của máy sửa ngay trên thẻ máy
+    const [phoneEditField, setPhoneEditField] = useState<'noiDung' | 'loi' | 'matKhau' | null>(null);
+    const [phoneEditValue, setPhoneEditValue] = useState('');
+    const cancelPhoneEdit = useRef(false);
     const [triggerModalProduct, setTriggerModalProduct] = useState<PropModal>(new PropModal({ isShow: false }));
     const [pageDataProduct, setPageDataProduct] = useState<PagedResultDto<ModelHangHoaDto>>({
         totalCount: 0,
@@ -635,7 +639,8 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
             soLuong: 1,
             imel: item?.imel,
             mau: item?.mau,
-            expanded: false
+            expanded: false,
+            idLoaiHangHoa: item?.idLoaiHangHoa as unknown as undefined
         });
         const itemCTHD = hoaDonChiTiet?.filter(
             (x) => x.idDonViQuyDoi === item.idDonViQuyDoi && utils.checkNull_OrEmpty(x.idChiTietHoaDon)
@@ -779,6 +784,90 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
         //await CheckCustomer_hasGDV(item?.id ?? '');
     };
 
+    const startEditPhoneField = (field: 'noiDung' | 'loi' | 'matKhau') => {
+        if (Utils.checkNull(phoneChosed?.id) || phoneChosed?.id === Guid.EMPTY) return;
+        cancelPhoneEdit.current = false;
+        setPhoneEditValue(phoneChosed?.[field] ?? '');
+        setPhoneEditField(field);
+    };
+
+    const savePhoneField = async () => {
+        const field = phoneEditField;
+        setPhoneEditField(null);
+        if (!field || !phoneChosed || cancelPhoneEdit.current) return;
+
+        const value = phoneEditValue.trim();
+        if (value === (phoneChosed[field] ?? '')) return;
+
+        const phoneNew = { ...phoneChosed, [field]: value };
+        try {
+            const ok = await ProductService.UpdateThongTinNhanhDienThoai({
+                id: phoneNew.id ?? '',
+                noiDung: phoneNew.noiDung ?? '',
+                loi: phoneNew.loi ?? '',
+                matKhau: phoneNew.matKhau ?? ''
+            });
+            if (ok) {
+                setPhoneChosed(phoneNew);
+                setObjAlert({ show: true, type: 1, mes: 'Cập nhật thông tin máy thành công' });
+            } else {
+                setObjAlert({ show: true, type: 2, mes: 'Không tìm thấy máy để cập nhật' });
+            }
+        } catch {
+            // lỗi từ BE đã được hiển thị qua http interceptor
+        }
+    };
+
+    const renderPhoneQuickField = (label: string, field: 'noiDung' | 'loi' | 'matKhau') => (
+        <Stack
+            direction="row"
+            spacing={0.5}
+            alignItems="center"
+            onClick={(e) => {
+                // không mở dropdown chọn máy khi bấm vào dòng sửa nhanh
+                e.stopPropagation();
+                if (phoneEditField !== field) startEditPhoneField(field);
+            }}>
+            <Typography variant="caption" fontWeight={700} sx={{ whiteSpace: 'nowrap' }}>
+                {label}:
+            </Typography>
+            {phoneEditField === field ? (
+                <TextField
+                    variant="standard"
+                    size="small"
+                    autoFocus
+                    fullWidth
+                    value={phoneEditValue}
+                    onChange={(e) => setPhoneEditValue(e.target.value)}
+                    onBlur={savePhoneField}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            (e.target as HTMLInputElement).blur();
+                        } else if (e.key === 'Escape') {
+                            cancelPhoneEdit.current = true;
+                            (e.target as HTMLInputElement).blur();
+                        }
+                    }}
+                    inputProps={{ style: { fontSize: 12, padding: 0 } }}
+                />
+            ) : (
+                <Typography
+                    variant="caption"
+                    title="Nhấn để sửa"
+                    sx={{
+                        flex: 1,
+                        cursor: 'text',
+                        borderRadius: 0.5,
+                        px: 0.5,
+                        color: phoneChosed?.[field] ? 'inherit' : 'text.disabled',
+                        '&:hover': { bgcolor: 'action.hover', textDecoration: 'underline dotted' }
+                    }}>
+                    {phoneChosed?.[field] || 'Nhấn để nhập'}
+                </Typography>
+            )}
+        </Stack>
+    );
+
     const changePhone = async (item: IListPhone) => {
         setAnchorDropdownPhone(null);
 
@@ -793,6 +882,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
             tenChu: item?.chuMay ?? '',
             noiDung: item?.noiDung ?? '',
             loi: item?.loi ?? '',
+            matKhau: item?.matKhau ?? '',
             pin: item?.pin ?? '',
             imel: item?.imel ?? '',
             idChuSoHuu: item?.idChuSoHuu ?? '',
@@ -906,6 +996,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
             tenChu: '',
             noiDung: '',
             loi: '',
+            matKhau: '',
             imel: '',
             isShow: false
         });
@@ -1338,7 +1429,13 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                 console.error('Lỗi tạo thẻ kho', err);
             }
             try {
-                const list = hoaDonChiTiet.filter((x) => x?.idHangHoa);
+                // Chỉ đánh dấu "Đã bán" cho Điện thoại (hàng tồn theo từng máy).
+                // Hàng hóa (phụ kiện) và Dịch vụ không có khái niệm "hết" theo kiểu này.
+                const list = hoaDonChiTiet.filter(
+                    (x) =>
+                        x?.idHangHoa &&
+                        (x.idLoaiHangHoa === LoaiHangHoa.DIEN_THOAI || x.idLoaiHangHoa === LoaiHangHoa.DIEN_THOAI_SUA)
+                );
 
                 for (const item of list) {
                     await ProductService.UpdateTrangThaiDienThoai(item.idHangHoa!, 2);
@@ -1711,6 +1808,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                     tenChu: objNew?.idChuSoHuu ?? '',
                     noiDung: objNew?.noiDung ?? '',
                     loi: objNew?.loi ?? '',
+                    matKhau: objNew?.matKhau ?? '',
                     pin: objNew?.pin ?? '',
                     imel: objNew?.imel ?? '',
                     idChuSoHuu: objNew?.idChuSoHuu ?? '',
@@ -2220,13 +2318,9 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                                                 {/* Nội dung + lỗi */}
                                                 {phoneChosed && (
                                                     <Stack spacing={0.5}>
-                                                        <Typography variant="caption">
-                                                            <strong>Nội dung:</strong> {phoneChosed?.noiDung}
-                                                        </Typography>
-
-                                                        <Typography variant="caption">
-                                                            <strong>Lỗi trước sửa:</strong> {phoneChosed?.loi}
-                                                        </Typography>
+                                                        {renderPhoneQuickField('Nội dung', 'noiDung')}
+                                                        {renderPhoneQuickField('Lỗi trước sửa', 'loi')}
+                                                        {renderPhoneQuickField('Mật khẩu', 'matKhau')}
                                                     </Stack>
                                                 )}
                                             </Stack>

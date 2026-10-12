@@ -40,7 +40,7 @@ class UpLoadFileService {
     GoogleApi_UploaFileToDrive = async (fileSelect: File, subFolder = '') => {
         // const pathFile = URL.createObjectURL(fileSelect); // Lưu trong bộ nhớ của trình duyệt
 
-        // cấu trúc lưu file: luckyBeauty/tenantName/subFolder/fileName
+        // cấu trúc lưu file: techShop/tenantName/subFolder/fileName
         let tenantName = Cookies.get('TenantName');
         if (utils.checkNull(tenantName)) {
             tenantName = 'Default';

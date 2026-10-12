@@ -226,7 +226,7 @@ class ZaloService {
                     tempdata[key] = dataSend?.tenHangHoa ?? 'Nhuộm + gội test';
                     break;
                 case 'TenChiNhanh':
-                    tempdata[key] = dataSend?.tenChiNhanh ?? 'SSOFT Việt Nam Hà Nội';
+                    tempdata[key] = dataSend?.tenChiNhanh ?? 'MiniPhone Việt Nam Hà Nội';
                     break;
                 case 'DiaChiChiNhanh':
                     tempdata[key] = dataSend?.diaChiChiNhanh ?? '31 Lê Văn Lương';
@@ -235,7 +235,7 @@ class ZaloService {
                     tempdata[key] = dataSend?.soDienThoaiChiNhanh ?? '0393363069';
                     break;
                 case 'TenCuaHang':
-                    tempdata[key] = dataSend?.tenCuaHang ?? 'SSOFT Việt Nam JSC';
+                    tempdata[key] = dataSend?.tenCuaHang ?? 'MiniPhone Việt Nam JSC';
                     break;
                 case 'DiaChiCuaHang':
                     tempdata[key] = dataSend?.diaChiCuaHang ?? 'số 6, Duy Tân, HN';

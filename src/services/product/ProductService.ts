@@ -140,6 +140,14 @@ class ProductService {
             });
         return xx;
     };
+    UpdateThongTinNhanhDienThoai = async (input: { id: string; noiDung: string; loi: string; matKhau: string }) => {
+        const xx = await http
+            .post(`api/services/app/HangHoa/UpdateThongTinNhanhDienThoai`, input)
+            .then((res: { data: { result: any } }) => {
+                return res.data.result;
+            });
+        return xx;
+    };
     DeleteMultipleProduct = async (lstIdHangHoa: any) => {
         const xx = await http.post(`api/services/app/HangHoa/DeleteMultipleProduct`, lstIdHangHoa);
         return xx.data.success;

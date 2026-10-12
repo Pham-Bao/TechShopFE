@@ -109,6 +109,11 @@ class KhachHangService {
         return result.data.result;
     };
 
+    GetOrCreate_KhachLe = async () => {
+        const result = await http.get(`api/services/app/KhachHang/GetOrCreate_KhachLe`);
+        return result.data.result;
+    };
+
     async checkExistSoDienThoai(phone: string, id: string | null = null) {
         if (Utils.checkNull(id)) {
             id = Guid.EMPTY;

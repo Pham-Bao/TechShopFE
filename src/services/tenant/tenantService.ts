@@ -15,7 +15,8 @@ import { TenantInfoActivityDto } from './dto/tenantInfoActivityDto';
 class TenantService {
     public async create(createTenantInput: CreateTenantInput): Promise<CreateTenantOutput> {
         try {
-            const result = await http.post('api/services/app/Tenant/Create', createTenantInput);
+            // tạo DB + chạy toàn bộ migration cho tenant mới có thể mất hơn 60s (timeout mặc định)
+            const result = await http.post('api/services/app/Tenant/Create', createTenantInput, { timeout: 300000 });
             return result.data.result;
         } catch (error) {
             console.error('Error occurred while creating tenant:', error);

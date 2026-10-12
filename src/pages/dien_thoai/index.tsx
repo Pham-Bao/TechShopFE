@@ -66,7 +66,7 @@ import { AppContext } from '../../services/chi_nhanh/ChiNhanhContext';
 import { CreateNhatKyThaoTacDto } from '../../services/nhat_ky_hoat_dong/dto/CreateNhatKyThaoTacDto';
 import nhatKyHoatDongService from '../../services/nhat_ky_hoat_dong/nhatKyHoatDongService';
 import Cookies from 'js-cookie';
-import TrangThaiHangSelect from './TrangThaiHangSelect';
+import TrangThaiHangSelect, { listTrangThai } from './TrangThaiHangSelect';
 import PopoverFilterDienThoai from './PopoverFilterDienThoai';
 import { DienThoaiRequestDto } from '../../services/dto/ParamSearchDto';
 import ButtonOnlyIcon from '../../components/Button/ButtonOnlyIcon';
@@ -111,7 +111,7 @@ const PageProduct = () => {
         columnSort: '',
         typeSort: '',
         idLoaiHangHoa: 4,
-        trangThais: [1]
+        trangThais: listTrangThai.map((x) => x.value)
     });
     const [soLuongTheoTrangThai, setSoLuongTheoTrangThai] = useState<SoLuongTheoTrangThaiBanHangDto[]>([]);
 

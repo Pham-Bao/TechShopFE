@@ -63,6 +63,19 @@ class CheckinService {
             });
         return xx;
     };
+    UpdateTrangThaiSuaChua = async (idCheckIn: string, trangThaiSuaChua = 1) => {
+        if (utils.checkNull_OrEmpty(idCheckIn)) {
+            return;
+        }
+        const xx = await http
+            .post(
+                `api/services/app/CheckIn/UpdateTrangThaiSuaChua?idCheckIn=${idCheckIn}&trangThaiSuaChua=${trangThaiSuaChua}`
+            )
+            .then((res: { data: { result: string } }) => {
+                return res.data.result;
+            });
+        return xx;
+    };
     UpdateTrangThaiBooking_byIdCheckIn = async (idCheckIn: string, trangThaiBooking: number): Promise<boolean> => {
         if (utils.checkNull_OrEmpty(idCheckIn)) {
             return false;

@@ -16,7 +16,7 @@ import GroupAddOutlinedIcon from '@mui/icons-material/GroupAddOutlined';
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined';
 import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
 import React, { useEffect, useRef, useState } from 'react';
-import { LoaiChungTu, TrangThaiCheckin } from '../../lib/appconst';
+import { LoaiChungTu, listTrangThaiSuaChua, TrangThaiCheckin } from '../../lib/appconst';
 import Loading from '../../components/Loading';
 import { PageKhachHangCheckInDto } from '../../services/check_in/CheckinDto';
 import CheckinService from '../../services/check_in/CheckinService';
@@ -64,9 +64,9 @@ export default function TabKhachHangChecking(props: IPropsTabKhachHangCheckIn) {
         setSelectedCus(null);
     };
 
-    const handleMarkDone = () => {
+    const handleChangeTrangThaiSuaChua = (newStatus: number) => {
         if (selectedCus) {
-            onFinishCustomer(selectedCus);
+            onChangeTrangThaiSuaChua(selectedCus, newStatus);
         }
         handleCloseMenu();
     };
@@ -175,59 +175,43 @@ export default function TabKhachHangChecking(props: IPropsTabKhachHangCheckIn) {
     if (isLoadingData) {
         return <Loading />;
     }
-    const getColorByTrangThai = (trangThaiCheckIn?: number): string => {
-        //console.log(trangThaiCheckIn);
-        switch (trangThaiCheckIn) {
-            case 1:
+    const getColorByTrangThai = (trangThaiSuaChua?: number): string => {
+        switch (trangThaiSuaChua) {
+            case 1: // Tiếp nhận
                 return '#d0f0c0'; // Xanh nhạt
-            case 2:
+            case 2: // Đang sửa
                 return '#fff3cd'; // Vàng nhạt
-            case 3:
+            case 3: // Đã sửa xong
                 return '#d1ecf1'; // Xanh dương
-            case 4:
+            case 4: // Sửa xong 1 phần
+                return '#ffe5b4'; // Cam nhạt
+            case 5: // Hoàn trả
+                return '#e2d6f3'; // Tím nhạt
+            case 6: // Hoàn trả (không sửa được)
                 return '#f8d7da'; // Đỏ nhạt
             default:
                 return '#ffffff'; // Mặc định
         }
     };
-    const onFinishCustomer = async (cusItem: PageKhachHangCheckInDto) => {
-        const nextStatus = cusItem.trangThaiCheckIn === 1 ? 2 : 1;
-        let nextStatusText = '';
-
-        if (nextStatus === 1) {
-            nextStatusText = 'Đang sửa chữa';
-        } else {
-            nextStatusText = 'Đã sửa xong';
-        }
+    const onChangeTrangThaiSuaChua = async (cusItem: PageKhachHangCheckInDto, newStatus: number) => {
+        const nextStatusText = listTrangThaiSuaChua.find((x) => x.value === newStatus)?.label ?? '';
 
         try {
-            // Gọi API cập nhật trạng thái mới
-            await CheckinService.UpdateTrangThaiCheckin(cusItem.idCheckIn, nextStatus);
+            await CheckinService.UpdateTrangThaiSuaChua(cusItem.idCheckIn, newStatus);
 
-            // Cập nhật danh sách khách hàng trong local state
             setLstCustomerChecking((prev) =>
-                prev.map((item) => {
-                    if (item.idCheckIn === cusItem.idCheckIn) {
-                        return new PageKhachHangCheckInDto({
-                            ...item,
-                            idKhachHang: item.idKhachHang ?? undefined,
-                            idHangHoa: item.idHangHoa ?? undefined,
-                            idChiNhanh: typeof item.idChiNhanh === 'string' ? null : item.idChiNhanh,
-                            maKhachHang: item.maKhachHang ?? undefined,
-                            dateTimeCheckIn: item.dateTimeCheckIn ?? undefined,
-                            soDienThoai: item.soDienThoai ?? '',
-                            tenKhachHang: item.tenKhachHang ?? '',
-                            tongTichDiem: item.tongTichDiem ?? 0,
-                            ghiChu: item.ghiChu ?? '',
-                            trangThaiCheckIn: nextStatus ?? '',
-                            txtTrangThaiCheckIn: nextStatusText
-                        });
-                    }
-                    return item;
-                })
+                prev.map((item) =>
+                    item.idCheckIn === cusItem.idCheckIn
+                        ? ({
+                              ...item,
+                              trangThaiSuaChua: newStatus,
+                              txtTrangThaiSuaChua: nextStatusText
+                          } as PageKhachHangCheckInDto)
+                        : item
+                )
             );
         } catch (error) {
-            console.error('Lỗi khi cập nhật trạng thái khách hàng:', error);
+            console.error('Lỗi khi cập nhật trạng thái sửa chữa:', error);
         }
     };
 
@@ -265,7 +249,7 @@ export default function TabKhachHangChecking(props: IPropsTabKhachHangCheckIn) {
                                 borderRadius={1}
                                 sx={{
                                     boxShadow: '0px 2px 5px 0px #c6bdd1',
-                                    backgroundColor: getColorByTrangThai(cusItem.trangThaiCheckIn ?? 0),
+                                    backgroundColor: getColorByTrangThai(cusItem.trangThaiSuaChua ?? 1),
                                     '&:hover': {
                                         borderColor: 'var(--color-main)',
                                         cursor: 'pointer'
@@ -277,11 +261,15 @@ export default function TabKhachHangChecking(props: IPropsTabKhachHangCheckIn) {
                                     <MoreVertIcon />
                                 </IconButton>
                                 <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleCloseMenu}>
-                                    {selectedCus?.trangThaiCheckIn === 1 ? (
-                                        <MenuItem onClick={handleMarkDone}>Đang sửa chữa</MenuItem>
-                                    ) : (
-                                        <MenuItem onClick={handleMarkDone}>Đã sửa xong</MenuItem>
-                                    )}
+                                    {listTrangThaiSuaChua
+                                        .filter((x) => x.value !== selectedCus?.trangThaiSuaChua)
+                                        .map((x) => (
+                                            <MenuItem
+                                                key={x.value}
+                                                onClick={() => handleChangeTrangThaiSuaChua(x.value)}>
+                                                {x.label}
+                                            </MenuItem>
+                                        ))}
                                     <MenuItem onClick={handleRemoveCustomer}>Xóa</MenuItem>
                                 </Menu>
 
@@ -313,8 +301,18 @@ export default function TabKhachHangChecking(props: IPropsTabKhachHangCheckIn) {
                                                     title={cusItem?.tenHangHoa}>
                                                     {cusItem?.tenHangHoa}{' '}
                                                     <span style={{ color: 'var(--color-text-blur)' }}>
-                                                        ({cusItem?.noiDung})
+                                                        ({cusItem?.imel})
                                                     </span>
+                                                </Typography>
+
+                                                <Typography
+                                                    variant="body2"
+                                                    maxWidth={260}
+                                                    minHeight={20}
+                                                    className="lableOverflow"
+                                                    color={'var(--color-text-blur)'}
+                                                    title={cusItem?.noiDung}>
+                                                    {cusItem?.noiDung}
                                                 </Typography>
                                             </Stack>
                                         </Stack>
@@ -347,7 +345,7 @@ export default function TabKhachHangChecking(props: IPropsTabKhachHangCheckIn) {
                                             )}
 
                                             <Typography variant="body2" fontStyle="italic" color="GrayText">
-                                                {cusItem?.txtTrangThaiCheckIn}
+                                                {cusItem?.txtTrangThaiSuaChua}
                                             </Typography>
                                         </Stack>
 
