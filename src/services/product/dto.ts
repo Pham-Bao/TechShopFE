@@ -194,6 +194,8 @@ export class ModelNhomHangHoa {
 export class PagedProductSearchDto extends ParamSearchDto {
     idNhomHangHoas?: string[];
     idLoaiHangHoa?: number;
+    // có giá trị thì backend chỉ lấy đúng các loại này (ưu tiên hơn idLoaiHangHoa)
+    idLoaiHangHoas?: number[];
     idLoaiChungTu?: number;
     mau?: string[];
     dungLuong?: number[];

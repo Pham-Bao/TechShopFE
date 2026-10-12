@@ -140,6 +140,11 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
     const firstLoad_changeLoaiHD = useRef(true);
     const firstLoad_resetTab = useRef(true);
     const firstLoad_changeIdInvoiceWaiting = useRef(true);
+    // debounce tìm hàng hóa được hẹn giờ trước khi loaiHoaDon kịp đổi (cấu hình/hóa đơn chờ),
+    // nên phải đọc giá trị mới nhất lúc chạy thay vì giá trị lúc hẹn.
+    const loaiHoaDonRef = useRef(loaiHoaDon);
+    loaiHoaDonRef.current = loaiHoaDon;
+    const requestIdListHangHoa = useRef(0);
     const [anchorDropdownCustomer, setAnchorDropdownCustomer] = useState<null | HTMLElement>(null);
     const [anchorDropdownPhone, setAnchorDropdownPhone] = useState<null | HTMLElement>(null);
     const expandSearchCus = Boolean(anchorDropdownCustomer);
@@ -228,6 +233,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
     };
 
     const getListHangHoa_groupbyNhom = async (txtSearch: string, arrIdNhomHang: string[] = [], loaiHoaDon?: number) => {
+        const requestId = ++requestIdListHangHoa.current;
         setIsLoadingData(true);
         const input = {
             IdNhomHangHoas: arrIdNhomHang,
@@ -238,6 +244,8 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
             PageSize: 50
         } as PagedProductSearchDto;
         const data = await ProductService.GetDMHangHoa_groupByNhom(input);
+        // Bỏ kết quả của request cũ về muộn, tránh ghi đè danh sách của request mới hơn.
+        if (requestId !== requestIdListHangHoa.current) return;
 
         // Hóa đơn sửa: chỉ hiển thị hàng hóa/dịch vụ, không hiển thị Điện thoại (điện thoại để bán,
         // khác với máy sửa của khách - máy sửa chọn riêng ở khu vực thông tin khách/máy phía trên).
@@ -610,13 +618,13 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
 
     // only used when change textsearch
     const debounceSearchHangHoa = useRef(
-        debounce(async (txtSearch: string, loaiHoaDon: number) => {
-            getListHangHoa_groupbyNhom(txtSearch, arrIdNhomHangChosed, loaiHoaDon);
+        debounce(async (txtSearch: string) => {
+            getListHangHoa_groupbyNhom(txtSearch, arrIdNhomHangChosed, loaiHoaDonRef.current);
         }, 500)
     ).current;
 
     useEffect(() => {
-        debounceSearchHangHoa(txtSearch, loaiHoaDon);
+        debounceSearchHangHoa(txtSearch);
     }, [txtSearch]);
 
     const removeCTHD = async (item: HoaDonChiTietDto) => {

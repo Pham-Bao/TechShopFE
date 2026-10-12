@@ -90,9 +90,12 @@ const PageProduct = () => {
         items: []
     });
 
+    // Tab "Tất cả" chỉ gồm hàng hóa, dịch vụ, combo - điện thoại quản lý ở trang Điện thoại riêng
+    const LOAI_HANG_HOA_TAT_CA = [LoaiHangHoa.HANG_HOA, LoaiHangHoa.DICH_VU, LoaiHangHoa.COMBO];
     const [filterPageProduct, setFilterPageProduct] = useState<PagedProductSearchDto>({
         idNhomHangHoas: [],
         idLoaiHangHoa: 0,
+        idLoaiHangHoas: LOAI_HANG_HOA_TAT_CA,
         textSearch: '',
         currentPage: 1,
         pageSize: AppConsts.pageOption[0].value,
@@ -196,7 +199,8 @@ const PageProduct = () => {
         setFilterPageProduct((prev) => ({
             ...prev,
             currentPage: 1,
-            idLoaiHangHoa: loaiHangHoa
+            idLoaiHangHoa: loaiHangHoa,
+            idLoaiHangHoas: loaiHangHoa === undefined ? LOAI_HANG_HOA_TAT_CA : undefined
         }));
     };
     function showModalAddProduct(action?: number, id = '', idLoaiHangHoa?: number) {
