@@ -73,7 +73,7 @@ const LineChartNew: React.FC = () => {
                 <Line
                     type="monotone"
                     dataKey={'tuanTruoc'}
-                    stroke="#ff9900"
+                    stroke="#93C5FD"
                     dot={false}
                     activeDot={{ r: 4 }}
                     animationDuration={8000}

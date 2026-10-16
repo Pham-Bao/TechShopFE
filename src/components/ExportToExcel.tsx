@@ -5,6 +5,7 @@ import { saveAs } from 'file-saver';
 import * as XLSX from 'xlsx';
 import { GridColDef } from '@mui/x-data-grid';
 import UploadIcon from '../images/upload.svg';
+import DownloadIcon from '../images/download.svg';
 interface ExportToExcelProps {
     rows: any[];
     columns: GridColDef[];
@@ -27,7 +28,7 @@ const ExportToExcel: React.FC<ExportToExcelProps> = ({ rows, columns, fileName }
             size="small"
             className="border-color btn-outline-hover"
             variant="outlined"
-            startIcon={<img src={UploadIcon} />}
+            startIcon={<img src={DownloadIcon} />}
             sx={{
                 textTransform: 'capitalize',
                 fontWeight: '400',

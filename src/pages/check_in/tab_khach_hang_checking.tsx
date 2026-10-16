@@ -323,7 +323,7 @@ export default function TabKhachHangChecking(props: IPropsTabKhachHangCheckIn) {
                                             {cusItem?.loaiHoaDon !== LoaiChungTu.HOA_DON_SUA_CHUA ? (
                                                 <Typography
                                                     sx={{
-                                                        color: '#1976d2',
+                                                        color: 'var(--color-main)',
                                                         '&:hover': {
                                                             color: '#3c9977',
                                                             cursor: 'pointer'

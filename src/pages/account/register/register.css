@@ -61,7 +61,7 @@ p {
 }
 
 .btn-register {
-    background: #7c3367 !important;
+    background: var(--color-main) !important;
     border: 0;
     border-radius: 6px;
 }
@@ -126,7 +126,7 @@ p {
 
 .dieu-khoan-bao-mat p a {
     text-decoration: none;
-    color: #319dff;
+    color: var(--color-second);
 }
 
 .dieu-khoan-bao-mat p {
@@ -144,7 +144,7 @@ p {
     text-align: center;
 }
 .has-login a {
-    color: #009ef7;
+    color: var(--color-second);
     text-decoration: none;
 }
 
@@ -206,7 +206,7 @@ p {
 }
 .dieu-khoan a {
     text-decoration: none;
-    color: #319dff;
+    color: var(--color-second);
 }
 .dieu-khoan {
     font-size: 14px;

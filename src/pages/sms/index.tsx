@@ -18,6 +18,7 @@ import {
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import { ReactComponent as UploadIcon } from '../../images/upload.svg';
+import { ReactComponent as DownloadIcon } from '../../images/download.svg';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import DeleteSweepOutlinedIcon from '@mui/icons-material/DeleteSweepOutlined';
 import NearMeOutlinedIcon from '@mui/icons-material/NearMeOutlined';
@@ -55,8 +56,9 @@ import abpCustom from '../../components/abp-custom';
 import { AppContext } from '../../services/chi_nhanh/ChiNhanhContext';
 import utils from '../../utils/utils';
 import suggestStore from '../../stores/suggestStore';
+import appTheme from '../../theme'; // kế thừa theme chung (màu chủ đạo) của app
 
-const styleListItem = createTheme({
+const styleListItem = createTheme(appTheme, {
     components: {
         MuiTypography: {
             styleOverrides: {
@@ -659,7 +661,7 @@ const TinNhanPage = () => {
                                     padding: '4px 8px',
                                     borderRadius: '1000px',
                                     // backgroundColor: '#F1FAFF',
-                                    color: params.row?.trangThai !== 100 ? '#b16827' : '#009EF7'
+                                    color: params.row?.trangThai !== 100 ? '#b16827' : 'var(--color-second)'
                                 }}>
                                 {params.value || ''}
                             </Box>
@@ -728,7 +730,7 @@ const TinNhanPage = () => {
                                     backgroundColor: params.row?.trangThai !== 1 ? '' : '#F1FAFF',
                                     color:
                                         params.row?.trangThai === 100
-                                            ? '#009EF7'
+                                            ? 'var(--color-second)'
                                             : params.row?.trangThai === 1
                                             ? ''
                                             : '#b16827'
@@ -876,7 +878,7 @@ const TinNhanPage = () => {
                                 size="small"
                                 onClick={exportToExcel}
                                 variant="outlined"
-                                startIcon={<UploadIcon />}
+                                startIcon={<DownloadIcon />}
                                 className="btnNhapXuat btn-outline-hover"
                                 sx={{
                                     bgcolor: '#fff!important',

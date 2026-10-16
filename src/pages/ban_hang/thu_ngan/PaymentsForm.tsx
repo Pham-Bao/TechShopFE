@@ -620,7 +620,7 @@ const PaymentsForm: React.FC<ChildComponent> = ({
                         {isSaving ? (
                             <Stack
                                 sx={{
-                                    backgroundColor: '#1976d2',
+                                    backgroundColor: 'var(--color-main)',
                                     borderRadius: '4px',
                                     justifyContent: 'center',
                                     alignItems: 'center',
@@ -636,7 +636,7 @@ const PaymentsForm: React.FC<ChildComponent> = ({
                         ) : (
                             <Stack
                                 sx={{
-                                    backgroundColor: '#1976d2',
+                                    backgroundColor: 'var(--color-main)',
                                     borderRadius: '8px',
                                     justifyContent: 'center',
                                     alignItems: 'center',

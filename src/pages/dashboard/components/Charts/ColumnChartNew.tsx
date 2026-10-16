@@ -92,7 +92,7 @@ const ColumnChartNew: React.FC = () => {
                         content={<CustomTooltip />}
                     />
 
-                    <Bar dataKey="thangTruoc" stackId="stack" fill="#ff9900" barSize={12} />
+                    <Bar dataKey="thangTruoc" stackId="stack" fill="#93C5FD" barSize={12} />
                     <Bar dataKey="thangNay" stackId="stack" fill="var(--color-main)" barSize={12} />
                 </BarChart>
             </ResponsiveContainer>

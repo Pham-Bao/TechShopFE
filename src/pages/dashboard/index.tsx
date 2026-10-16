@@ -8,7 +8,17 @@ import ColumnChartNew from './components/Charts/ColumnChartNew';
 import HotServicesNew from './components/Statistical/HotServicesNew';
 import Box from '@mui/material/Box';
 import OverView from './components/OverView/ovver-view';
-import { FormControlLabel, Grid, Radio, RadioGroup, SelectChangeEvent, Stack, Typography } from '@mui/material';
+import { Button, FormControlLabel, Grid, Radio, RadioGroup, SelectChangeEvent, Stack, Typography } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import abpCustom from '../../components/abp-custom';
+import StorefrontOutlinedIcon from '@mui/icons-material/StorefrontOutlined';
+import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';
+import PointOfSaleOutlinedIcon from '@mui/icons-material/PointOfSaleOutlined';
+import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined';
+import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined';
+import PhoneIphoneOutlinedIcon from '@mui/icons-material/PhoneIphoneOutlined';
+import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
+import AccountBalanceWalletOutlinedIcon from '@mui/icons-material/AccountBalanceWalletOutlined';
 import dashboardStore from '../../stores/dashboardStore';
 import Cookies from 'js-cookie';
 import { observer } from 'mobx-react';
@@ -28,6 +38,7 @@ enum TopService_LoaiBaoCao {
 }
 const Dashboard: React.FC = () => {
     const toDay = new Date();
+    const navigate = useNavigate();
     const [dashboardDateView, setDashboardDateView] = useState('day');
     const appContext = useContext(AppContext);
     const chinhanh = appContext.chinhanhCurrent;
@@ -170,290 +181,239 @@ const Dashboard: React.FC = () => {
         await dashboardStore.getThongKeHotService(param);
     };
 
+    // Lối tắt tới các chức năng có sẵn (chỉ hiện khi có quyền)
+    const quickActions = [
+        { label: 'Thu ngân', icon: <PointOfSaleOutlinedIcon />, path: '/ban-hang', permission: 'Pages.HoaDon.Create' },
+        {
+            label: 'Hóa đơn',
+            icon: <ReceiptLongOutlinedIcon />,
+            path: '/giao-dich-thanh-toan',
+            permission: 'Pages.HoaDon'
+        },
+        { label: 'Khách hàng', icon: <PeopleAltOutlinedIcon />, path: '/khach-hangs', permission: 'Pages.KhachHang' },
+        { label: 'Điện thoại', icon: <PhoneIphoneOutlinedIcon />, path: '/dien-thoai', permission: 'Pages.DM_HangHoa' },
+        { label: 'Nhập hàng', icon: <Inventory2OutlinedIcon />, path: '/nhap-hangs', permission: 'Pages.DM_HangHoa' },
+        { label: 'Sổ quỹ', icon: <AccountBalanceWalletOutlinedIcon />, path: '/so-quy', permission: 'Pages.QuyHoaDon' }
+    ].filter((x) => abpCustom.isGrandPermission(x.permission));
+
+    const txtToday = toDay.toLocaleDateString('vi-VN', {
+        weekday: 'long',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    });
+
     return (
-        <div style={{ height: 'auto' }}>
+        <div className="ts-dash">
             <ModalAllLichHenDoard
                 isShowModal={showAllLichHen}
                 objUpDate={paramSearchLichHen}
                 onClose={() => setShowAllLichHen(false)}
                 onOK={() => setShowAllLichHen(false)}
             />
-            <Box
-                display="flex"
-                alignItems="center"
-                justifyContent="space-between"
-                sx={{ paddingTop: '16px', paddingBottom: '16px' }}>
-                <Typography fontSize={18} fontWeight={600}>
-                    Trang chủ
-                </Typography>
-                <Stack
-                    direction={'row'}
-                    spacing={1}
-                    sx={{ padding: '8px 12px', background: 'wheat', borderRadius: '4px' }}>
-                    {suggestStore?.suggestChiNhanh_byUserLogin?.length > 1 && (
-                        <Stack
-                            direction={'row'}
-                            alignItems={'center'}
-                            spacing={1.5}
-                            // display={{ xs: 'none', lg: 'flex', md: 'flex' }}
-                        >
-                            <Stack>
-                                <Stack direction={'row'} spacing={0.5} onClick={toggleChiNhanh}>
-                                    <Typography variant="body1">{lblChiNhanh}</Typography>
-                                    <ExpandMoreIcon />
-                                </Stack>
 
-                                <MenuWithDataHasSearch
-                                    open={expandDropdownChiNhanh}
-                                    hasCheckBox={true}
-                                    lstData={suggestStore?.suggestChiNhanh_byUserLogin?.map((x) => {
-                                        return {
-                                            id: x.id,
-                                            text: x.tenChiNhanh
-                                        } as IList;
-                                    })}
-                                    anchorEl={anchorChiNhanh}
-                                    handleClose={() => setAnchorChiNhanh(null)}
-                                    choseMultipleItem={choseChiNhanh}
+            {/* Tiêu đề + bộ lọc chi nhánh / thời gian */}
+            <div className="ts-dash__header">
+                <div>
+                    <Typography className="ts-dash__title">Tổng quan</Typography>
+                    <Typography className="ts-dash__subtitle">Xin chào! Hôm nay là {txtToday}</Typography>
+                </div>
+                <Stack direction={'row'} spacing={1} className="ts-dash__filters">
+                    {suggestStore?.suggestChiNhanh_byUserLogin?.length > 1 && (
+                        <>
+                            <Button
+                                variant="outlined"
+                                color="inherit"
+                                className="ts-dash__filter-btn"
+                                startIcon={<StorefrontOutlinedIcon fontSize="small" />}
+                                endIcon={<ExpandMoreIcon />}
+                                onClick={toggleChiNhanh}>
+                                {lblChiNhanh}
+                            </Button>
+                            <MenuWithDataHasSearch
+                                open={expandDropdownChiNhanh}
+                                hasCheckBox={true}
+                                lstData={suggestStore?.suggestChiNhanh_byUserLogin?.map((x) => {
+                                    return {
+                                        id: x.id,
+                                        text: x.tenChiNhanh
+                                    } as IList;
+                                })}
+                                anchorEl={anchorChiNhanh}
+                                handleClose={() => setAnchorChiNhanh(null)}
+                                choseMultipleItem={choseChiNhanh}
+                            />
+                        </>
+                    )}
+                    <Button
+                        variant="outlined"
+                        color="inherit"
+                        className="ts-dash__filter-btn"
+                        startIcon={<CalendarTodayOutlinedIcon fontSize="small" />}
+                        endIcon={<ExpandMoreIcon />}
+                        onClick={(event) => setAnchorDateEl(event.currentTarget)}>
+                        {lblDateTypeFilter}
+                    </Button>
+                    <DateFilterCustom
+                        id="popover-date-filter"
+                        dateTypeDefault={paramSearch.dateType}
+                        open={openDateFilter}
+                        anchorEl={anchorDateEl}
+                        onClose={() => setAnchorDateEl(null)}
+                        onApplyDate={onApplyFilterDate}
+                    />
+                </Stack>
+            </div>
+
+            {/* Thẻ số liệu */}
+            <OverView />
+
+            {/* Thao tác nhanh */}
+            {quickActions.length > 0 && (
+                <div className="ts-card ts-dash__quick">
+                    <div className="ts-card__header">
+                        <Typography className="ts-card__title">Thao tác nhanh</Typography>
+                    </div>
+                    <div className="ts-dash__quick-grid">
+                        {quickActions.map((x) => (
+                            <button
+                                key={x.path}
+                                type="button"
+                                className="ts-dash__quick-item"
+                                onClick={() => navigate(x.path)}>
+                                <span className="ts-dash__quick-icon">{x.icon}</span>
+                                <span className="ts-dash__quick-label">{x.label}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            <Grid container spacing={2}>
+                {/* Doanh thu */}
+                <Grid item xs={12} lg={8}>
+                    <div className="ts-card">
+                        <div className="ts-card__header">
+                            <div>
+                                <Typography className="ts-card__title">Doanh thu</Typography>
+                                <Typography className="ts-dash__revenue">
+                                    {new Intl.NumberFormat('vi-VN').format(sumTongTien)}
+                                </Typography>
+                            </div>
+                            <Stack direction={'row'} spacing={2} alignItems={'center'}>
+                                <span className="ts-dash__legend">
+                                    <i style={{ background: 'var(--color-main)' }} /> Năm này
+                                </span>
+                                <span className="ts-dash__legend">
+                                    <i style={{ background: '#93C5FD' }} /> Năm trước
+                                </span>
+                            </Stack>
+                        </div>
+                        <div className="ts-card__body">
+                            <ColumnChartNew />
+                        </div>
+                    </div>
+                </Grid>
+
+                {/* Danh sách cuộc hẹn */}
+                <Grid item xs={12} lg={4}>
+                    <div className="ts-card ts-card--fill">
+                        <div className="ts-card__header">
+                            <Stack direction={'row'} spacing={1} alignItems={'center'}>
+                                <Typography className="ts-card__title">Danh sách cuộc hẹn</Typography>
+                                <span className="ts-badge">{dashboardStore?.countLichHen}</span>
+                            </Stack>
+                            <Stack direction={'row'} spacing={0.5} alignItems={'center'}>
+                                {dashboardStore?.countLichHen > 3 && (
+                                    <Button
+                                        size="small"
+                                        color="secondary"
+                                        endIcon={<ArrowOutwardIcon fontSize="small" />}
+                                        onClick={() => setShowAllLichHen(true)}>
+                                        Xem tất cả
+                                    </Button>
+                                )}
+                                <Button
+                                    size="small"
+                                    color="inherit"
+                                    className="ts-dash__filter-btn ts-dash__filter-btn--sm"
+                                    endIcon={<ExpandMoreIcon />}
+                                    onClick={(event) => setAnchorDateLichHen(event.currentTarget)}>
+                                    {lblDateTypeFilterLichHen}
+                                </Button>
+                                <DateFilterCustom
+                                    id="popover-date-filter"
+                                    dateTypeDefault={paramSearchLichHen.dateType}
+                                    open={openDateFilterLichHen}
+                                    anchorEl={anchorDateLichHen}
+                                    onClose={() => setAnchorDateLichHen(null)}
+                                    onApplyDate={onApplyFilterDateLichHen}
                                 />
                             </Stack>
-                        </Stack>
-                    )}
+                        </div>
+                        <Box className="ts-card__body" sx={{ height: '300px' }}>
+                            <AppoimentsNew />
+                        </Box>
+                    </div>
+                </Grid>
 
-                    <Stack>
-                        <Stack
-                            direction={'row'}
-                            spacing={0.5}
-                            onClick={(event) => setAnchorDateEl(event.currentTarget)}>
-                            <Typography variant="body1">{lblDateTypeFilter}</Typography>
-                            <ExpandMoreIcon />
-                        </Stack>
+                {/* Cuộc hẹn hàng tuần */}
+                <Grid item xs={12} md={6}>
+                    <div className="ts-card ts-card--fill">
+                        <div className="ts-card__header">
+                            <Typography className="ts-card__title">Tổng số cuộc hẹn hàng tuần</Typography>
+                        </div>
+                        <div className="ts-card__body">
+                            <LineChartNew />
+                        </div>
+                    </div>
+                </Grid>
 
-                        <DateFilterCustom
-                            id="popover-date-filter"
-                            dateTypeDefault={paramSearch.dateType}
-                            open={openDateFilter}
-                            anchorEl={anchorDateEl}
-                            onClose={() => setAnchorDateEl(null)}
-                            onApplyDate={onApplyFilterDate}
-                        />
-                    </Stack>
-                </Stack>
-            </Box>
-            <div style={{ gap: '16px' }}>
-                <OverView />
-                <Box paddingTop={'16px'}>
-                    <Grid container spacing={2}>
-                        <Grid item xs={12} sm={12} md={6} lg={6} xl={6} sx={{ height: '100%' }}>
-                            <Stack padding={1} bgcolor={'#FFF'} borderRadius={'4px'}>
-                                <Stack
-                                    padding={2}
-                                    borderBottom={'1px solid #EEF0F4'}
-                                    borderRadius={'4px'}
-                                    direction={'row'}
-                                    justifyContent={'space-between'}>
-                                    <Stack direction={'row'} spacing={1}>
-                                        <Typography
-                                            sx={{
-                                                fontSize: '18px',
-                                                fontWeight: '600'
-                                            }}>
-                                            Danh sách cuộc hẹn
-                                        </Typography>
-                                        <Typography component={'span'} variant="body2">
-                                            ({dashboardStore?.countLichHen})
-                                        </Typography>
-                                        {dashboardStore?.countLichHen > 3 && (
-                                            <ArrowOutwardIcon
-                                                titleAccess="Xem tất cả"
-                                                color="info"
-                                                onClick={() => setShowAllLichHen(true)}
-                                            />
-                                        )}
-                                    </Stack>
-
-                                    <Stack>
-                                        <Stack
-                                            direction={'row'}
-                                            spacing={0.5}
-                                            onClick={(event) => setAnchorDateLichHen(event.currentTarget)}>
-                                            <Typography variant="body1">{lblDateTypeFilterLichHen}</Typography>
-                                            <ExpandMoreIcon />
-                                        </Stack>
-
-                                        <DateFilterCustom
-                                            id="popover-date-filter"
-                                            dateTypeDefault={paramSearchLichHen.dateType}
-                                            open={openDateFilterLichHen}
-                                            anchorEl={anchorDateLichHen}
-                                            onClose={() => setAnchorDateLichHen(null)}
-                                            onApplyDate={onApplyFilterDateLichHen}
-                                        />
-                                    </Stack>
-                                </Stack>
-
-                                <Box bgcolor={'#FFF'} padding={'8px 24px 16px 0px'} sx={{ height: '300px' }}>
-                                    <AppoimentsNew />
-                                </Box>
+                {/* Top dịch vụ */}
+                <Grid item xs={12} md={6}>
+                    <div className="ts-card ts-card--fill">
+                        <div className="ts-card__header ts-card__header--wrap">
+                            <Typography className="ts-card__title">Top 5 dịch vụ hot</Typography>
+                            <Stack direction={'row'} spacing={1} alignItems={'center'}>
+                                <RadioGroup
+                                    row
+                                    value={paramSearchTopService?.trangThais?.[0]}
+                                    onChange={TopService_ChangeLoaiBaoCao}>
+                                    <FormControlLabel
+                                        value={TopService_LoaiBaoCao.DOANH_THU}
+                                        label="Doanh thu"
+                                        control={<Radio size="small" />}
+                                    />
+                                    <FormControlLabel
+                                        value={TopService_LoaiBaoCao.SO_LUONG}
+                                        label="Số lượng"
+                                        control={<Radio size="small" />}
+                                    />
+                                </RadioGroup>
+                                <Button
+                                    size="small"
+                                    color="inherit"
+                                    className="ts-dash__filter-btn ts-dash__filter-btn--sm"
+                                    endIcon={<ExpandMoreIcon />}
+                                    onClick={(event) => setAnchorDateTopService(event.currentTarget)}>
+                                    {lblDateTypeFilterTopService}
+                                </Button>
+                                <DateFilterCustom
+                                    id="popover-date-filter"
+                                    dateTypeDefault={paramSearchTopService.dateType}
+                                    open={openDateFilterTopService}
+                                    anchorEl={anchorDateTopService}
+                                    onClose={() => setAnchorDateTopService(null)}
+                                    onApplyDate={onApplyFilterDateTopService}
+                                />
                             </Stack>
-                        </Grid>
-                        <Grid item xs={12} sm={12} md={6} lg={6} xl={6}>
-                            <Box
-                                style={{
-                                    background: '#FFF',
-                                    padding: '16px 24px',
-                                    borderRadius: '4px'
-                                }}>
-                                <Typography
-                                    sx={{
-                                        fontSize: '18px',
-                                        fontWeight: '600'
-                                    }}>
-                                    Tổng số cuộc hẹn hàng tuần
-                                </Typography>
-                                <Stack>
-                                    <LineChartNew />
-                                </Stack>
-                            </Box>
-                        </Grid>
-                    </Grid>
-                </Box>
-                <Box marginTop={'16px'}>
-                    <Grid container spacing={2}>
-                        <Grid item xs={12} sm={12} md={9} lg={12} xl={12} borderRadius={'8px'}>
-                            <Box bgcolor={'#FFF'} padding={'8px 24px'} borderRadius={'8px'}>
-                                <Typography
-                                    sx={{
-                                        fontSize: '18px',
-                                        fontWeight: '600'
-                                    }}>
-                                    Doanh thu
-                                </Typography>
-                            </Box>
-                            <Grid
-                                container
-                                display={'flex'}
-                                justifyContent={'space-between'}
-                                bgcolor={'#FFF'}
-                                padding={'8px 24px'}>
-                                <Grid item xs={12} sm={6}>
-                                    <Box width={'100%'} borderRadius={'8px'}>
-                                        <Typography
-                                            sx={{
-                                                color: '#3D475C',
-                                                fontSize: '24px',
-                                                fontWeight: '700'
-                                            }}>
-                                            {new Intl.NumberFormat('vi-VN').format(sumTongTien)}
-                                        </Typography>
-                                    </Box>
-                                </Grid>
-                                <Grid item>
-                                    <Box display={'flex'} justifyContent={'end'} width={'100%'}>
-                                        <Box
-                                            display={'flex'}
-                                            justifyContent={'space-between'}
-                                            alignItems={'center'}
-                                            marginRight={'24px'}>
-                                            <Box
-                                                sx={{
-                                                    borderRadius: '50%',
-                                                    width: '12px',
-                                                    height: '12px',
-                                                    bgcolor: 'var(--color-main)'
-                                                }}></Box>
-                                            <Typography
-                                                sx={{
-                                                    marginLeft: '8px',
-                                                    fontSize: '12px',
-                                                    fontWeight: '400'
-                                                }}>
-                                                Năm này
-                                            </Typography>
-                                        </Box>
-
-                                        <Box display={'flex'} justifyContent={'space-between'} alignItems={'center'}>
-                                            <Box
-                                                sx={{
-                                                    borderRadius: '50%',
-                                                    width: '12px',
-                                                    height: '12px',
-                                                    bgcolor: '#ff9900'
-                                                }}></Box>
-                                            <Typography
-                                                sx={{
-                                                    marginLeft: '8px',
-                                                    fontSize: '12px',
-                                                    fontWeight: '400'
-                                                }}>
-                                                Năm trước
-                                            </Typography>
-                                        </Box>
-                                    </Box>
-                                </Grid>
-                            </Grid>
-
-                            <Box bgcolor={'#FFF'} padding={'8px 24px'} borderRadius={'8px'}>
-                                <ColumnChartNew />
-                            </Box>
-                        </Grid>
-                        <Grid item xs={12} sm={12} md={12} lg={12} xl={12}>
-                            <Stack
-                                width={'100%'}
-                                bgcolor={'#FFF'}
-                                padding={'16px 24px'}
-                                paddingRight={0}
-                                borderRadius={'4px'}>
-                                <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'}>
-                                    <Typography
-                                        sx={{
-                                            fontSize: '18px',
-                                            fontWeight: '600'
-                                        }}>
-                                        Top 5 dịch vụ hot
-                                    </Typography>
-                                    <Stack direction={'row'} spacing={2} alignItems={'center'}>
-                                        <RadioGroup
-                                            row
-                                            value={paramSearchTopService?.trangThais?.[0]}
-                                            onChange={TopService_ChangeLoaiBaoCao}>
-                                            <FormControlLabel
-                                                value={TopService_LoaiBaoCao.DOANH_THU}
-                                                label="Doanh thu"
-                                                control={<Radio size="small" />}
-                                            />
-                                            <FormControlLabel
-                                                value={TopService_LoaiBaoCao.SO_LUONG}
-                                                label="Số lượng"
-                                                control={<Radio size="small" />}
-                                            />
-                                        </RadioGroup>
-                                        <Stack
-                                            direction={'row'}
-                                            spacing={0.5}
-                                            onClick={(event) => setAnchorDateTopService(event.currentTarget)}>
-                                            <Typography variant="body1">{lblDateTypeFilterTopService}</Typography>
-                                            <ExpandMoreIcon />
-                                        </Stack>
-
-                                        <DateFilterCustom
-                                            id="popover-date-filter"
-                                            dateTypeDefault={paramSearchTopService.dateType}
-                                            open={openDateFilterTopService}
-                                            anchorEl={anchorDateTopService}
-                                            onClose={() => setAnchorDateTopService(null)}
-                                            onApplyDate={onApplyFilterDateTopService}
-                                        />
-                                    </Stack>
-                                </Stack>
-                                <Stack paddingTop={2}>
-                                    <HotServicesNew />
-                                </Stack>
-                            </Stack>
-                        </Grid>
-                    </Grid>
-                </Box>
-            </div>
+                        </div>
+                        <div className="ts-card__body">
+                            <HotServicesNew />
+                        </div>
+                    </div>
+                </Grid>
+            </Grid>
         </div>
     );
 };

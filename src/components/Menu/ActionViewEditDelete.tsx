@@ -62,7 +62,7 @@ export default function ActionViewEditDelete({ handleAction, lstOption }: any) {
                             onClick={() => handleClickAction(0)}
                             sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Typography
-                                color="#009EF7"
+                                color="var(--color-second)"
                                 fontSize="12px"
                                 variant="button"
                                 textTransform="unset"
@@ -71,13 +71,13 @@ export default function ActionViewEditDelete({ handleAction, lstOption }: any) {
                                 marginRight="8px">
                                 Xem
                             </Typography>
-                            <Info sx={{ color: '#009EF7' }} />
+                            <Info sx={{ color: 'var(--color-second)' }} />
                         </MenuItem>
                         <MenuItem
                             onClick={() => handleClickAction(1)}
                             sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Typography
-                                color="#009EF7"
+                                color="var(--color-second)"
                                 fontSize="12px"
                                 variant="button"
                                 textTransform="unset"
@@ -86,7 +86,7 @@ export default function ActionViewEditDelete({ handleAction, lstOption }: any) {
                                 marginRight="8px">
                                 Sửa
                             </Typography>
-                            <Edit sx={{ color: '#009EF7' }} />
+                            <Edit sx={{ color: 'var(--color-second)' }} />
                         </MenuItem>
                         <MenuItem
                             onClick={() => handleClickAction(2)}

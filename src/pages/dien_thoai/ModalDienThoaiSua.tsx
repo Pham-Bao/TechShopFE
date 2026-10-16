@@ -20,8 +20,11 @@ import {
     FormControlLabel,
     Checkbox,
     Avatar,
-    IconButton
+    IconButton,
+    useMediaQuery,
+    useTheme
 } from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
 import { ReactComponent as CloseIcon } from '../../images/close-square.svg';
 import { Add } from '@mui/icons-material';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
@@ -97,6 +100,9 @@ const ModalHangHoaDienThoaiSua = ({ handleSave, trigger }: any) => {
     const [customerChosed, setCustomerChosed] = useState<CreateOrEditKhachHangDto>({} as CreateOrEditKhachHangDto);
     const [anchorDropdownCustomer, setAnchorDropdownCustomer] = useState<null | HTMLElement>(null);
     const expandSearchCus = Boolean(anchorDropdownCustomer);
+
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     const showModal = async (id: string) => {
         if (id) {
@@ -544,9 +550,36 @@ const ModalHangHoaDienThoaiSua = ({ handleSave, trigger }: any) => {
                 id: customer?.id?.toString(),
                 maKhachHang: customer?.maKhachHang,
                 tenKhachHang: customer?.tenKhachHang ?? 'Chưa chọn khách',
-                soDienThoai: customer?.soDienThoai ?? ''
+                soDienThoai: customer?.soDienThoai ?? '',
+                isShow: true
             });
+            // lấy lại đầy đủ thông tin (nhóm khách, tổng nợ) để hiển thị sau khi thêm/sửa khách
+            const data = await khachHangService.getDetailCustomerById(customer?.id?.toString() ?? '');
+            if (!utils.checkNull(data?.id?.toString())) {
+                setCustomerChosed((old) => ({
+                    ...old,
+                    id: data?.id?.toString() ?? old.id,
+                    maKhachHang: data?.maKhachHang ?? old.maKhachHang,
+                    tenKhachHang: data?.tenKhachHang ?? old.tenKhachHang,
+                    soDienThoai: data?.soDienThoai ?? '',
+                    conNo: data?.conNo,
+                    tenNhomKhach: data?.tenNhomKhach,
+                    isShow: true
+                }));
+            }
         }
+    };
+
+    // Khách lẻ dùng chung cho cả cửa hàng -> không cho sửa
+    const isKhachLe = !customerChosed?.isShow || customerChosed?.maKhachHang === 'KL';
+
+    // Bấm vào thông tin khách: mở popup khách hàng ở chế độ sửa (popup đã có kiểm tra trùng SĐT)
+    const showModalEditCustomer = async () => {
+        if (isKhachLe || utils.checkNull_OrEmpty(customerChosed?.id)) return;
+        const data = await khachHangService.getKhachHang(customerChosed.id);
+        if (utils.checkNull(data?.id)) return;
+        setNewCus(data);
+        setIsShowModalAddCus(true);
     };
 
     return (
@@ -555,7 +588,7 @@ const ModalHangHoaDienThoaiSua = ({ handleSave, trigger }: any) => {
                 visible={isShowModalAddCus}
                 onCancel={() => setIsShowModalAddCus(false)}
                 onOk={changeCustomer_fromModalAdd}
-                title="Thêm mới khách hàng"
+                title={utils.checkNull_OrEmpty(newCus?.id) ? 'Thêm mới khách hàng' : 'Cập nhật khách hàng'}
                 formRef={newCus}
             />
             <ConfirmDelete
@@ -570,7 +603,7 @@ const ModalHangHoaDienThoaiSua = ({ handleSave, trigger }: any) => {
                 title={objAlert.mes}
                 handleClose={() => setObjAlert({ show: false, mes: '', type: 1 })}></SnackbarAlert>
             <ModalNhomHangHoa trigger={triggerModalNhomHang} handleSave={saveNhomHang} />
-            <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
+            <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="md" fullScreen={isMobile}>
                 <DialogButtonClose onClose={() => setOpen(false)} />
                 <DialogTitle className="modal-title">
                     {isNew ? 'Thêm ' : 'Cập nhật '}
@@ -578,150 +611,125 @@ const ModalHangHoaDienThoaiSua = ({ handleSave, trigger }: any) => {
                 </DialogTitle>
 
                 <DialogContent>
-                    <Stack>
-                        <Stack direction={'row'} spacing={1} alignItems={'center'}>
-                            <Avatar />
+                    <Grid container spacing={2} paddingTop={1}>
+                        {/* Cột trái: khách hàng (chọn khách có sẵn / thêm mới, bên dưới là thông tin khách) */}
+                        <Grid item xs={12} sm={4}>
                             <Stack
-                                spacing={1}
-                                onClick={(event) => {
-                                    setAnchorDropdownCustomer(event.currentTarget);
+                                spacing={1.5}
+                                sx={{
+                                    border: '1px solid rgb(224, 228, 235)',
+                                    borderRadius: 2,
+                                    p: 1.5,
+                                    height: '100%'
                                 }}>
+                                <Typography variant="body2" fontWeight={600}>
+                                    Khách hàng
+                                </Typography>
+                                <Stack direction="row" spacing={1}>
+                                    <Button
+                                        variant="outlined"
+                                        size="small"
+                                        fullWidth
+                                        startIcon={<SearchIcon />}
+                                        sx={{ textTransform: 'none' }}
+                                        onClick={(event) => setAnchorDropdownCustomer(event.currentTarget)}>
+                                        Chọn khách có sẵn
+                                    </Button>
+                                    <IconButton
+                                        size="small"
+                                        color="primary"
+                                        aria-label="add-customer"
+                                        title="Thêm khách hàng mới"
+                                        sx={{ border: '1px solid', borderRadius: 1, flexShrink: 0 }}
+                                        onClick={showModalAddCustomer}>
+                                        <AddOutlinedIcon fontSize="small" />
+                                    </IconButton>
+                                </Stack>
+
                                 <Stack
-                                    direction={'row'}
-                                    spacing={3}
-                                    alignItems={'center'}
-                                    title="Thay đổi khách hàng"
-                                    sx={{ cursor: 'pointer' }}>
-                                    {/* Cột 1: Tên khách hàng, Nhóm khách hàng & Icon */}
-                                    <Stack direction="row" alignItems="center" spacing={1} maxWidth={250}>
-                                        <Stack direction="column">
-                                            <Typography variant="body2" fontWeight={500} className="lableOverflow">
-                                                {customerChosed?.tenKhachHang ?? 'Chưa chọn khách hàng'}
+                                    direction="row"
+                                    spacing={1}
+                                    alignItems="flex-start"
+                                    title={isKhachLe ? '' : 'Bấm để sửa thông tin khách hàng'}
+                                    onClick={showModalEditCustomer}
+                                    sx={{
+                                        p: 1,
+                                        borderRadius: 1,
+                                        backgroundColor: '#f7f8fa',
+                                        cursor: isKhachLe ? 'default' : 'pointer',
+                                        '&:hover': isKhachLe ? {} : { backgroundColor: '#eef3fb' }
+                                    }}>
+                                    <Avatar sx={{ width: 36, height: 36 }} />
+                                    <Stack spacing={0.25} flex={1} minWidth={0}>
+                                        <Stack
+                                            direction="row"
+                                            alignItems="center"
+                                            justifyContent="space-between"
+                                            spacing={0.5}>
+                                            <Typography variant="body2" fontWeight={600} noWrap>
+                                                {customerChosed?.tenKhachHang || 'Khách lẻ'}
                                             </Typography>
-                                            {customerChosed?.isShow && ( // Chỉ hiển thị nhóm khách hàng nếu isShow = true
-                                                <Typography
-                                                    variant="body2"
-                                                    fontWeight={300}
-                                                    className="lableOverflow"
-                                                    sx={{ textTransform: 'none', color: '#555' }}>
-                                                    Nhóm: {customerChosed?.tenNhomKhach}
-                                                </Typography>
+                                            {!isKhachLe && (
+                                                <CloseOutlinedIcon
+                                                    color="error"
+                                                    titleAccess="Bỏ chọn khách hàng"
+                                                    sx={{ width: 18, height: 18, flexShrink: 0, cursor: 'pointer' }}
+                                                    onClick={(event) => {
+                                                        event.stopPropagation();
+                                                        RemoveCustomer();
+                                                    }}
+                                                />
                                             )}
                                         </Stack>
-
-                                        {/* Icon Xóa hoặc Thêm khách hàng (chỉ hiển thị 1 trong 2) */}
-                                        {customerChosed?.isShow ? (
-                                            <CloseOutlinedIcon
-                                                color="error"
-                                                titleAccess="Bỏ chọn khách hàng"
-                                                sx={{ width: 20, cursor: 'pointer' }}
-                                                onClick={(event) => {
-                                                    event.stopPropagation();
-                                                    RemoveCustomer();
-                                                }}
-                                            />
-                                        ) : (
-                                            <IconButton
-                                                aria-label="add-customer"
-                                                color="primary"
-                                                title="Thêm khách hàng mới"
-                                                onClick={(event) => {
-                                                    event.stopPropagation();
-                                                    showModalAddCustomer();
-                                                }}>
-                                                <AddOutlinedIcon color="info" sx={{ width: 20 }} />
-                                            </IconButton>
+                                        {!isKhachLe && (
+                                            <>
+                                                <Typography variant="caption" noWrap>
+                                                    SĐT: {customerChosed?.soDienThoai || '---'}
+                                                </Typography>
+                                                <Typography variant="caption" noWrap>
+                                                    Nhóm: {customerChosed?.tenNhomKhach || '---'}
+                                                </Typography>
+                                                <Typography
+                                                    variant="caption"
+                                                    fontWeight={(customerChosed?.conNo ?? 0) !== 0 ? 600 : 400}
+                                                    color={(customerChosed?.conNo ?? 0) > 0 ? 'error.main' : 'inherit'}>
+                                                    Tổng nợ:{' '}
+                                                    {new Intl.NumberFormat('vi-VN').format(customerChosed?.conNo ?? 0)}đ
+                                                </Typography>
+                                            </>
                                         )}
                                     </Stack>
-
-                                    {/* Cột 2: Còn nợ & Số điện thoại (chỉ hiển thị nếu isShow = true) */}
-                                    {customerChosed?.isShow && (
-                                        <Stack direction="column" maxWidth={250}>
-                                            {customerChosed?.conNo != null && customerChosed?.conNo != 0 && (
-                                                <Typography
-                                                    color={'#000000'}
-                                                    variant="caption"
-                                                    sx={{ fontWeight: 'bold' }}>
-                                                    Còn nợ:{' '}
-                                                    {new Intl.NumberFormat('vi-VN').format(customerChosed?.conNo ?? 0)}{' '}
-                                                    đ
-                                                </Typography>
-                                            )}
-                                            <Typography color={'#000000'} variant="caption">
-                                                Điện thoại: {customerChosed?.soDienThoai}
-                                            </Typography>
-                                        </Stack>
-                                    )}
                                 </Stack>
+                                {!isKhachLe && (
+                                    <Typography variant="caption" color="text.secondary" fontStyle="italic">
+                                        Bấm vào thông tin khách để sửa
+                                    </Typography>
+                                )}
+
+                                <MenuWithDataFromDB
+                                    typeSearch={TypeSearchfromDB.CUSTOMER}
+                                    open={expandSearchCus}
+                                    anchorEl={anchorDropdownCustomer}
+                                    handleClose={() => setAnchorDropdownCustomer(null)}
+                                    handleChoseItem={changeCustomer}
+                                />
                             </Stack>
-                        </Stack>
-
-                        <MenuWithDataFromDB
-                            typeSearch={TypeSearchfromDB.CUSTOMER}
-                            open={expandSearchCus}
-                            anchorEl={anchorDropdownCustomer}
-                            handleClose={() => setAnchorDropdownCustomer(null)}
-                            handleChoseItem={changeCustomer}
-                        />
-                    </Stack>
-                    <Grid container spacing={2} paddingTop={2}>
-                        <Grid
-                            item
-                            xs={12}
-                            sm={4}
-                            md={4}
-                            lg={4}
-                            display="flex"
-                            flexDirection="column"
-                            alignItems="center"
-                            justifyContent="center">
-                            <Button
-                                fullWidth
-                                variant="contained"
-                                startIcon={
-                                    loading ? <CircularProgress size={18} color="inherit" /> : <PhoneIphoneIcon />
-                                }
-                                onClick={handleGetIphone}
-                                disabled={loading}
-                                sx={{
-                                    textTransform: 'none',
-                                    fontWeight: 600,
-                                    borderRadius: '12px',
-                                    py: 1.2,
-                                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                                    background: 'linear-gradient(135deg, #1976d2, #42a5f5)',
-                                    '&:hover': {
-                                        background: 'linear-gradient(135deg, #1565c0, #1e88e5)',
-                                        boxShadow: '0 6px 16px rgba(0,0,0,0.15)'
-                                    }
-                                }}>
-                                {loading ? 'Đang lấy dữ liệu...' : 'Lấy nhanh'}
-                            </Button>
-
-                            <Typography
-                                variant="caption"
-                                mt={1}
-                                textAlign="center" // 👈 căn giữa chữ cho đẹp
-                                sx={{
-                                    color:
-                                        status === 'success'
-                                            ? 'green'
-                                            : status === 'error' || status === 'empty'
-                                            ? 'red'
-                                            : 'text.secondary'
-                                }}>
-                                {status === 'loading' && 'Đang lấy dữ liệu...'}
-                                {status === 'success' && '✅ Lấy thông tin thành công'}
-                                {status === 'empty' && '⚠️ Không có thông tin thiết bị'}
-                                {status === 'error' && '❌ Không phát hiện iPhone'}
-                            </Typography>
                         </Grid>
+                        {/* Cột phải: thông tin điện thoại */}
                         <Grid item xs={12} sm={8} md={8} lg={8}>
                             <Stack spacing={2}>
-                                <Stack direction="row" spacing={2} alignItems="flex-start">
+                                {/* Tên máy co giãn (vừa "iPhone 18 Pro Max"), Dung lượng/Màu đủ hiện nhãn.
+                                    Mobile: tên 1 dòng riêng, Dung lượng | Màu chia đôi dòng dưới */}
+                                <Box
+                                    sx={{
+                                        display: 'grid',
+                                        gap: { xs: 1.5, sm: 2 },
+                                        gridTemplateColumns: { xs: '1fr 1fr', sm: 'minmax(0, 1fr) 130px 120px' },
+                                        alignItems: 'start'
+                                    }}>
                                     <Autocomplete
                                         freeSolo
-                                        sx={{ flex: 4 }}
+                                        sx={{ gridColumn: { xs: '1 / -1', sm: 'auto' }, minWidth: 0 }}
                                         options={PHONE_SUGGEST}
                                         value={productPhone.tenHangHoa || ''}
                                         filterOptions={(options, state) => {
@@ -763,7 +771,7 @@ const ModalHangHoaDienThoaiSua = ({ handleSave, trigger }: any) => {
                                     />
 
                                     <Autocomplete
-                                        sx={{ flex: 1 }}
+                                        sx={{ minWidth: 0 }}
                                         options={STORAGE_SUGGEST}
                                         value={STORAGE_SUGGEST.find((x) => x.value === productPhone.dungLuong) || null}
                                         getOptionLabel={(option) => option.label}
@@ -779,7 +787,7 @@ const ModalHangHoaDienThoaiSua = ({ handleSave, trigger }: any) => {
                                     />
                                     <Autocomplete
                                         freeSolo
-                                        sx={{ flex: 1 }}
+                                        sx={{ minWidth: 0 }}
                                         options={COLOR_SUGGEST}
                                         getOptionLabel={(option: any) =>
                                             typeof option === 'string' ? option : option.label
@@ -802,7 +810,7 @@ const ModalHangHoaDienThoaiSua = ({ handleSave, trigger }: any) => {
                                             <TextField {...params} variant="outlined" size="small" label="Màu sắc" />
                                         )}
                                     />
-                                </Stack>
+                                </Box>
                                 <TextField
                                     variant="outlined"
                                     size="small"
@@ -855,12 +863,18 @@ const ModalHangHoaDienThoaiSua = ({ handleSave, trigger }: any) => {
                                         onClick={() => showModalAddNhomHang()}
                                     />
                                 </Stack>
-                                <Stack direction="row" spacing={2}>
+                                {/* Pin tối đa 3 số, Mật khẩu ~6 ký tự -> thu gọn, phần còn lại dành cho IMEI */}
+                                <Box
+                                    sx={{
+                                        display: 'grid',
+                                        gap: { xs: 1.5, sm: 2 },
+                                        gridTemplateColumns: '72px minmax(0, 1fr) 105px'
+                                    }}>
                                     <TextField
                                         variant="outlined"
                                         size="small"
-                                        sx={{ flex: 1 }}
                                         label="Pin"
+                                        inputProps={{ inputMode: 'numeric', maxLength: 3 }}
                                         value={productPhone.pin || ''}
                                         onChange={(e) =>
                                             setProductPhone((prev) => ({
@@ -872,7 +886,6 @@ const ModalHangHoaDienThoaiSua = ({ handleSave, trigger }: any) => {
                                     <TextField
                                         variant="outlined"
                                         size="small"
-                                        sx={{ flex: 1 }}
                                         label="IMEL"
                                         value={productPhone.imel || ''}
                                         onChange={(e) =>
@@ -885,7 +898,6 @@ const ModalHangHoaDienThoaiSua = ({ handleSave, trigger }: any) => {
                                     <TextField
                                         variant="outlined"
                                         size="small"
-                                        sx={{ flex: 1 }}
                                         label="Mật khẩu"
                                         value={productPhone.matKhau || ''}
                                         onChange={(e) =>
@@ -895,7 +907,7 @@ const ModalHangHoaDienThoaiSua = ({ handleSave, trigger }: any) => {
                                             }))
                                         }
                                     />
-                                </Stack>
+                                </Box>
                                 {/* <Stack direction="row" spacing={2}>
                                     <NumericFormat
                                         size="small"
@@ -918,46 +930,40 @@ const ModalHangHoaDienThoaiSua = ({ handleSave, trigger }: any) => {
                                         onChange={(event) => editGiaVon(event)}
                                     />
                                 </Stack> */}
+                                <TextField
+                                    variant="outlined"
+                                    size="small"
+                                    fullWidth
+                                    label="Lỗi cần báo khách trước khi sửa chữa"
+                                    placeholder="Nhập mô tả lỗi"
+                                    value={productPhone.loi || ''}
+                                    onChange={(event) =>
+                                        setProductPhone((prev) => ({
+                                            ...prev,
+                                            loi: event.target.value
+                                        }))
+                                    }
+                                />
+                                <TextField
+                                    variant="outlined"
+                                    fullWidth
+                                    multiline
+                                    rows="2"
+                                    label="Ghi chú"
+                                    value={productPhone?.moTa ?? ''}
+                                    onChange={(event) =>
+                                        setProductPhone((itemOlds) => {
+                                            return {
+                                                ...itemOlds,
+                                                moTa: event.target.value
+                                            };
+                                        })
+                                    }
+                                />
                             </Stack>
                         </Grid>
                     </Grid>
                     <Grid container>
-                        <Grid item xs={0} sm={4} md={4} lg={4}></Grid>
-                        <Grid item xs={12} sm={8} md={8} lg={8} paddingTop={2} pl={{ sm: 0, md: 0.5 }}>
-                            <TextField
-                                variant="outlined"
-                                size="small"
-                                fullWidth
-                                label="Lỗi cần báo khách trước khi sửa chữa"
-                                placeholder="Nhập mô tả lỗi"
-                                value={productPhone.loi || ''}
-                                onChange={(event) =>
-                                    setProductPhone((prev) => ({
-                                        ...prev,
-                                        loi: event.target.value
-                                    }))
-                                }
-                            />
-                        </Grid>
-                        <Grid item xs={0} sm={4} md={4} lg={4}></Grid>
-                        <Grid item xs={12} sm={8} md={8} lg={8} paddingTop={2} pl={{ sm: 0, md: 0.5 }}>
-                            <TextField
-                                variant="outlined"
-                                fullWidth
-                                multiline
-                                rows="2"
-                                label="Ghi chú"
-                                value={productPhone?.moTa ?? ''}
-                                onChange={(event) =>
-                                    setProductPhone((itemOlds) => {
-                                        return {
-                                            ...itemOlds,
-                                            moTa: event.target.value
-                                        };
-                                    })
-                                }
-                            />
-                        </Grid>
                         <Grid item xs={12}>
                             <Grid item xs={12} sm={12} md={12} lg={12} style={{ display: 'none' }}>
                                 <FormGroup>
@@ -979,9 +985,9 @@ const ModalHangHoaDienThoaiSua = ({ handleSave, trigger }: any) => {
                                                     });
                                                 }}
                                                 sx={{
-                                                    color: '#7C3367',
+                                                    color: 'var(--color-main)',
                                                     '&.Mui-checked': {
-                                                        color: '#7C3367'
+                                                        color: 'var(--color-main)'
                                                     }
                                                 }}
                                             />
@@ -993,7 +999,38 @@ const ModalHangHoaDienThoaiSua = ({ handleSave, trigger }: any) => {
                         </Grid>
                     </Grid>
                 </DialogContent>
-                <DialogActions style={{ paddingBottom: '20px' }}>
+                <DialogActions style={{ paddingBottom: '20px' }} sx={{ px: 3, flexWrap: 'wrap', rowGap: 1 }}>
+                    {/* Lấy nhanh thông tin iPhone đang kết nối máy tính - đặt cạnh Hủy/Lưu */}
+                    <Stack direction="row" alignItems="center" spacing={1} minWidth={0} sx={{ mr: 'auto' }}>
+                        <Button
+                            variant="contained"
+                            startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <PhoneIphoneIcon />}
+                            onClick={handleGetIphone}
+                            disabled={loading}
+                            sx={{
+                                textTransform: 'none',
+                                fontWeight: 600,
+                                flexShrink: 0,
+                                background: 'linear-gradient(135deg, var(--color-main), var(--color-main-light))',
+                                '&:hover': {
+                                    background:
+                                        'linear-gradient(135deg, var(--color-main-dark), var(--color-main-light))'
+                                }
+                            }}>
+                            {loading ? 'Đang lấy dữ liệu...' : 'Lấy nhanh'}
+                        </Button>
+                        {status !== 'idle' && status !== 'loading' && (
+                            <Typography
+                                variant="caption"
+                                sx={{
+                                    color: status === 'success' ? 'green' : 'red'
+                                }}>
+                                {status === 'success' && '✅ Lấy thông tin thành công'}
+                                {status === 'empty' && '⚠️ Không có thông tin thiết bị'}
+                                {status === 'error' && '❌ Không phát hiện iPhone'}
+                            </Typography>
+                        )}
+                    </Stack>
                     <Button
                         variant="outlined"
                         sx={{ color: 'var(--color-main)' }}
@@ -1050,14 +1087,17 @@ const ModalHangHoaDienThoaiSua = ({ handleSave, trigger }: any) => {
                             {!wasClickSave && (
                                 <Button
                                     variant="contained"
-                                    sx={{ bgcolor: '#7C3367' }}
+                                    sx={{ bgcolor: 'var(--color-main)' }}
                                     onClick={saveProduct}
                                     className="btn-container-hover">
                                     Lưu
                                 </Button>
                             )}
                             {wasClickSave && (
-                                <Button variant="contained" sx={{ bgcolor: '#7C3367' }} className="btn-container-hover">
+                                <Button
+                                    variant="contained"
+                                    sx={{ bgcolor: 'var(--color-main)' }}
+                                    className="btn-container-hover">
                                     Đang lưu
                                 </Button>
                             )}

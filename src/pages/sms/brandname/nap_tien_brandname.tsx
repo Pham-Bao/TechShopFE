@@ -368,7 +368,7 @@ const NapTienBrandname = ({ visiable = false, idQuyHD = null, onClose, onOk }: a
                                                         }}
                                                         value="true"
                                                         sx={{
-                                                            color: '#7C3367!important'
+                                                            color: 'var(--color-main)!important'
                                                         }}
                                                     />
                                                 }
@@ -388,7 +388,7 @@ const NapTienBrandname = ({ visiable = false, idQuyHD = null, onClose, onOk }: a
                                             {!isSubmitting ? (
                                                 <Button
                                                     variant="contained"
-                                                    sx={{ bgcolor: '#7C3367' }}
+                                                    sx={{ bgcolor: 'var(--color-main)' }}
                                                     className="btn-container-hover"
                                                     type="submit">
                                                     Lưu
@@ -397,7 +397,7 @@ const NapTienBrandname = ({ visiable = false, idQuyHD = null, onClose, onOk }: a
                                                 isSubmitting && (
                                                     <Button
                                                         variant="contained"
-                                                        sx={{ bgcolor: '#7C3367' }}
+                                                        sx={{ bgcolor: 'var(--color-main)' }}
                                                         className="btn-container-hover"
                                                         type="submit">
                                                         Đang lưu

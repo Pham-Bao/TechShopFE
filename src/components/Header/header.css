@@ -1,7 +1,9 @@
 .header {
     align-items: center;
     background-color: #ffffff;
-    border: solid 0.1rem #e6e1e6;
+    /* chỉ kẻ viền dưới mảnh cho thanh header */
+    border: none;
+    border-bottom: 1px solid #e5e7eb;
     box-sizing: border-box;
     height: 70px;
     width: 100%;

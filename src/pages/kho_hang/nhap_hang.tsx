@@ -9,6 +9,7 @@ import DeleteSweepOutlinedIcon from '@mui/icons-material/DeleteSweepOutlined';
 import { Search } from '@mui/icons-material';
 import { DataGrid, GridColDef, GridRowSelectionModel } from '@mui/x-data-grid';
 import { ReactComponent as UploadIcon } from '../../images/upload.svg';
+import { ReactComponent as DownloadIcon } from '../../images/download.svg';
 import { TextTranslate } from '../../components/TableLanguage';
 import CustomTablePagination from '../../components/Pagination/CustomTablePagination';
 import ThongTinHoaDon from '../ban_hang/Hoa_don/ThongTinHoaDon';
@@ -44,6 +45,7 @@ import ButtonOnlyIcon from '../../components/Button/ButtonOnlyIcon';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import AddIcon from '@mui/icons-material/Add';
 import { useNavigate } from 'react-router-dom';
+import KhoHangService from '../../services/kho_hang/KhoHangService';
 const NhapHang: React.FC = () => {
     const today = new Date();
     const firstLoad = useRef(true);
@@ -305,7 +307,8 @@ const NhapHang: React.FC = () => {
     };
 
     const Delete_MultipleHoaDon = async () => {
-        await HoaDonService.Delete_MultipleHoaDon(rowSelectionModel);
+        // hủy phiếu nhập: tồn kho tự tính lại (bỏ dòng tổng cuối bảng có id rỗng)
+        await KhoHangService.HuyPhieuKho(rowSelectionModel.map((x) => x.toString()).filter((x) => x !== Guid.EMPTY));
         setInforDelete({ ...inforDelete, show: false });
         setObjAlert({ show: true, mes: 'Xóa thành công', type: 1 });
 
@@ -618,7 +621,7 @@ const NhapHang: React.FC = () => {
                             <Button
                                 variant="outlined"
                                 onClick={exportToExcel}
-                                startIcon={<UploadIcon />}
+                                startIcon={<DownloadIcon />}
                                 sx={{
                                     display: abpCustom.isGrandPermission('Pages.HoaDon.Export') ? '' : 'none'
                                 }}
@@ -630,12 +633,12 @@ const NhapHang: React.FC = () => {
                                 startIcon={<AddIcon />}
                                 onClick={() => navigate('/nhap-hang/tao-moi')}
                                 sx={{
-                                    backgroundColor: '#1976d2',
+                                    backgroundColor: 'var(--color-main)',
                                     color: '#fff',
                                     textTransform: 'none',
                                     boxShadow: 'none',
                                     '&:hover': {
-                                        backgroundColor: '#1565c0',
+                                        backgroundColor: 'var(--color-main-dark)',
                                         boxShadow: 'none'
                                     }
                                 }}>

@@ -82,7 +82,7 @@ const CustomerInfo: React.FC<Custom> = ({ onClose }) => {
                         sx={{ color: '#666466' }}>
                         Xuất
                     </Button>
-                    <Button className="btn-container-hover" variant="contained" sx={{ bgcolor: '#7C3367' }}>
+                    <Button className="btn-container-hover" variant="contained" sx={{ bgcolor: 'var(--color-main)' }}>
                         Sao chép
                     </Button>
                 </Box>
@@ -200,10 +200,10 @@ const CustomerInfo: React.FC<Custom> = ({ onClose }) => {
                             fontWeight: '400'
                         },
                         '& button.Mui-selected': {
-                            color: '#7C3367'
+                            color: 'var(--color-main)'
                         },
                         '& .MuiTabs-indicator': {
-                            bgcolor: '#7C3367'
+                            bgcolor: 'var(--color-main)'
                         },
                         '& .MuiTabs-flexContainer': {
                             gap: '32px'

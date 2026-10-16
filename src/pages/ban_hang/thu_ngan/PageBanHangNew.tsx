@@ -2055,7 +2055,7 @@ const PageBanHang = ({ customerChosed, horizontalLayout }: any) => {
                                         <Add
                                             onClick={() => showModalCheckIn(true)}
                                             sx={{
-                                                color: '#1976d2',
+                                                color: 'var(--color-main)',
                                                 display: !abpCustom.isGrandPermission('Pages.CheckIn.Create')
                                                     ? 'none'
                                                     : ''

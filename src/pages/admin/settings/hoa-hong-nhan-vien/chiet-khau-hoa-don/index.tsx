@@ -291,10 +291,10 @@ class ChietKhauHoaDonScreen extends Component {
                                     borderColor: 'transparent!important',
                                     boxShadow: 'none!important',
                                     '&:hover': {
-                                        color: '#319DFF',
+                                        color: 'var(--color-second)',
                                         backgroundColor: '#FFF',
                                         border: 'none !important',
-                                        borderBottom: '2px outset #319DFF !important',
+                                        borderBottom: '2px outset var(--color-second) !important',
                                         boxShadow: 'none!important'
                                     }
                                 }}
@@ -308,10 +308,10 @@ class ChietKhauHoaDonScreen extends Component {
                                 sx={{
                                     fontSize: '16px',
                                     textTransform: 'unset',
-                                    color: '#319DFF',
+                                    color: 'var(--color-second)',
                                     backgroundColor: '#FFF',
                                     border: 'none !important',
-                                    borderBottom: '2px outset #319DFF !important',
+                                    borderBottom: '2px outset var(--color-second) !important',
                                     boxShadow: 'none!important'
                                 }}>
                                 Theo hóa đơn

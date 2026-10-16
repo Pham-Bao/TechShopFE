@@ -271,9 +271,9 @@ const ModalNhomHangHoa = ({ handleSave, trigger }: any) => {
                                                 );
                                             }}
                                             sx={{
-                                                color: '#7C3367',
+                                                color: 'var(--color-main)',
                                                 '&.Mui-checked': {
-                                                    color: '#7C3367'
+                                                    color: 'var(--color-main)'
                                                 }
                                             }}
                                         />

@@ -208,3 +208,176 @@
 .column-chart .recharts-tooltip-item:nth-child(2)::before {
     background: var(--color-main);
 }
+
+/* ===================== Trang chủ mới (tông sáng, thẻ trắng viền mảnh) ===================== */
+.ts-dash {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px 4px 24px;
+}
+.ts-dash__header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.ts-dash__title {
+    font-size: 24px !important;
+    font-weight: 700 !important;
+    color: #111827;
+    letter-spacing: -0.02em;
+}
+.ts-dash__subtitle {
+    margin-top: 2px !important;
+    font-size: 14px !important;
+    color: #6b7280;
+}
+.ts-dash__subtitle::first-letter {
+    text-transform: uppercase;
+}
+.ts-dash__filter-btn {
+    height: 38px;
+    padding: 0 12px !important;
+    background: #fff !important;
+    border: 1px solid #e5e7eb !important;
+    color: #111827 !important;
+    font-weight: 500 !important;
+    white-space: nowrap;
+}
+.ts-dash__filter-btn:hover {
+    background: #f9fafb !important;
+}
+.ts-dash__filter-btn--sm {
+    height: 32px;
+    font-size: 13px !important;
+}
+
+/* Khối nội dung dùng chung */
+.ts-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    overflow: hidden;
+}
+.ts-card--fill {
+    height: 100%;
+}
+.ts-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 20px;
+    border-bottom: 1px solid #f0f1f3;
+}
+.ts-card__header--wrap {
+    flex-wrap: wrap;
+}
+.ts-card__title {
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    color: #111827;
+}
+.ts-card__body {
+    padding: 16px 20px;
+}
+.ts-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 22px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: #f3f4f6;
+    color: #374151;
+    font-size: 12px;
+    font-weight: 600;
+}
+.ts-dash__revenue {
+    margin-top: 4px !important;
+    font-size: 26px !important;
+    font-weight: 700 !important;
+    color: #111827;
+    letter-spacing: -0.02em;
+}
+.ts-dash__legend {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #6b7280;
+}
+.ts-dash__legend i {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+}
+
+/* Thao tác nhanh */
+.ts-dash__quick-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 12px;
+    padding: 16px 20px;
+}
+.ts-dash__quick-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    background: #fff;
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s, transform 0.15s;
+    font-family: inherit;
+}
+.ts-dash__quick-item:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+    transform: translateY(-1px);
+}
+.ts-dash__quick-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    background: #111827;
+    color: #fff;
+}
+.ts-dash__quick-icon svg {
+    font-size: 20px;
+}
+.ts-dash__quick-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #111827;
+    text-align: left;
+}
+
+@media (max-width: 1200px) {
+    .ts-dash__quick-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+@media (max-width: 600px) {
+    .ts-dash {
+        padding-top: 12px;
+    }
+    .ts-dash__quick-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        padding: 12px;
+    }
+    .ts-card__header,
+    .ts-card__body {
+        padding: 12px 14px;
+    }
+}

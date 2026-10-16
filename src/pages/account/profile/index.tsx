@@ -302,7 +302,7 @@ class ProfileScreen extends Component {
                                                         border: 'none',
 
                                                         ':hover': {
-                                                            backgroundColor: '#009EF7',
+                                                            backgroundColor: 'var(--color-second)',
                                                             border: 'none'
                                                         }
                                                     }}>

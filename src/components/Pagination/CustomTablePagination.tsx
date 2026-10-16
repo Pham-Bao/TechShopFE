@@ -15,7 +15,11 @@ class CustomTablePagination extends Component<TablePaginationProps> {
     render(): ReactNode {
         const { totalPage, totalRecord, currentPage, rowPerPage, handlePageChange, handlePerPageChange } = this.props;
         return (
-            <Grid container sx={{ display: totalRecord > 0 ? '' : 'none', backgroundColor: '#fff' }} padding="0px 16px">
+            <Grid
+                container
+                className="table-pagination"
+                sx={{ display: totalRecord > 0 ? '' : 'none', backgroundColor: '#fff' }}
+                padding="0px 16px">
                 <Grid item xs={12} sm={12} md={3}>
                     <Box
                         sx={{
@@ -43,10 +47,18 @@ class CustomTablePagination extends Component<TablePaginationProps> {
                             alignItems: 'center',
                             height: 48
                         }}>
-                        <Typography variant="body2">
-                            Hiển thị {(currentPage - 1) * rowPerPage + 1} -{' '}
-                            {rowPerPage * currentPage > totalRecord ? totalRecord : rowPerPage * currentPage} của{' '}
-                            {totalRecord} mục
+                        <Typography variant="body2" className="label-displayed-rows">
+                            <span className="label-rows-full">
+                                Hiển thị {(currentPage - 1) * rowPerPage + 1} -{' '}
+                                {rowPerPage * currentPage > totalRecord ? totalRecord : rowPerPage * currentPage} của{' '}
+                                {totalRecord} mục
+                            </span>
+                            {/* điện thoại: rút gọn dạng 1-10/19 */}
+                            <span className="label-rows-short">
+                                {(currentPage - 1) * rowPerPage + 1}-
+                                {rowPerPage * currentPage > totalRecord ? totalRecord : rowPerPage * currentPage}/
+                                {totalRecord}
+                            </span>
                         </Typography>
                         <Pagination
                             count={totalPage}

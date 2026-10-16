@@ -12,7 +12,7 @@ export const OptionPage = ({ changeNumberOfpage }: any) => {
     };
     return (
         <>
-            <Box sx={{ minWidth: 120 }}>
+            <Box sx={{ minWidth: 120 }} className="option-page">
                 <FormControl variant="standard">
                     <Select value={value} onChange={handleChange}>
                         {AppConsts.pageOption.map((item: any, index: number) => (

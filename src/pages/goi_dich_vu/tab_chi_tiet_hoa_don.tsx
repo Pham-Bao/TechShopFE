@@ -17,6 +17,7 @@ import ClearIcon from '@mui/icons-material/Clear';
 import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined';
 import SearchIcon from '@mui/icons-material/Search';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined';
 import ControlPointIcon from '@mui/icons-material/ControlPoint';
 import PageHoaDonChiTietDto from '../../services/ban_hang/PageHoaDonChiTietDto';
@@ -293,7 +294,7 @@ const TabChiTietHoaDon: FC<{
                             }}
                             variant="outlined"
                             fullWidth
-                            startIcon={<FileUploadIcon />}
+                            startIcon={<FileDownloadIcon />}
                             onClick={exportExcelHoaDon_byId}>
                             Xuất file
                         </Button>
@@ -382,7 +383,7 @@ const TabChiTietHoaDon: FC<{
                                     alignItems={'center'}
                                     sx={{
                                         textDecoration: 'underline',
-                                        color: '#1976d2',
+                                        color: 'var(--color-main)',
                                         cursor: 'pointer'
                                     }}
                                     onClick={() => setIsShowModalProduct(true)}>

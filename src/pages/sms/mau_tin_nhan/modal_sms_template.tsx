@@ -278,9 +278,9 @@ const ModalSmsTemplate = ({ visiable, onCancel, idMauTin, objMauTinOld, onOK }: 
                                                             setFieldValue('laMacDinh', !values.laMacDinh);
                                                         }}
                                                         sx={{
-                                                            color: '#7C3367',
+                                                            color: 'var(--color-main)',
                                                             '&.Mui-checked': {
-                                                                color: '#7C3367'
+                                                                color: 'var(--color-main)'
                                                             },
                                                             '& input': {
                                                                 zIndex: 2

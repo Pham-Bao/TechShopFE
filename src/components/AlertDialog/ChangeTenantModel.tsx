@@ -99,7 +99,7 @@ const ChangeTenantModal = ({ isShow, handleClose }: any) => {
                     sx={{
                         ':hover': {
                             color: '#E8F1FA',
-                            background: '#1976D2'
+                            background: 'var(--color-main)'
                         },
                         color: '#399BFF',
                         background: '#E1F0FF',

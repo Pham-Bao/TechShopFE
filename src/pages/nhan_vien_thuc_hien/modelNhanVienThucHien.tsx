@@ -332,7 +332,7 @@ const ModelNhanVienThucHien = ({ triggerModal, handleSave, idChiNhanh }: any) =>
                             variant="contained"
                             className="btn-container-hover"
                             sx={{
-                                background: '#7c3367',
+                                background: 'var(--color-main)',
                                 textTransform: 'capitalize',
                                 color: '#fff'
                             }}

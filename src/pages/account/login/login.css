@@ -177,7 +177,7 @@ h1.login-label {
 }
 
 .quenMk {
-    color: #009ef7;
+    color: var(--color-second);
     font-size: 14px;
     line-height: 20px;
 }
@@ -187,7 +187,7 @@ h1.login-label {
     font-size: 14px;
     line-height: 20px;
     font-family: 'Roboto';
-    color: #319dff;
+    color: var(--color-second);
 }
 
 .remember {
@@ -276,5 +276,178 @@ h1.login-label {
     }
     .css-1oqqzyl-MuiContainer-root {
         padding: 0 !important;
+    }
+}
+
+/* ===================== Trang đăng nhập mới (2 cột: thương hiệu | form) ===================== */
+.ts-login {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    background: #f5f6f8;
+}
+
+/* Cột thương hiệu: nền tối, hoa văn lưới công nghệ */
+.ts-login__brand {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 40px 56px;
+    color: #f9fafb;
+    background-color: #0b0f19;
+    background-image: radial-gradient(circle at 85% 15%, rgba(37, 99, 235, 0.35), transparent 45%),
+        radial-gradient(circle at 10% 90%, rgba(37, 99, 235, 0.18), transparent 40%),
+        linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: auto, auto, 32px 32px, 32px 32px;
+    overflow: hidden;
+}
+.ts-login__brand-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+.ts-login__brand-logo img {
+    width: 36px;
+    height: 36px;
+    padding: 4px;
+    border-radius: 10px;
+    background: #fff;
+}
+.ts-login__brand-body {
+    max-width: 460px;
+}
+.ts-login__brand-body h1 {
+    margin: 0 0 16px;
+    font-size: 38px;
+    line-height: 1.2;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #fff;
+}
+.ts-login__brand-body p {
+    margin: 0 0 28px;
+    font-size: 16px;
+    line-height: 1.6;
+    color: #9ca3af;
+}
+.ts-login__brand-body ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.ts-login__brand-body li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+    color: #e5e7eb;
+}
+.ts-login__brand-body li svg {
+    font-size: 20px;
+    color: #60a5fa;
+}
+.ts-login__brand-footer {
+    font-size: 13px;
+    color: #6b7280;
+}
+
+/* Cột form */
+.ts-login__panel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 24px;
+}
+.ts-login__card {
+    width: 100%;
+    max-width: 400px;
+}
+.ts-login__mobile-logo {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 28px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #111827;
+}
+.ts-login__mobile-logo img {
+    width: 30px;
+    height: 30px;
+}
+.ts-login__title {
+    font-size: 28px !important;
+    font-weight: 700 !important;
+    color: #111827;
+    letter-spacing: -0.02em;
+}
+.ts-login__subtitle {
+    margin-top: 6px !important;
+    margin-bottom: 28px !important;
+    font-size: 14px !important;
+    color: #6b7280;
+}
+.ts-login__form {
+    display: flex;
+    flex-direction: column;
+}
+.ts-login__label {
+    margin: 14px 0 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #374151;
+}
+.ts-login__form .MuiOutlinedInput-root {
+    background: #fff;
+    border-radius: 10px;
+}
+.ts-login__form .MuiInputAdornment-positionStart svg {
+    color: #9ca3af;
+}
+.ts-login__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+}
+.ts-login__row .MuiFormControlLabel-label {
+    font-size: 14px;
+    color: #4b5563;
+}
+.ts-login__forgot {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-second);
+    text-decoration: none;
+}
+.ts-login__forgot:hover {
+    text-decoration: underline;
+}
+.ts-login__submit {
+    margin-top: 20px !important;
+    height: 48px;
+    border-radius: 10px !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+}
+
+/* Màn hình nhỏ: chỉ hiện form */
+@media (max-width: 900px) {
+    .ts-login {
+        grid-template-columns: 1fr;
+    }
+    .ts-login__brand {
+        display: none;
+    }
+    .ts-login__mobile-logo {
+        display: flex;
     }
 }

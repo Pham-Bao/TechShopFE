@@ -20,6 +20,7 @@ import {
 } from '@mui/material';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { ReactComponent as UploadIcon } from '../../../images/upload.svg';
+import { ReactComponent as DownloadIcon } from '../../../images/download.svg';
 import ClearIcon from '@mui/icons-material/Clear';
 import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined';
 import CustomTablePagination from '../../../components/Pagination/CustomTablePagination';
@@ -652,14 +653,14 @@ const PageSoQuy = () => {
                         [
                             {
                                 id: '0',
-                                icon: <Info sx={{ color: '#009EF7' }} />,
+                                icon: <Info sx={{ color: 'var(--color-second)' }} />,
                                 text: 'Xem',
                                 isShow: true
                             },
                             {
                                 id: '1',
                                 text: 'Sửa',
-                                icon: <Edit sx={{ color: '#009EF7' }} />,
+                                icon: <Edit sx={{ color: 'var(--color-second)' }} />,
                                 isShow: abpCustom.isGrandPermission('Pages.QuyHoaDon.Edit')
                             },
                             {
@@ -793,7 +794,7 @@ const PageSoQuy = () => {
                             <Button
                                 variant="outlined"
                                 onClick={exportToExcel}
-                                startIcon={<UploadIcon />}
+                                startIcon={<DownloadIcon />}
                                 sx={{
                                     borderColor: '#CDC9CD!important',
                                     bgcolor: '#fff!important',

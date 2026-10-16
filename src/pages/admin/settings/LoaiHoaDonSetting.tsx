@@ -40,31 +40,20 @@ const LoaiHoaDonSetting: React.FC = () => {
     };
 
     return (
-        <Box marginTop={'8px'}>
+        <Box sx={{ bgcolor: '#F9FAFB', borderRadius: '8px', padding: '8px 12px' }}>
             <Snackbar open={!!errorMsg} autoHideDuration={3000} onClose={() => setErrorMsg('')}>
                 <Alert severity="warning" onClose={() => setErrorMsg('')}>
                     {errorMsg}
                 </Alert>
             </Snackbar>
 
-            <Typography
-                sx={{
-                    color: 'black',
-                    fontSize: '14px',
-                    fontWeight: '400',
-                    fontFamily: 'Roboto',
-                    marginBottom: '4px'
-                }}>
-                Loại hóa đơn
-            </Typography>
-
             <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'} mb={1}>
-                <Typography sx={{ color: '#4C4B4C', fontSize: '13px', fontFamily: 'Roboto' }}>Hóa đơn bán</Typography>
+                <Typography sx={{ color: '#374151', fontSize: '13px' }}>Hóa đơn bán</Typography>
                 <IOSSwitch checked={checkedBan} onChange={handleToggleBan} />
             </Stack>
 
             <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'}>
-                <Typography sx={{ color: '#4C4B4C', fontSize: '13px', fontFamily: 'Roboto' }}>Hóa đơn sửa</Typography>
+                <Typography sx={{ color: '#374151', fontSize: '13px' }}>Hóa đơn sửa</Typography>
                 <IOSSwitch checked={checkedSua} onChange={handleToggleSua} />
             </Stack>
         </Box>

@@ -35,15 +35,13 @@ import { KhachHangDto } from '../../services/khach-hang/dto/KhachHangDto';
 import MenuWithDataFromDB from '../../components/Menu/MenuWithData_fromDB';
 import { TypeSearchfromDB } from '../../enum/TypeSearch_fromDB';
 import { IList } from '../../services/dto/IList';
-import HoaDonService from '../../services/ban_hang/HoaDonService';
 import SoQuyServices from '../../services/so_quy/SoQuyServices';
 import { HINH_THUC_THANH_TOAN, LoaiChungTu } from '../../lib/appconst';
-import PageHoaDonDto from '../../services/ban_hang/PageHoaDonDto';
-import PageHoaDonChiTietDto from '../../services/ban_hang/PageHoaDonChiTietDto';
 import HoaDonDto from '../../services/ban_hang/HoaDonDto';
 import HoaDonChiTietDto from '../../services/ban_hang/HoaDonChiTietDto';
-import CreateOrEditDM_TheKhoDto, { DM_TheKhoDto } from '../../services/the_kho/dto';
-import TheKhoService from '../../services/the_kho/sevice';
+import KhoHangService from '../../services/kho_hang/KhoHangService';
+import { useNavigate } from 'react-router-dom';
+import { enqueueSnackbar } from 'notistack';
 
 interface IHangHoa {
     id: string;
@@ -73,6 +71,8 @@ const Page_Them_Phieu_Nhap_Hang = () => {
     const [customerChosed, setCustomerChosed] = useState<CreateOrEditKhachHangDto>({} as CreateOrEditKhachHangDto);
     const [anchorDropdownCustomer, setAnchorDropdownCustomer] = useState<HTMLElement | null>(null);
     const [expandSearchCus, setExpandSearchCus] = useState(false);
+    const [ghiChu, setGhiChu] = useState('');
+    const navigate = useNavigate();
     const getCookie = (name: string) => {
         const value = `; ${document.cookie}`;
         const parts = value.split(`; ${name}=`);
@@ -110,6 +110,7 @@ const Page_Them_Phieu_Nhap_Hang = () => {
                 idNhomHangHoas: [],
                 textSearch: value,
                 idLoaiHangHoa: 1,
+                idChiNhanhs: idChiNhanhChosed ? [idChiNhanhChosed] : [],
                 currentPage: 0,
                 pageSize: 20
             } as PagedProductSearchDto;
@@ -245,88 +246,53 @@ const Page_Them_Phieu_Nhap_Hang = () => {
             idLoaiKhach: 1
         });
     };
-    const [hoadon, setHoaDon] = useState<PageHoaDonDto>(
-        new PageHoaDonDto({
-            idKhachHang: null,
-            idLoaiChungTu: LoaiChungTu.NHAP_HANG,
-            tenKhachHang: 'Chưa chọn khách'
-        })
-    );
     const savePhieuNhap = async () => {
         if (isSavingHoaDon) return;
 
         setIsSavingHoaDon(true);
         try {
-            const dataSave = { ...hoadon };
+            if (listHangHoa.length === 0) {
+                enqueueSnackbar('Phiếu nhập chưa có hàng hóa', { variant: 'warning' });
+                return;
+            }
+            const tongTienChuaCK = listHangHoa.reduce((prev, item) => prev + item.soLuong * item.donGia, 0);
 
-            dataSave.idKhachHang = customerChosed?.id ?? null;
-
-            dataSave.tenKhachHang = customerChosed?.tenKhachHang ?? 'Chưa chọn NCC';
-
-            dataSave.soDienThoai = customerChosed?.soDienThoai ?? '';
-
-            dataSave.idLoaiChungTu = LoaiChungTu.NHAP_HANG;
-
-            dataSave.idChiNhanh = idChiNhanhChosed ?? undefined;
-            dataSave.tongTienHang = tongTienHang;
-
-            dataSave.tongThanhToan = soTienThanhToan;
-
-            dataSave.ngayLapHoaDon = new Date().toISOString();
-
-            dataSave.hoaDonChiTiet = listHangHoa.map((item, index) => {
-                const ct = new PageHoaDonChiTietDto({
-                    idHangHoa: item.id as never,
-
-                    idDonViQuyDoi: item.idDonViQuyDoi as never,
-
-                    maHangHoa: item.maHang,
-
-                    tenHangHoa: item.tenHang,
-
-                    giaBan: item.donGia,
-
-                    soLuong: item.soLuong
-                });
-
-                ct.stt = index + 1;
-
-                return ct;
+            // tồn kho, giá vốn bình quân do Backend tính khi lưu phiếu
+            const hoadonDB = await KhoHangService.SavePhieuKho({
+                idLoaiChungTu: LoaiChungTu.NHAP_HANG,
+                idChiNhanh: idChiNhanhChosed ?? null,
+                idKhachHang: customerChosed?.id ?? null,
+                ngayLapHoaDon: new Date().toISOString(),
+                ghiChuHD: ghiChu,
+                trangThai: 3,
+                tongTienHangChuaChietKhau: tongTienChuaCK,
+                tongChietKhauHangHoa: tongTienChuaCK - tongTienHang,
+                tongTienHang: tongTienHang,
+                tongThanhToan: soTienThanhToan,
+                chiTiet: listHangHoa.map((item) => {
+                    const giamGia1Sp = item.soLuong > 0 ? item.giamGia / item.soLuong : 0;
+                    return {
+                        idDonViQuyDoi: item.idDonViQuyDoi ?? '',
+                        soLuong: item.soLuong,
+                        donGiaTruocCK: item.donGia,
+                        tienChietKhau: giamGia1Sp,
+                        donGiaSauCK: item.donGia - giamGia1Sp,
+                        thanhTienTruocCK: item.soLuong * item.donGia,
+                        thanhTienSauCK: item.soLuong * item.donGia - item.giamGia,
+                        ghiChu: item.ghiChu
+                    };
+                })
             });
-
-            const listTheKho: CreateOrEditDM_TheKhoDto[] = listHangHoa.map((item) => {
-                const tonTruoc = item.soLuong || 0;
-
-                const tonSau = tonTruoc + item.soLuong;
-
-                return new CreateOrEditDM_TheKhoDto({
-                    idHangHoa: item.id,
-                    idLoaiChungTu: LoaiChungTu.NHAP_HANG,
-                    soLuong: item.soLuong,
-                    tonTruoc: tonTruoc,
-                    tonSau: tonSau,
-                    creationTime: new Date().toISOString()
-                });
-            });
-            const hoadonDB = await HoaDonService.CreateHoaDon(dataSave);
 
             if (hoadonDB != null) {
-                try {
-                    const dataTheKho = listTheKho.map((x) => ({
-                        ...x,
-                        idHoaDon: hoadonDB.id
-                    }));
-
-                    await TheKhoService.CreateTheKho(dataTheKho);
-                } catch (err) {
-                    console.error('Lỗi update trạng thái hàng', err);
-                }
+                enqueueSnackbar(`Lưu phiếu nhập ${hoadonDB.maHoaDon ?? ''} thành công`, { variant: 'success' });
 
                 setListHangHoa([]);
 
                 setSoTienThanhToan(0);
 
                 setCustomerChosed({} as CreateOrEditKhachHangDto);
+                setGhiChu('');
 
                 return hoadonDB;
             }
@@ -352,7 +318,7 @@ const Page_Them_Phieu_Nhap_Hang = () => {
                     sx={{
                         fontSize: 13,
                         fontWeight: 700,
-                        color: '#1976d2'
+                        color: 'var(--color-main)'
                     }}>
                     {params.row.maHang}
                 </Typography>
@@ -573,7 +539,7 @@ const Page_Them_Phieu_Nhap_Hang = () => {
                         mb: 2
                     }}>
                     <Stack direction="row" alignItems="center" spacing={1}>
-                        <IconButton>
+                        <IconButton onClick={() => navigate('/nhap-hangs')}>
                             <ArrowBackIcon />
                         </IconButton>
 
@@ -793,6 +759,8 @@ const Page_Them_Phieu_Nhap_Hang = () => {
                                     fullWidth
                                     placeholder="Tìm nhà cung cấp"
                                     size="small"
+                                    value={customerChosed?.tenKhachHang ?? ''}
+                                    InputProps={{ readOnly: true }}
                                     onClick={(e) => {
                                         setAnchorDropdownCustomer(e.currentTarget);
                                         setExpandSearchCus(true);
@@ -810,11 +778,11 @@ const Page_Them_Phieu_Nhap_Hang = () => {
                                         sx={{
                                             width: 40,
                                             height: 40,
-                                            backgroundColor: '#1976d2',
+                                            backgroundColor: 'var(--color-main)',
                                             color: '#fff',
                                             borderRadius: 1,
                                             '&:hover': {
-                                                backgroundColor: '#1565c0'
+                                                backgroundColor: 'var(--color-main-dark)'
                                             }
                                         }}
                                         onClick={showModalAddCustomer}>
@@ -848,7 +816,7 @@ const Page_Them_Phieu_Nhap_Hang = () => {
                                 <Typography
                                     sx={{
                                         fontWeight: 800,
-                                        color: '#1976d2',
+                                        color: 'var(--color-main)',
                                         fontSize: 24
                                     }}>
                                     {formatMoney(tongTienHang)}
@@ -896,7 +864,14 @@ const Page_Them_Phieu_Nhap_Hang = () => {
                                 </Select>
                             </Box>
 
-                            <TextField fullWidth multiline rows={4} placeholder="Ghi chú nhập hàng..." />
+                            <TextField
+                                fullWidth
+                                multiline
+                                rows={4}
+                                placeholder="Ghi chú nhập hàng..."
+                                value={ghiChu}
+                                onChange={(e) => setGhiChu(e.target.value)}
+                            />
 
                             {/* BUTTON */}
                             <Box
@@ -931,7 +906,7 @@ const Page_Them_Phieu_Nhap_Hang = () => {
                                     disabled={isSavingHoaDon}
                                     sx={{
                                         flex: 7,
-                                        backgroundColor: '#1976d2',
+                                        backgroundColor: 'var(--color-main)',
                                         color: '#fff',
                                         textTransform: 'none',
                                         fontWeight: 800,
@@ -939,7 +914,7 @@ const Page_Them_Phieu_Nhap_Hang = () => {
                                         py: 1.2,
                                         opacity: isSavingHoaDon ? 0.7 : 1,
                                         '&:hover': {
-                                            backgroundColor: '#1565c0',
+                                            backgroundColor: 'var(--color-main-dark)',
                                             boxShadow: 'none'
                                         }
                                     }}>

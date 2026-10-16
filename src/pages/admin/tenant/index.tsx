@@ -450,16 +450,16 @@ class TenantScreen extends AppComponentBase<ITenantProps> {
                                 {
                                     id: '0',
                                     text: 'Xem',
-                                    color: '#009EF7',
+                                    color: 'var(--color-second)',
                                     isShow: abpCustom.isGrandPermission('Pages.Tenants'),
-                                    icon: <Info sx={{ color: '#009EF7' }} />
+                                    icon: <Info sx={{ color: 'var(--color-second)' }} />
                                 },
                                 {
                                     id: '1',
                                     text: 'Sửa',
-                                    color: '#009EF7',
+                                    color: 'var(--color-second)',
                                     isShow: abpCustom.isGrandPermission('Pages.Tenants.Edit'),
-                                    icon: <Edit sx={{ color: '#009EF7' }} />
+                                    icon: <Edit sx={{ color: 'var(--color-second)' }} />
                                 },
                                 {
                                     id: '2',
@@ -475,16 +475,16 @@ class TenantScreen extends AppComponentBase<ITenantProps> {
                                 {
                                     id: '3',
                                     text: 'Chuyển đến tenant: ' + params.row.tenancyName,
-                                    color: '#009EF7',
+                                    color: 'var(--color-second)',
                                     isShow: true,
-                                    icon: <Info sx={{ color: '#009EF7' }} />
+                                    icon: <Info sx={{ color: 'var(--color-second)' }} />
                                 },
                                 {
                                     id: '4',
                                     text: 'Lịch sử hoạt động',
-                                    color: '#009EF7',
+                                    color: 'var(--color-second)',
                                     isShow: true,
-                                    icon: <Info sx={{ color: '#009EF7' }} />
+                                    icon: <Info sx={{ color: 'var(--color-second)' }} />
                                 }
                             ] as IList[]
                         }

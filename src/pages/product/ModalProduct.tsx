@@ -624,9 +624,9 @@ const ModalHangHoa = ({ handleSave, trigger }: any) => {
                                                     }));
                                                 }}
                                                 sx={{
-                                                    color: '#7C3367',
+                                                    color: 'var(--color-main)',
                                                     '&.Mui-checked': {
-                                                        color: '#7C3367'
+                                                        color: 'var(--color-main)'
                                                     }
                                                 }}
                                             />
@@ -695,14 +695,17 @@ const ModalHangHoa = ({ handleSave, trigger }: any) => {
                             {!wasClickSave && (
                                 <Button
                                     variant="contained"
-                                    sx={{ bgcolor: '#7C3367' }}
+                                    sx={{ bgcolor: 'var(--color-main)' }}
                                     onClick={saveProduct}
                                     className="btn-container-hover">
                                     Lưu
                                 </Button>
                             )}
                             {wasClickSave && (
-                                <Button variant="contained" sx={{ bgcolor: '#7C3367' }} className="btn-container-hover">
+                                <Button
+                                    variant="contained"
+                                    sx={{ bgcolor: 'var(--color-main)' }}
+                                    className="btn-container-hover">
                                     Đang lưu
                                 </Button>
                             )}

@@ -24,6 +24,7 @@ import {
 import { Search } from '@mui/icons-material';
 import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import SnackbarAlert from '../../../components/AlertDialog/SnackbarAlert';
 import CustomTablePagination from '../../../components/Pagination/CustomTablePagination';
 import { PropConfirmOKCancel } from '../../../utils/PropParentToChild';
@@ -346,7 +347,7 @@ export default function BaoCaoKhachHangCheckIn() {
                                     <Button
                                         variant="outlined"
                                         onClick={exportToExcel}
-                                        startIcon={<FileUploadIcon />}
+                                        startIcon={<FileDownloadIcon />}
                                         sx={{
                                             borderColor: '#CDC9CD!important',
                                             bgcolor: '#fff!important',

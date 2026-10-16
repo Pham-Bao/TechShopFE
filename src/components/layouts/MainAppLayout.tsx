@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import AppSiderMenu from '../SiderMenu/index';
 import Cookies from 'js-cookie';
@@ -117,6 +117,76 @@ const MainAppLayout: React.FC<IMainAppLayout> = (props) => {
     const changeChiNhanh = (item: SuggestChiNhanhDto) => {
         setChiNhanhCurrent(item);
     };
+
+    // Mobile: trang có bảng (DataGrid) thì khóa vừa 1 màn hình - thanh tiêu đề/nút & phân trang đứng yên,
+    // chỉ nội dung bảng cuộn. Tự co/giãn chiều cao bảng cho vừa phần còn trống (không đổi bố cục từng trang).
+    const isMobileLayout = window.screen.width <= 650;
+    const mobileContentRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        const content = mobileContentRef.current;
+        if (!isMobileLayout || !content) return;
+
+        const MIN_GRID_HEIGHT = 220;
+        let frame = 0;
+        const fitGrid = () => {
+            cancelAnimationFrame(frame);
+            frame = requestAnimationFrame(() => {
+                // chỉ xử lý khi có đúng 1 bảng đang hiển thị (bỏ qua bảng ẩn trong tab khác / bảng autoHeight)
+                // ưu tiên DataGrid, nếu trang không có DataGrid thì dùng bảng thường (TableContainer)
+                const visible = (x: HTMLElement) => x.offsetParent !== null;
+                let grids = Array.from(content.querySelectorAll<HTMLElement>('.MuiDataGrid-root')).filter(
+                    (x) => visible(x) && !x.classList.contains('MuiDataGrid-autoHeight')
+                );
+                const isTable = grids.length === 0;
+                if (isTable) {
+                    grids = Array.from(content.querySelectorAll<HTMLElement>('.MuiTableContainer-root')).filter(
+                        (x) => visible(x) && !x.parentElement?.closest('.MuiTableContainer-root')
+                    );
+                }
+                const hasGrid = grids.length === 1;
+                content.classList.toggle('mobile-fit-grid', hasGrid);
+                if (!hasGrid) return;
+
+                const grid = grids[0];
+                if (isTable) {
+                    grid.style.overflow = 'auto';
+                    // tiêu đề bảng đứng yên khi cuộn: ô tiêu đề trong suốt thì cho nền trắng để không bị lộ chữ bên dưới
+                    grid.querySelectorAll<HTMLElement>('thead th').forEach((th) => {
+                        th.style.position = 'sticky';
+                        th.style.top = '0';
+                        th.style.zIndex = '2';
+                        const bg = getComputedStyle(th).backgroundColor;
+                        if (bg === 'transparent' || bg === 'rgba(0, 0, 0, 0)') th.style.backgroundColor = '#fff';
+                    });
+                }
+                const contentTop = content.getBoundingClientRect().top - content.scrollTop;
+                const paddingBottom = parseFloat(getComputedStyle(content).paddingBottom) || 0;
+                let usedBottom = 0;
+                Array.from(content.children).forEach((child) => {
+                    usedBottom = Math.max(usedBottom, child.getBoundingClientRect().bottom - contentTop);
+                });
+                const used = usedBottom + paddingBottom;
+                const gridHeight = grid.getBoundingClientRect().height;
+                const newHeight = Math.max(MIN_GRID_HEIGHT, Math.floor(gridHeight + content.clientHeight - used));
+                if (Math.abs(newHeight - gridHeight) > 1) {
+                    // !important để thắng chiều cao cố định theo vh của .data-grid-row (responsive.css)
+                    grid.style.setProperty('height', `${newHeight}px`, 'important');
+                    grid.style.setProperty('min-height', `${newHeight}px`, 'important');
+                    grid.style.setProperty('max-height', `${newHeight}px`, 'important');
+                }
+            });
+        };
+
+        const mutationObserver = new MutationObserver(fitGrid);
+        mutationObserver.observe(content, { childList: true, subtree: true });
+        window.addEventListener('resize', fitGrid);
+        fitGrid();
+        return () => {
+            cancelAnimationFrame(frame);
+            mutationObserver.disconnect();
+            window.removeEventListener('resize', fitGrid);
+        };
+    }, []);
     return (
         <Container maxWidth={false} disableGutters={true}>
             {window.screen.width > 650 ? (
@@ -150,7 +220,7 @@ const MainAppLayout: React.FC<IMainAppLayout> = (props) => {
                                 borderLeft: 'solid 0.1rem #e6e1e6',
                                 marginTop: '70px',
                                 minHeight: 'calc(100vh - 70px)',
-                                bgcolor: 'rgba(245,247,244,1)'
+                                bgcolor: '#F3F4F6'
                             }}>
                             <AppContext.Provider value={{ chinhanhCurrent, congty }}>
                                 <Outlet />
@@ -173,6 +243,8 @@ const MainAppLayout: React.FC<IMainAppLayout> = (props) => {
                     <Box>
                         <ResponsiveDrawer isOpen={!collapsed} onOpen={toggle} />
                         <Box
+                            ref={mobileContentRef}
+                            className="main-content-mobile"
                             padding={2}
                             paddingTop={0}
                             sx={{
@@ -181,7 +253,7 @@ const MainAppLayout: React.FC<IMainAppLayout> = (props) => {
                                 borderLeft: 'solid 0.1rem #e6e1e6',
                                 marginTop: '70px',
                                 minHeight: 'calc(100vh - 70px)',
-                                bgcolor: 'rgba(248,248,248,1)'
+                                bgcolor: '#F3F4F6'
                             }}>
                             <AppContext.Provider value={{ chinhanhCurrent, congty }}>
                                 <Outlet />

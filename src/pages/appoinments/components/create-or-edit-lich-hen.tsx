@@ -169,7 +169,7 @@ class CreateOrEditLichHenModal extends Component<ICreateOrEditProps> {
                                                         width: '36px',
                                                         height: '36px',
                                                         borderRadius: '4px',
-                                                        border: '1px solid #319DFF'
+                                                        border: '1px solid var(--color-second)'
                                                     }}
                                                     onClick={this.onOpenKhachHangModal}>
                                                     <AddIcon />

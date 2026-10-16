@@ -6,6 +6,8 @@ import { SnackbarProvider, MaterialDesignContent } from 'notistack';
 import { ReactComponent as SuccessIcon } from './images/success.svg';
 import styled from 'styled-components';
 import notificationStore from './stores/notificationStore';
+import { ThemeProvider } from '@mui/material/styles';
+import appTheme from './theme';
 
 const StyledMaterialDesignContent = styled(MaterialDesignContent)(() => ({
     '&.notistack-MuiContent-success': {
@@ -24,20 +26,22 @@ const StyledMaterialDesignContent = styled(MaterialDesignContent)(() => ({
 
 const App = () => {
     return (
-        <div>
-            <BrowserRouter>{Routes}</BrowserRouter>
-            <SnackbarProvider
-                maxSnack={3}
-                anchorOrigin={{ horizontal: 'center', vertical: 'top' }}
-                iconVariant={{
-                    success: <SuccessIcon />
-                }}
-                Components={{
-                    success: StyledMaterialDesignContent,
-                    error: StyledMaterialDesignContent
-                }}
-            />
-        </div>
+        <ThemeProvider theme={appTheme}>
+            <div>
+                <BrowserRouter>{Routes}</BrowserRouter>
+                <SnackbarProvider
+                    maxSnack={3}
+                    anchorOrigin={{ horizontal: 'center', vertical: 'top' }}
+                    iconVariant={{
+                        success: <SuccessIcon />
+                    }}
+                    Components={{
+                        success: StyledMaterialDesignContent,
+                        error: StyledMaterialDesignContent
+                    }}
+                />
+            </div>
+        </ThemeProvider>
     );
 };
 

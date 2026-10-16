@@ -26,8 +26,9 @@ import ConfirmDelete from '../../../../components/AlertDialog/ConfirmDelete';
 import TokenMauIn from './TokenMauIn';
 import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
 import abpCustom from '../../../../components/abp-custom';
+import appTheme from '../../../../theme'; // kế thừa theme chung (màu chủ đạo) của app
 
-const zIndexDialog = createTheme({
+const zIndexDialog = createTheme(appTheme, {
     components: {
         MuiDialog: {
             styleOverrides: {

@@ -238,7 +238,7 @@ const ModalChuyenTienSMS = ({ visiable = false, idNhatKyNapTien = null, onClose,
                                             {!isSubmitting ? (
                                                 <Button
                                                     variant="contained"
-                                                    sx={{ bgcolor: '#7C3367' }}
+                                                    sx={{ bgcolor: 'var(--color-main)' }}
                                                     className="btn-container-hover"
                                                     type="submit">
                                                     Lưu
@@ -247,7 +247,7 @@ const ModalChuyenTienSMS = ({ visiable = false, idNhatKyNapTien = null, onClose,
                                                 isSubmitting && (
                                                     <Button
                                                         variant="contained"
-                                                        sx={{ bgcolor: '#7C3367' }}
+                                                        sx={{ bgcolor: 'var(--color-main)' }}
                                                         className="btn-container-hover"
                                                         type="submit">
                                                         Đang lưu

@@ -13,7 +13,8 @@ import {
     Chip,
     Button,
     useMediaQuery,
-    useTheme
+    useTheme,
+    Tooltip
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import MoreOutlinedIcon from '@mui/icons-material/MoreOutlined';
@@ -96,11 +97,30 @@ import Utils from '../../../utils/utils';
 import { PagedResultDto } from '../../../services/dto/pagedResultDto';
 import ModalHangHoaDienThoai from '../../dien_thoai/ModalPhone';
 import ModalHangHoaDienThoaiSua from '../../dien_thoai/ModalDienThoaiSua';
-import TheKhoService from '../../../services/the_kho/sevice';
 
 import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
+import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
+import HandymanOutlinedIcon from '@mui/icons-material/HandymanOutlined';
+import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined';
 import khachHangStore from '../../../stores/khachHangStore';
-import CreateOrEditDM_TheKhoDto from '../../../services/the_kho/dto';
+
+// icon loại hàng hóa hiển thị ở góc trên bên phải ô sản phẩm
+const getIconLoaiHangHoa = (idLoaiHangHoa?: number) => {
+    const sxIcon = { fontSize: 15 };
+    switch (idLoaiHangHoa) {
+        case LoaiHangHoa.HANG_HOA:
+            return { title: 'Hàng hóa', icon: <Inventory2OutlinedIcon sx={sxIcon} /> };
+        case LoaiHangHoa.DICH_VU:
+            return { title: 'Dịch vụ', icon: <HandymanOutlinedIcon sx={sxIcon} /> };
+        case LoaiHangHoa.COMBO:
+            return { title: 'Combo', icon: <CategoryOutlinedIcon sx={sxIcon} /> };
+        case LoaiHangHoa.DIEN_THOAI:
+        case LoaiHangHoa.DIEN_THOAI_SUA:
+            return { title: 'Điện thoại', icon: <PhoneIphoneIcon sx={sxIcon} /> };
+        default:
+            return null;
+    }
+};
 
 export type IPropsPageThuNgan = {
     txtSearch: string;
@@ -327,15 +347,15 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
             setPhoneChosed(null);
             await GetInforCustomer_byId(hdCache[0]?.idKhachHang ?? Guid.EMPTY);
 
-            onSetActiveTabLoaiHoaDon(hdCache[0]?.idLoaiChungTu ?? LoaiChungTu.HOA_DON_BAN_LE);
+            onSetActiveTabLoaiHoaDon(hdCache[0]?.idLoaiChungTu ?? loaiHoaDon);
         } else {
-            onSetActiveTabLoaiHoaDon(LoaiChungTu.HOA_DON_BAN_LE);
-
+            // Không có hóa đơn chờ: giữ loại hóa đơn (tab) đang chọn, không ép về Hóa đơn bán
+            // (shop có thể đã tắt Hóa đơn bán).
             setHoaDon({
                 ...hoadon,
                 idKhachHang: '',
                 idChiNhanh: idChiNhanhChosed,
-                idLoaiChungTu: LoaiChungTu.HOA_DON_BAN_LE
+                idLoaiChungTu: loaiHoaDon
             });
             setHoaDonChiTiet([]);
         }
@@ -447,6 +467,9 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
             firstLoad_changeLoaiHD.current = false;
             return;
         }
+        // Loại hóa đơn có thể tự đổi sau lần load đầu (cấu hình chỉ bật Hóa đơn sửa, mở hóa đơn chờ/check-in)
+        // -> hóa đơn đang tạo phải mang đúng loại đó, không giữ loại mặc định (Hóa đơn bán) lúc khởi tạo.
+        setHoaDon((prev) => ({ ...prev, idLoaiChungTu: loaiHoaDon }));
         ChangeLoaiHoaDon();
         getListHangHoa_groupbyNhom(txtSearch, arrIdNhomHangFilter, loaiHoaDon);
     }, [loaiHoaDon]);
@@ -1406,36 +1429,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                 type: 1,
                 mes: 'Thanh toán hóa đơn thành công'
             });
-            try {
-                const listChiTietHangHoa = hoaDonChiTiet.filter((x) => x?.idHangHoa);
-
-                if (listChiTietHangHoa.length > 0) {
-                    const listTheKho: CreateOrEditDM_TheKhoDto[] = hoaDonChiTiet
-                        .filter((x) => x?.idHangHoa)
-                        .map(
-                            (item) =>
-                                new CreateOrEditDM_TheKhoDto({
-                                    idHangHoa: hoadonDB.idHangHoa as string,
-
-                                    idHoaDon: hoadonDB.id,
-                                    idLoaiChungTu: hoadonDB.idLoaiChungTu,
-
-                                    soLuong: -Math.abs(item.soLuong ?? 0),
-
-                                    tonTruoc: 0,
-                                    tonSau: 0,
-
-                                    ghiChu: `Bán hàng - ${hoadonDB.maHoaDon}`
-                                })
-                        );
-
-                    if (listTheKho.length > 0) {
-                        await TheKhoService.CreateTheKho(listTheKho);
-                    }
-                }
-            } catch (err) {
-                console.error('Lỗi tạo thẻ kho', err);
-            }
+            // Phiếu xuất kho cho hàng hóa / điện thoại do Backend tự tạo khi lưu hóa đơn (CreateHoaDon)
             try {
                 // Chỉ đánh dấu "Đã bán" cho Điện thoại (hàng tồn theo từng máy).
                 // Hàng hóa (phụ kiện) và Dịch vụ không có khái niệm "hết" theo kiểu này.
@@ -1964,10 +1958,21 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                 onClose={handleCloseDialog}
                 onOk={handleDialogSubmit}
             /> */}
-            <Grid container minHeight={'86vh'} maxHeight={'86vh'}>
+            <Grid
+                container
+                minHeight={'86vh'}
+                maxHeight={'86vh'}
+                // Mobile: chiếm đúng phần còn lại của màn hình, chỉ danh sách bên trong mới cuộn
+                sx={isMobile ? { height: '100%', minHeight: 0, maxHeight: 'none', flexWrap: 'nowrap' } : undefined}>
                 {!isThanhToanTienMat
                     ? (!isMobile || mobileStep === 'cart') && (
-                          <Grid item lg={7} md={6} xs={12} zIndex={5}>
+                          <Grid
+                              item
+                              lg={7}
+                              md={6}
+                              xs={12}
+                              zIndex={5}
+                              sx={isMobile ? { height: '100%', overflowY: 'auto' } : undefined}>
                               <PaymentsForm
                                   tongPhaiTra={hoadon?.tongThanhToan ?? 0}
                                   onClose={() => setIsThanhToanTienMat(true)}
@@ -1990,8 +1995,14 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                               xs={12}
                               sm={5}
                               borderRight={'1px solid rgb(224, 228, 235)'}
-                              marginTop={{ md: '-64px', sm: '-64px', lg: 0 }}>
-                              <Stack spacing={2} overflow={'auto'} maxHeight={'84vh'}>
+                              marginTop={{ md: '-64px', sm: '-64px', lg: 0 }}
+                              sx={isMobile ? { height: '100%', display: 'flex', flexDirection: 'column' } : undefined}>
+                              <Stack
+                                  spacing={isMobile ? 1.5 : 2}
+                                  overflow={'auto'}
+                                  maxHeight={isMobile ? 'none' : '84vh'}
+                                  flex={isMobile ? 1 : undefined}
+                                  minHeight={isMobile ? 0 : undefined}>
                                   {(nhomHangHoaChosed?.length ?? 0) > 0 && (
                                       <Stack spacing={2}>
                                           <Stack direction={'row'} spacing={2} alignItems={'center'}>
@@ -2038,13 +2049,17 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                                                   <Typography fontSize={16} fontWeight={500} marginBottom={0.5}>
                                                       {nhom?.tenNhomHang}
                                                   </Typography>
-                                                  <Grid container spacing={2} paddingRight={2}>
+                                                  <Grid
+                                                      container
+                                                      spacing={isMobile ? 1 : 2}
+                                                      paddingRight={isMobile ? 1 : 2}>
                                                       {nhom?.hangHoas.map((item, index2) => (
                                                           <Grid key={index2} item lg={4} md={6} xs={12} sm={12}>
                                                               <Stack
-                                                                  padding={2}
+                                                                  padding={isMobile ? 1.25 : 2}
                                                                   title={item.tenHangHoa}
                                                                   sx={{
+                                                                      position: 'relative',
                                                                       backgroundColor: 'var(--color-bg)',
                                                                       border: '1px solid transparent',
                                                                       '&:hover': {
@@ -2052,6 +2067,35 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                                                                           cursor: 'pointer'
                                                                       }
                                                                   }}>
+                                                                  {getIconLoaiHangHoa(item?.idLoaiHangHoa) && (
+                                                                      <Tooltip
+                                                                          title={
+                                                                              getIconLoaiHangHoa(item?.idLoaiHangHoa)
+                                                                                  ?.title
+                                                                          }>
+                                                                          <Stack
+                                                                              alignItems="center"
+                                                                              justifyContent="center"
+                                                                              onClick={() => choseProduct(item)}
+                                                                              sx={{
+                                                                                  position: 'absolute',
+                                                                                  top: 6,
+                                                                                  right: 6,
+                                                                                  width: 24,
+                                                                                  height: 24,
+                                                                                  borderRadius: '50%',
+                                                                                  bgcolor: '#fff',
+                                                                                  border: '1px solid #E5E7EB',
+                                                                                  color: '#6B7280'
+                                                                              }}>
+                                                                              {
+                                                                                  getIconLoaiHangHoa(
+                                                                                      item?.idLoaiHangHoa
+                                                                                  )?.icon
+                                                                              }
+                                                                          </Stack>
+                                                                      </Tooltip>
+                                                                  )}
                                                                   <Stack
                                                                       spacing={0.5}
                                                                       onClick={() => choseProduct(item)}>
@@ -2062,7 +2106,8 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                                                                               overflow: 'hidden',
                                                                               textOverflow: 'ellipsis',
                                                                               whiteSpace: 'nowrap',
-                                                                              width: '100%'
+                                                                              width: '100%',
+                                                                              paddingRight: '24px'
                                                                           }}>
                                                                           {item?.tenHangHoa}
                                                                       </Typography>
@@ -2107,61 +2152,93 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                                       direction="row"
                                       alignItems="center"
                                       justifyContent="space-between"
-                                      spacing={2}
+                                      spacing={1.5}
                                       sx={{
-                                          position: 'sticky',
-                                          bottom: 0,
-                                          left: 0,
-                                          right: 0,
+                                          flexShrink: 0,
                                           mt: 1,
-                                          p: 1.5,
+                                          px: 1.5,
+                                          py: 1,
                                           backgroundColor: 'rgb(245 241 241)',
                                           borderTop: '1px solid rgb(224, 228, 235)',
                                           boxSizing: 'border-box'
                                       }}>
-                                      <Stack spacing={0.2} minWidth={0} flex={1}>
+                                      {/* Trái: mỗi dịch vụ 1 dòng (tên - thành tiền) */}
+                                      <Stack minWidth={0} flex={1} title={mobileSummaryText}>
                                           {phoneChosed?.tenHangHoa && (
-                                              <Typography variant="caption" fontWeight={600} noWrap>
+                                              <Typography variant="caption" fontWeight={600} noWrap lineHeight={1.4}>
                                                   {[phoneChosed.tenHangHoa, phoneChosed.dungLuong, phoneChosed.mau]
                                                       .filter(Boolean)
                                                       .join(', ')}
                                               </Typography>
                                           )}
                                           {(hoaDonChiTiet?.length ?? 0) > 0 ? (
-                                              <Typography
-                                                  variant="caption"
-                                                  color="text.secondary"
-                                                  title={mobileSummaryText}
-                                                  sx={{
-                                                      overflow: 'hidden',
-                                                      textOverflow: 'ellipsis',
-                                                      whiteSpace: 'nowrap'
-                                                  }}>
-                                                  {mobileSummaryText}
-                                              </Typography>
+                                              <>
+                                                  {mobileSummaryItems.map((item, index) => (
+                                                      <Stack
+                                                          key={index}
+                                                          direction="row"
+                                                          spacing={1}
+                                                          justifyContent="space-between">
+                                                          <Typography
+                                                              variant="caption"
+                                                              color="text.secondary"
+                                                              noWrap
+                                                              lineHeight={1.4}
+                                                              minWidth={0}>
+                                                              {item?.tenHangHoa ?? ''}
+                                                              {item?.soLuong && item.soLuong > 1
+                                                                  ? ` x${item.soLuong}`
+                                                                  : ''}
+                                                          </Typography>
+                                                          <Typography
+                                                              variant="caption"
+                                                              color="text.secondary"
+                                                              noWrap
+                                                              lineHeight={1.4}
+                                                              flexShrink={0}>
+                                                              {Intl.NumberFormat('vi-VN').format(
+                                                                  item?.thanhTienSauCK ?? item?.donGiaSauCK ?? 0
+                                                              )}
+                                                              đ
+                                                          </Typography>
+                                                      </Stack>
+                                                  ))}
+                                                  {mobileSummaryExtraCount > 0 && (
+                                                      <Typography
+                                                          variant="caption"
+                                                          color="text.secondary"
+                                                          fontStyle="italic"
+                                                          lineHeight={1.4}>
+                                                          +{mobileSummaryExtraCount} dịch vụ khác
+                                                      </Typography>
+                                                  )}
+                                              </>
                                           ) : (
                                               <Typography variant="caption" color="text.secondary">
                                                   Chưa chọn dịch vụ nào
                                               </Typography>
                                           )}
+                                      </Stack>
+                                      {/* Phải: tổng tiền + nút Tiếp tục xếp chồng để tiết kiệm chiều cao */}
+                                      <Stack alignItems="flex-end" spacing={0.5} flexShrink={0}>
                                           <Typography variant="body2" fontWeight={600} noWrap>
                                               {Intl.NumberFormat('vi-VN').format(hoadon?.tongThanhToan ?? 0)}đ
                                           </Typography>
+                                          <Button
+                                              variant="contained"
+                                              size="small"
+                                              disabled={(hoaDonChiTiet?.length ?? 0) === 0}
+                                              onClick={() => setMobileStep('cart')}>
+                                              Tiếp tục
+                                          </Button>
                                       </Stack>
-                                      <Button
-                                          variant="contained"
-                                          sx={{ flexShrink: 0 }}
-                                          disabled={(hoaDonChiTiet?.length ?? 0) === 0}
-                                          onClick={() => setMobileStep('cart')}>
-                                          Tiếp tục
-                                      </Button>
                                   </Stack>
                               )}
                           </Grid>
                       )}
 
                 {(!isMobile || mobileStep === 'cart') && (
-                    <Grid item lg={5} md={6} xs={12} sm={7}>
+                    <Grid item lg={5} md={6} xs={12} sm={7} sx={isMobile ? { height: '100%' } : undefined}>
                         <Stack marginLeft={isMobile ? 0 : 2} height={'100%'}>
                             {isMobile && (
                                 <Stack
@@ -2176,7 +2253,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                                     </Typography>
                                 </Stack>
                             )}
-                            <Stack flex={isMobile ? undefined : 1} minHeight={isMobile ? undefined : 0}>
+                            <Stack flex={1} minHeight={0}>
                                 {loaiHoaDon === LoaiChungTu.HOA_DON_BAN_LE ? (
                                     // UI hóa đơn bán lẻ
                                     <Stack
@@ -2270,13 +2347,13 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                                             direction="row"
                                             spacing={1.5}
                                             alignItems="flex-start"
-                                            sx={{ cursor: 'pointer', flex: 1 }}
+                                            sx={{ cursor: 'pointer', flex: 1, minWidth: 0 }}
                                             onClick={(event) => {
                                                 setAnchorDropdownPhone(event.currentTarget);
                                             }}>
                                             <Avatar sx={{ width: 36, height: 36 }} />
 
-                                            <Stack spacing={1} flex={1}>
+                                            <Stack spacing={1} flex={1} minWidth={0}>
                                                 {/* 2 cột */}
                                                 <Stack
                                                     direction="row"
@@ -2336,6 +2413,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                                         <Button
                                             variant="contained"
                                             size="small"
+                                            sx={{ flexShrink: 0 }}
                                             color={phoneChosed ? 'error' : 'primary'}
                                             onClick={() => {
                                                 if (phoneChosed) {
@@ -2356,11 +2434,7 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                                     </Stack>
                                 )}
 
-                                <Stack
-                                    overflow={'auto'}
-                                    flex={isMobile ? '0 1 auto' : 1}
-                                    minHeight={isMobile ? undefined : 0}
-                                    maxHeight={isMobile ? '45vh' : undefined}>
+                                <Stack overflow={'auto'} flex={1} minHeight={0}>
                                     {hoaDonChiTiet
                                         ?.sort((x, y) => {
                                             const a = x.stt;
@@ -2644,7 +2718,9 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                                         {isSavingHoaDon ? (
                                             <Stack
                                                 sx={{
-                                                    backgroundColor: isThanhToanTienMat ? '#1976d2' : '#e5ebed',
+                                                    backgroundColor: isThanhToanTienMat
+                                                        ? 'var(--color-main)'
+                                                        : '#e5ebed',
                                                     borderRadius: '8px',
                                                     justifyContent: 'center',
                                                     alignItems: 'center',
@@ -2663,7 +2739,9 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                                         ) : (
                                             <Stack
                                                 sx={{
-                                                    backgroundColor: isThanhToanTienMat ? '#1976d2' : '#e5ebed',
+                                                    backgroundColor: isThanhToanTienMat
+                                                        ? 'var(--color-main)'
+                                                        : '#e5ebed',
                                                     borderRadius: '8px',
                                                     justifyContent: 'center',
                                                     alignItems: 'center',

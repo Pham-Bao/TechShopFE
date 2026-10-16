@@ -374,9 +374,9 @@ export default function PageUser({ isShowModalAdd, txtSearch, onCloseModal }: an
                             {
                                 id: '1',
                                 text: 'Sửa',
-                                color: '#009EF7',
+                                color: 'var(--color-second)',
                                 isShow: abpCustom.isGrandPermission('Pages.Administration.Users.Edit'),
-                                icon: <Edit sx={{ color: '#009EF7' }} />
+                                icon: <Edit sx={{ color: 'var(--color-second)' }} />
                             },
                             {
                                 id: '2',

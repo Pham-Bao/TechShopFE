@@ -116,7 +116,7 @@ const DateInputWithMask: React.FC<DateInputWithMaskProps> = ({
                 InputLabelProps={{
                     shrink: true, // Đảm bảo nhãn luôn hiển thị
                     style: {
-                        color: '#1976d2', // Màu xanh dương
+                        color: 'var(--color-main)', // Màu xanh dương
                         fontSize: '14px'
                     }
                 }}

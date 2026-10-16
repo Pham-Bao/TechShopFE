@@ -12,6 +12,9 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import IconButton from '@mui/material/IconButton';
 
+// tạm ẩn nhóm Sinh Nhật (Hôm nay / Tuần này / Tháng này)
+const SHOW_SINH_NHAT = false;
+
 export default function AccordionNhomKhachHang({
     dataNhomKhachHang,
     clickTreeItem,
@@ -108,119 +111,122 @@ export default function AccordionNhomKhachHang({
                     </Typography>
                 </AccordionSummary>
             </Accordion>
-            <Accordion
-                disableGutters
-                sx={{
-                    boxShadow: 'unset',
-                    '&.MuiAccordion-root::before': { content: 'none' },
-                    '& .MuiAccordionSummary-root': { minHeight: '46px', maxHeight: '46px' }
-                }}>
-                <AccordionSummary
+            {/* tạm ẩn nhóm Sinh Nhật: đổi SHOW_SINH_NHAT = true để hiện lại */}
+            {SHOW_SINH_NHAT && (
+                <Accordion
+                    disableGutters
                     sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        '&:hover': {
-                            bgcolor: 'var(--color-bg)'
-                        },
-                        '& .MuiAccordionSummary-content': {
-                            display: 'flex',
-                            alignItems: 'center'
-                        }
+                        boxShadow: 'unset',
+                        '&.MuiAccordion-root::before': { content: 'none' },
+                        '& .MuiAccordionSummary-root': { minHeight: '46px', maxHeight: '46px' }
                     }}>
-                    <CakeIcon sx={{ color: 'var(--color-main)' }} />
-                    <Typography
-                        variant="body2"
-                        fontWeight="700"
-                        textTransform="capitalize"
+                    <AccordionSummary
                         sx={{
-                            marginLeft: '9px',
                             display: 'flex',
                             alignItems: 'center',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            WebkitBoxOrient: 'vertical',
-                            WebkitLineClamp: 1,
-                            paddingRight: '20px'
-                        }}
-                        title={'Sinh Nhật'}>
-                        Sinh Nhật
-                    </Typography>
-                    <IconButton
-                        onClick={handleToggle}
-                        sx={{
-                            marginLeft: 'auto',
-                            color: 'var(--color-main)',
-                            transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                            transition: 'transform 0.3s'
+                            '&:hover': {
+                                bgcolor: 'var(--color-bg)'
+                            },
+                            '& .MuiAccordionSummary-content': {
+                                display: 'flex',
+                                alignItems: 'center'
+                            }
                         }}>
-                        <ExpandMoreIcon />
-                    </IconButton>
-                </AccordionSummary>
+                        <CakeIcon sx={{ color: 'var(--color-main)' }} />
+                        <Typography
+                            variant="body2"
+                            fontWeight="700"
+                            textTransform="capitalize"
+                            sx={{
+                                marginLeft: '9px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                WebkitBoxOrient: 'vertical',
+                                WebkitLineClamp: 1,
+                                paddingRight: '20px'
+                            }}
+                            title={'Sinh Nhật'}>
+                            Sinh Nhật
+                        </Typography>
+                        <IconButton
+                            onClick={handleToggle}
+                            sx={{
+                                marginLeft: 'auto',
+                                color: 'var(--color-main)',
+                                transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                                transition: 'transform 0.3s'
+                            }}>
+                            <ExpandMoreIcon />
+                        </IconButton>
+                    </AccordionSummary>
 
-                <AccordionDetails
-                    sx={{
-                        padding: '8px 16px',
-                        backgroundColor: 'var(--color-bg-light)'
-                    }}>
-                    <Typography
-                        variant="body2"
-                        onClick={() => filterByDate('today')}
+                    <AccordionDetails
                         sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            color: 'var(--color-text)',
-                            cursor: 'pointer',
-                            marginBottom: '8px',
-                            paddingLeft: '16px',
-                            '&:hover': { color: 'var(--color-main)' },
-                            '&::before': {
-                                content: '"•"',
-                                marginRight: '8px'
-                            },
-                            textDecoration: 'none'
+                            padding: '8px 16px',
+                            backgroundColor: 'var(--color-bg-light)'
                         }}>
-                        Hôm nay({birthdayCounts.today})
-                    </Typography>
-                    <Typography
-                        variant="body2"
-                        onClick={() => filterByDate('thisWeek')}
-                        sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            color: 'var(--color-text)',
-                            cursor: 'pointer',
-                            marginBottom: '8px',
-                            paddingLeft: '16px',
-                            '&:hover': { color: 'var(--color-main)' },
-                            '&::before': {
-                                content: '"•"',
-                                marginRight: '8px'
-                            },
-                            textDecoration: 'none'
-                        }}>
-                        Tuần này({birthdayCounts.thisWeek})
-                    </Typography>
-                    <Typography
-                        variant="body2"
-                        onClick={() => filterByDate('thisMonth')}
-                        sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            color: 'var(--color-text)',
-                            cursor: 'pointer',
-                            marginBottom: '8px',
-                            paddingLeft: '16px',
-                            '&:hover': { color: 'var(--color-main)' },
-                            '&::before': {
-                                content: '"•"',
-                                marginRight: '8px'
-                            },
-                            textDecoration: 'none'
-                        }}>
-                        Tháng này({birthdayCounts.thisMonth})
-                    </Typography>
-                </AccordionDetails>
-            </Accordion>
+                        <Typography
+                            variant="body2"
+                            onClick={() => filterByDate('today')}
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                color: 'var(--color-text)',
+                                cursor: 'pointer',
+                                marginBottom: '8px',
+                                paddingLeft: '16px',
+                                '&:hover': { color: 'var(--color-main)' },
+                                '&::before': {
+                                    content: '"•"',
+                                    marginRight: '8px'
+                                },
+                                textDecoration: 'none'
+                            }}>
+                            Hôm nay({birthdayCounts.today})
+                        </Typography>
+                        <Typography
+                            variant="body2"
+                            onClick={() => filterByDate('thisWeek')}
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                color: 'var(--color-text)',
+                                cursor: 'pointer',
+                                marginBottom: '8px',
+                                paddingLeft: '16px',
+                                '&:hover': { color: 'var(--color-main)' },
+                                '&::before': {
+                                    content: '"•"',
+                                    marginRight: '8px'
+                                },
+                                textDecoration: 'none'
+                            }}>
+                            Tuần này({birthdayCounts.thisWeek})
+                        </Typography>
+                        <Typography
+                            variant="body2"
+                            onClick={() => filterByDate('thisMonth')}
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                color: 'var(--color-text)',
+                                cursor: 'pointer',
+                                marginBottom: '8px',
+                                paddingLeft: '16px',
+                                '&:hover': { color: 'var(--color-main)' },
+                                '&::before': {
+                                    content: '"•"',
+                                    marginRight: '8px'
+                                },
+                                textDecoration: 'none'
+                            }}>
+                            Tháng này({birthdayCounts.thisMonth})
+                        </Typography>
+                    </AccordionDetails>
+                </Accordion>
+            )}
 
             {dataNhomKhachHang?.map((item: any, index: any) => (
                 <Accordion

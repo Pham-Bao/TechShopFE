@@ -121,7 +121,7 @@ const PopoverGiamGiaHD = ({
                             <Button
                                 onClick={() => onClickPTramVND(true)}
                                 sx={{
-                                    bgcolor: laPTGiamGia ? '#1976d2' : 'white',
+                                    bgcolor: laPTGiamGia ? 'var(--color-main)' : 'white',
                                     color: laPTGiamGia ? 'white' : 'black',
                                     '&:hover ': {
                                         bgcolor: 'var(--color-main)',
@@ -134,7 +134,7 @@ const PopoverGiamGiaHD = ({
                                 onClick={() => onClickPTramVND(false)}
                                 sx={{
                                     color: !laPTGiamGia ? 'white' : 'black',
-                                    bgcolor: !laPTGiamGia ? '#1976d2' : 'white'
+                                    bgcolor: !laPTGiamGia ? 'var(--color-main)' : 'white'
                                 }}>
                                 đ
                             </Button>

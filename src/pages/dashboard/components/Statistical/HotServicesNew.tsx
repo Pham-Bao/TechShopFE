@@ -38,7 +38,7 @@ const HotServicesNew: React.FC = () => {
         <ResponsiveContainer width="100%" height={300}>
             <BarChart layout="vertical" data={dashboardStore.danhSachDichVuHot} margin={{ right: 16 }}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" tick={{ fontSize: '12px', fill: '#8884d8' }} tickFormatter={formatNumber} />
+                <XAxis type="number" tick={{ fontSize: '12px', fill: '#6B7280' }} tickFormatter={formatNumber} />
                 <YAxis
                     type="category"
                     dataKey="tenHangHoa"
@@ -56,7 +56,7 @@ const HotServicesNew: React.FC = () => {
                 <Tooltip formatter={(value: number) => formatNumber(value)} content={<CustomTooltip />} />
                 <Legend />
 
-                <Bar dataKey="giaTri" fill="#8884d8" barSize={20} />
+                <Bar dataKey="giaTri" fill="#2563EB" barSize={20} />
             </BarChart>
         </ResponsiveContainer>
     );

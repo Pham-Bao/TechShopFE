@@ -400,7 +400,7 @@ export default function PageDanhSachGDV() {
                                                 variant="outlined"
                                                 className="btn-outline-hover"
                                                 onClick={onImportShow}
-                                                startIcon={<FileDownloadIcon />}>
+                                                startIcon={<FileUploadIcon />}>
                                                 Import tồn đầu
                                             </Button>
                                         )}
@@ -413,7 +413,7 @@ export default function PageDanhSachGDV() {
                                                     ? ''
                                                     : 'none'
                                             }}
-                                            startIcon={<FileUploadIcon />}>
+                                            startIcon={<FileDownloadIcon />}>
                                             Xuất file
                                         </Button>
                                     </Stack>

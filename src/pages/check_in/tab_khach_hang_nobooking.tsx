@@ -208,7 +208,7 @@ export default function TabKhachHangNoBooking(props: IPropsTabKhachHangNoBooking
                                         spacing={1}
                                         onClick={() => addHoaDon(cusItem, LoaiChungTu.HOA_DON_BAN_LE)}
                                         sx={{
-                                            color: '#1976d2',
+                                            color: 'var(--color-main)',
                                             '&:hover': {
                                                 color: '#3c9977',
                                                 cursor: 'pointer'

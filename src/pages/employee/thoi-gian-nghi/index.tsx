@@ -478,7 +478,7 @@ class EmployeeHoliday extends Component {
                             size="small"
                             onClick={this.onImportShow}
                             variant="outlined"
-                            startIcon={<img src={DownloadIcon} />}
+                            startIcon={<img src={UploadIcon} />}
                             sx={{
                                 textTransform: 'capitalize',
                                 fontWeight: '400',
@@ -495,7 +495,7 @@ class EmployeeHoliday extends Component {
                             size="small"
                             onClick={this.exportToExcel}
                             variant="outlined"
-                            startIcon={<img src={UploadIcon} />}
+                            startIcon={<img src={DownloadIcon} />}
                             sx={{
                                 textTransform: 'capitalize',
                                 fontWeight: '400',

@@ -23,7 +23,6 @@ import {
     Radio
 } from '@mui/material';
 import { Add, Category, DeleteOutline, LocalOfferOutlined, Search } from '@mui/icons-material';
-import { ReactComponent as FilterIcon } from '../../images/icons/i-filter.svg';
 // prop for send data from parent to child
 import { PropModal, PropConfirmOKCancel } from '../../utils/PropParentToChild';
 import { TextTranslate } from '../../components/TableLanguage';
@@ -94,7 +93,6 @@ const PageProduct = () => {
     const [lstErrImport, setLstErrImport] = useState<BangBaoLoiFileimportDto[]>([]);
     const [rowSelectionModel, setRowSelectionModel] = React.useState<GridRowSelectionModel>([]);
     const [isShowModalChuyenNhom, setIsShowModalChuyenNhom] = useState(false);
-    const [anchorElFilter, setAnchorElFilter] = useState<any>(null);
     const [anchorElFilterNangCao, setAnchorElFilterNangCao] = useState<any>(null);
 
     const [selectedLoaiDienThoai, setSelectedLoaiDienThoai] = useState<number>(4);
@@ -1134,28 +1132,6 @@ window.onload=function(){
                             </RadioGroup>
                         </FormControl>
 
-                        {/* Filter Mobile */}
-                        {window.screen.width < 768 && (
-                            <Button
-                                aria-describedby="popover-filter"
-                                variant="outlined"
-                                size="small"
-                                onClick={(e) => setAnchorElFilter(e.currentTarget)}
-                                sx={{
-                                    height: 36,
-                                    minWidth: 36,
-                                    px: 1,
-                                    bgcolor: '#fff',
-                                    color: '#666466',
-                                    borderColor: '#E6E1E6',
-                                    '&:hover': {
-                                        bgcolor: '#f8f8f8'
-                                    }
-                                }}>
-                                <FilterIcon />
-                            </Button>
-                        )}
-
                         {/* Filter nâng cao */}
                         <Button
                             variant="outlined"
@@ -1180,7 +1156,7 @@ window.onload=function(){
                         <Button
                             size="small"
                             variant="outlined"
-                            startIcon={<DownIcon />}
+                            startIcon={<UploadIcon />}
                             onClick={onImportShow}
                             className="btnNhapXuat btn-outline-hover"
                             sx={{
@@ -1197,7 +1173,7 @@ window.onload=function(){
                         <Button
                             size="small"
                             variant="outlined"
-                            startIcon={<UploadIcon />}
+                            startIcon={<DownIcon />}
                             onClick={exportToExcel}
                             className="btnNhapXuat btn-outline-hover"
                             sx={{

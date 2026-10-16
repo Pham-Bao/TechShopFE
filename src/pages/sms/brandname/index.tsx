@@ -376,8 +376,8 @@ export default function PageBrandname() {
                         {
                             id: '1',
                             text: 'Sửa',
-                            color: '#009EF7',
-                            icon: <Edit sx={{ color: '#009EF7' }} />
+                            color: 'var(--color-second)',
+                            icon: <Edit sx={{ color: 'var(--color-second)' }} />
                         },
                         {
                             id: '2',

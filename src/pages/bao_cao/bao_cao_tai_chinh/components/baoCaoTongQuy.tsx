@@ -15,6 +15,7 @@ import { TextTranslate } from '../../../../components/TableLanguage';
 import { DataGrid } from '@mui/x-data-grid';
 import suggestStore from '../../../../stores/suggestStore';
 import UploadIcon from '../../../../images/upload.svg';
+import DownloadIcon from '../../../../images/download.svg';
 import SearchIcon from '../../../../images/search-normal.svg';
 import { useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
@@ -160,7 +161,7 @@ const BaoCaoTongQuy = ({ handleChangeTab }: any) => {
                         variant="outlined"
                         size="small"
                         //hidden={!abpCustom.isGrandPermission('Pages.NhanSu.Export')}
-                        startIcon={<img src={UploadIcon} />}
+                        startIcon={<img src={DownloadIcon} />}
                         sx={{
                             backgroundColor: '#fff!important',
                             textTransform: 'capitalize',
@@ -200,10 +201,10 @@ const BaoCaoTongQuy = ({ handleChangeTab }: any) => {
                                 borderColor: 'transparent!important',
                                 boxShadow: 'none!important',
                                 '&:hover': {
-                                    color: '#319DFF',
+                                    color: 'var(--color-second)',
                                     backgroundColor: '#FFF',
                                     border: 'none !important',
-                                    borderBottom: '2px outset #319DFF !important',
+                                    borderBottom: '2px outset var(--color-second) !important',
                                     boxShadow: 'none!important'
                                 }
                             }}
@@ -223,10 +224,10 @@ const BaoCaoTongQuy = ({ handleChangeTab }: any) => {
                                 borderColor: 'transparent!important',
                                 boxShadow: 'none!important',
                                 '&:hover': {
-                                    color: '#319DFF',
+                                    color: 'var(--color-second)',
                                     backgroundColor: '#FFF',
                                     border: 'none !important',
-                                    borderBottom: '2px outset #319DFF !important',
+                                    borderBottom: '2px outset var(--color-second) !important',
                                     boxShadow: 'none!important'
                                 }
                             }}
@@ -240,9 +241,9 @@ const BaoCaoTongQuy = ({ handleChangeTab }: any) => {
                             sx={{
                                 fontSize: '16px',
                                 textTransform: 'unset',
-                                color: '#319DFF',
+                                color: 'var(--color-second)',
                                 border: 'none !important',
-                                borderBottom: '2px outset #319DFF !important',
+                                borderBottom: '2px outset var(--color-second) !important',
                                 boxShadow: 'none!important'
                             }}
                             onClick={() => {
@@ -260,10 +261,10 @@ const BaoCaoTongQuy = ({ handleChangeTab }: any) => {
                                 borderColor: 'transparent!important',
                                 boxShadow: 'none!important',
                                 '&:hover': {
-                                    color: '#319DFF',
+                                    color: 'var(--color-second)',
                                     backgroundColor: '#FFF',
                                     border: 'none !important',
-                                    borderBottom: '2px outset #319DFF !important',
+                                    borderBottom: '2px outset var(--color-second) !important',
                                     boxShadow: 'none!important'
                                 }
                             }}

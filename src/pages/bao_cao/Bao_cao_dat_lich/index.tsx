@@ -257,7 +257,7 @@ const BaoCaoDatLichPage = () => {
                                 padding={'4px 8px'}
                                 sx={{
                                     backgroundColor: '#009EF71a',
-                                    color: '#009EF7'
+                                    color: 'var(--color-second)'
                                 }}
                                 fontSize="13px"
                                 fontWeight="400">
@@ -385,7 +385,7 @@ const BaoCaoDatLichPage = () => {
                         variant="outlined"
                         size="small"
                         //hidden={!abpCustom.isGrandPermission('Pages.NhanSu.Export')}
-                        startIcon={<img src={UploadIcon} />}
+                        startIcon={<img src={DownloadIcon} />}
                         sx={{
                             backgroundColor: '#fff!important',
                             textTransform: 'capitalize',

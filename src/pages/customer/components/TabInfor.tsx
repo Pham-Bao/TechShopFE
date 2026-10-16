@@ -122,7 +122,7 @@ const TabInfor: React.FC = () => {
                                                 transition: '.2s'
                                             },
                                             '& .on': {
-                                                bgcolor: '#7C3367',
+                                                bgcolor: 'var(--color-main)',
                                                 left: item.open ? '0' : '-100%'
                                             },
                                             '& .off': {

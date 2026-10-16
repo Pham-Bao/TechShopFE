@@ -223,7 +223,11 @@ export const InvoiceWaiting = ({ idChiNhanh, idLoaiChungTu, onChose, isAddNewHD 
                 onOk={onClickConfirmDelete}
                 onCancel={() => setConfirmDialog({ ...confirmDialog, show: false })}></ConfirmDelete>
             <Badge badgeContent={countInvoice} color="secondary" sx={{ position: 'relative' }}>
-                <ShoppingCartIcon sx={{ color: '#1976d2' }} titleAccess="Hóa đơn chờ" onClick={showAllInvoiceWaiting} />
+                <ShoppingCartIcon
+                    sx={{ color: 'var(--color-main)' }}
+                    titleAccess="Hóa đơn chờ"
+                    onClick={showAllInvoiceWaiting}
+                />
 
                 <Stack
                     width={300}

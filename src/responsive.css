@@ -78,3 +78,150 @@
         max-height: calc(80vh - 32px) !important;
     }
 }
+
+/* ===================== ĐIỆN THOẠI (nhánh mobile của MainAppLayout) ===================== */
+
+/* Trang có bảng: khóa vừa 1 màn hình, chiều cao bảng được MainAppLayout tự tính để vừa phần còn trống
+   -> tiêu đề/nút và phân trang đứng yên, chỉ nội dung bảng cuộn */
+.main-content-mobile.mobile-fit-grid {
+    height: calc(100vh - 70px);
+    height: calc(100dvh - 70px);
+    min-height: 0 !important;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+/* Tiêu đề trang 1 dòng riêng, ô tìm kiếm cạnh tiêu đề xuống dòng dưới rộng hết */
+.main-content-mobile .MuiGrid-item:has(> .page-title),
+.main-content-mobile .MuiGrid-item:has(> .page-title) + .MuiGrid-item {
+    flex-basis: 100% !important;
+    max-width: 100% !important;
+}
+
+/* Nút Nhập/Xuất (có icon): chỉ hiện icon cho gọn */
+.main-content-mobile .btnNhapXuat:has(.MuiButton-startIcon) {
+    font-size: 0 !important;
+    min-width: 40px !important;
+    padding: 0 10px !important;
+}
+.main-content-mobile .btnNhapXuat:has(.MuiButton-startIcon) .MuiButton-startIcon {
+    margin: 0 !important;
+}
+
+/* Nút chính (Thêm ...): không ép độ rộng tối thiểu, chữ 1 dòng */
+.main-content-mobile .btn-container-hover {
+    min-width: 0 !important;
+    white-space: nowrap;
+}
+
+/* Phân trang: gom vào 1 dòng (chọn số dòng/trang | số bản ghi | nút trang) */
+.main-content-mobile .table-pagination,
+.main-content-mobile .MuiGrid-container:has(> .MuiGrid-item > .MuiStack-root > .MuiPagination-root) {
+    flex-wrap: nowrap !important;
+    align-items: center;
+    padding-left: 8px !important;
+    padding-right: 4px !important;
+}
+.main-content-mobile .table-pagination > .MuiGrid-item,
+.main-content-mobile .MuiGrid-container:has(> .MuiGrid-item > .MuiStack-root > .MuiPagination-root) > .MuiGrid-item {
+    flex: 0 0 auto !important;
+    max-width: none !important;
+}
+.main-content-mobile .table-pagination > .MuiGrid-item:last-child,
+.main-content-mobile .MuiGrid-container:has(> .MuiGrid-item > .MuiStack-root > .MuiPagination-root) > .MuiGrid-item:last-child {
+    flex: 1 1 auto !important;
+    min-width: 0;
+}
+.main-content-mobile .table-pagination > .MuiGrid-item > *,
+.main-content-mobile .MuiGrid-container:has(> .MuiGrid-item > .MuiStack-root > .MuiPagination-root) > .MuiGrid-item > * {
+    height: 44px !important;
+}
+.main-content-mobile .MuiStack-root:has(> .MuiPagination-root) {
+    float: none !important;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+    gap: 4px;
+}
+.main-content-mobile .option-page {
+    min-width: 0 !important;
+}
+.main-content-mobile .label-displayed-rows {
+    padding-top: 0 !important;
+    white-space: nowrap;
+}
+
+/* Nút trang nhỏ lại, chỉ giữ: ‹  trang đầu  trang hiện tại  trang cuối  › */
+.main-content-mobile .MuiPagination-ul {
+    flex-wrap: nowrap;
+}
+.main-content-mobile .MuiPaginationItem-root {
+    min-width: 28px;
+    height: 28px;
+    margin: 0 1px;
+    padding: 0 4px;
+}
+.main-content-mobile .MuiPagination-ul > li {
+    display: none;
+}
+.main-content-mobile .MuiPagination-ul > li:first-child,
+.main-content-mobile .MuiPagination-ul > li:nth-child(2),
+.main-content-mobile .MuiPagination-ul > li:nth-last-child(2),
+.main-content-mobile .MuiPagination-ul > li:last-child,
+.main-content-mobile .MuiPagination-ul > li:has(.Mui-selected) {
+    display: block;
+}
+
+/* Nhãn số bản ghi: bản đầy đủ trên máy tính, bản rút gọn trên điện thoại */
+.label-rows-short {
+    display: none;
+}
+.main-content-mobile .label-rows-full {
+    display: none;
+}
+.main-content-mobile .label-rows-short {
+    display: inline;
+}
+
+/* iOS Safari tự phóng to trang khi focus ô nhập chữ < 16px -> toàn app trên điện thoại (kể cả popup) */
+@media (max-width: 650px) {
+    input,
+    textarea,
+    select {
+        font-size: 16px !important;
+    }
+}
+
+/* Hàng nút thao tác (Lọc / Nhập / Xuất / Thêm): nút icon vuông 40x40 bằng nhau,
+   nút Thêm cao bằng và giãn lấp phần còn lại -> thẳng mép với ô tìm kiếm */
+.main-content-mobile .MuiGrid-item:has(> .btnNhapXuat) {
+    justify-content: flex-start !important;
+    gap: 8px !important;
+}
+.main-content-mobile .MuiGrid-item:has(> .btnNhapXuat) > .MuiButton-outlined:has(svg, img) {
+    flex: 0 0 40px;
+    width: 40px !important;
+    min-width: 40px !important;
+    height: 40px !important;
+    padding: 0 !important;
+    font-size: 0 !important;
+}
+.main-content-mobile .MuiGrid-item:has(> .btnNhapXuat) > .MuiButton-outlined .MuiButton-startIcon {
+    margin: 0 !important;
+}
+.main-content-mobile .MuiGrid-item:has(> .btnNhapXuat) > .btn-container-hover {
+    flex: 1 1 auto;
+    height: 40px !important;
+}
+
+/* Tab Tất cả / Hàng hóa / Dịch vụ: chia đều chiều ngang */
+.main-content-mobile .dich-vu-page > .MuiTabs-root {
+    flex-basis: 100%;
+    max-width: 100%;
+}
+.main-content-mobile .dich-vu-page > .MuiTabs-root .MuiTab-root {
+    flex: 1;
+    min-width: 0;
+    padding-left: 4px;
+    padding-right: 4px;
+}

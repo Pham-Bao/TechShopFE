@@ -50,6 +50,7 @@ import suggestStore from '../../../../stores/suggestStore';
 import SnackbarAlert from '../../../../components/AlertDialog/SnackbarAlert';
 import abpCustom from '../../../../components/abp-custom';
 import DialogButtonClose from '../../../../components/Dialog/ButtonClose';
+import appTheme from '../../../../theme'; // kế thừa theme chung (màu chủ đạo) của app
 
 interface SoQuyDialogProps {
     visiable: boolean;
@@ -58,7 +59,7 @@ interface SoQuyDialogProps {
     idQuyHD: string | null;
 }
 
-const themeDate = createTheme({
+const themeDate = createTheme(appTheme, {
     components: {
         MuiFormControl: {
             styleOverrides: {
@@ -635,7 +636,7 @@ const CreateOrEditSoQuyDialog = ({ visiable = false, idQuyHD = null, onClose, on
                                                             }}
                                                             value="true"
                                                             sx={{
-                                                                color: '#7C3367!important'
+                                                                color: 'var(--color-main)!important'
                                                             }}
                                                         />
                                                     }
@@ -656,7 +657,7 @@ const CreateOrEditSoQuyDialog = ({ visiable = false, idQuyHD = null, onClose, on
                                                 quyHoaDon?.trangThai == TrangThaiActive.ACTIVE ? (
                                                     <Button
                                                         variant="contained"
-                                                        sx={{ bgcolor: '#7C3367' }}
+                                                        sx={{ bgcolor: 'var(--color-main)' }}
                                                         className="btn-container-hover"
                                                         type="submit">
                                                         Lưu
@@ -665,7 +666,7 @@ const CreateOrEditSoQuyDialog = ({ visiable = false, idQuyHD = null, onClose, on
                                                     formik.isSubmitting && (
                                                         <Button
                                                             variant="contained"
-                                                            sx={{ bgcolor: '#7C3367' }}
+                                                            sx={{ bgcolor: 'var(--color-main)' }}
                                                             className="btn-container-hover"
                                                             type="submit">
                                                             Đang lưu

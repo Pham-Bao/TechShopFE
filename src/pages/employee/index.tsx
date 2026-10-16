@@ -712,7 +712,7 @@ class EmployeeScreen extends React.Component {
                                 <Button
                                     variant="outlined"
                                     size="small"
-                                    startIcon={<img src={DownloadIcon} />}
+                                    startIcon={<img src={UploadIcon} />}
                                     sx={{
                                         backgroundColor: '#fff!important',
                                         textTransform: 'capitalize',
@@ -730,7 +730,7 @@ class EmployeeScreen extends React.Component {
                                 <Button
                                     variant="outlined"
                                     size="small"
-                                    startIcon={<img src={UploadIcon} />}
+                                    startIcon={<img src={DownloadIcon} />}
                                     sx={{
                                         backgroundColor: '#fff!important',
                                         textTransform: 'capitalize',

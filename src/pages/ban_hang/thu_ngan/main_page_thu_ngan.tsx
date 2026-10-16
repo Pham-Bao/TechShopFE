@@ -237,7 +237,11 @@ export const InvoiceWaiting = ({ idChiNhanh, idLoaiChungTu, onChose, isAddNewHD,
                 onOk={onClickConfirmDelete}
                 onCancel={() => setConfirmDialog({ ...confirmDialog, show: false })}></ConfirmDelete>
             <Badge badgeContent={countInvoice} color="secondary" sx={{ position: 'relative' }}>
-                <ShoppingCartIcon sx={{ color: '#1976d2' }} titleAccess="Hóa đơn chờ" onClick={showAllInvoiceWaiting} />
+                <ShoppingCartIcon
+                    sx={{ color: 'var(--color-main)' }}
+                    titleAccess="Hóa đơn chờ"
+                    onClick={showAllInvoiceWaiting}
+                />
 
                 <Stack
                     width={300}
@@ -463,7 +467,7 @@ export default function MainPageThuNgan() {
                 onAgree={onAgreeFilterNhomHang}
             />
 
-            <Grid item lg={12} width={'100%'}>
+            <Grid item lg={12} width={'100%'} className="thu-ngan-header">
                 <Grid container spacing={2}>
                     <Grid item lg={3} md={4}>
                         <Stack direction={'row'} alignItems={'center'} spacing={2}>

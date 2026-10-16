@@ -200,7 +200,7 @@
     padding: 4px 8px;
     border-radius: 999px;
     background: #f1faff;
-    color: #009ef7;
+    color: var(--color-second);
     font-size: 12px;
 }
 

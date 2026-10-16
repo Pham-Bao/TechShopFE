@@ -1162,7 +1162,7 @@ const ThuNganTabRight: FC<{
                         {isSavingHoaDon ? (
                             <Stack
                                 sx={{
-                                    backgroundColor: isThanhToanTienMat ? '#1976d2' : '#e5ebed',
+                                    backgroundColor: isThanhToanTienMat ? 'var(--color-main)' : '#e5ebed',
                                     borderRadius: '8px',
                                     justifyContent: 'center',
                                     alignItems: 'center',
@@ -1178,7 +1178,7 @@ const ThuNganTabRight: FC<{
                         ) : (
                             <Stack
                                 sx={{
-                                    backgroundColor: isThanhToanTienMat ? '#1976d2' : '#e5ebed',
+                                    backgroundColor: isThanhToanTienMat ? 'var(--color-main)' : '#e5ebed',
                                     borderRadius: '8px',
                                     justifyContent: 'center',
                                     alignItems: 'center',

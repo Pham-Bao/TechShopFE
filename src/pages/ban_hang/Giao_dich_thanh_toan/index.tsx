@@ -9,6 +9,7 @@ import DeleteSweepOutlinedIcon from '@mui/icons-material/DeleteSweepOutlined';
 import { Search } from '@mui/icons-material';
 import { DataGrid, GridColDef, GridRowSelectionModel } from '@mui/x-data-grid';
 import { ReactComponent as UploadIcon } from '../../../images/upload.svg';
+import { ReactComponent as DownloadIcon } from '../../../images/download.svg';
 import { TextTranslate } from '../../../components/TableLanguage';
 import CustomTablePagination from '../../../components/Pagination/CustomTablePagination';
 import ThongTinHoaDon from '../Hoa_don/ThongTinHoaDon';
@@ -690,7 +691,7 @@ const GiaoDichThanhToan: React.FC = () => {
                             <Button
                                 variant="outlined"
                                 onClick={exportToExcel}
-                                startIcon={<UploadIcon />}
+                                startIcon={<DownloadIcon />}
                                 sx={{
                                     display: abpCustom.isGrandPermission('Pages.HoaDon.Export') ? '' : 'none'
                                 }}
@@ -739,12 +740,12 @@ const GiaoDichThanhToan: React.FC = () => {
                         },
 
                         '& .Mui-selected': {
-                            color: '#1976d2',
+                            color: 'var(--color-main)',
                             fontWeight: 600
                         },
 
                         '& .Mui-selected .MuiSvgIcon-root': {
-                            color: '#1976d2' // tab active icon xanh
+                            color: 'var(--color-main)' // tab active icon xanh
                         }
                     }}>
                     <Tab icon={<AppsIcon />} iconPosition="start" label="Tất cả" />

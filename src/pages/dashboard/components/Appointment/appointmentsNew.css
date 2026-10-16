@@ -55,7 +55,7 @@ align-items: center;
     float: right;
 }
 .state{
-    color: #009EF7;
+    color: var(--color-second);
     background: #F1FAFF;
 border-radius: 8px;
 font-size: 12px;

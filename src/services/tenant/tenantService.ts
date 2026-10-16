@@ -11,6 +11,8 @@ import http from '../httpService';
 import { PagedRequestDto } from '../dto/pagedRequestDto';
 import { TenantHistoryActivityDto } from './dto/tenantHistoryActivityDto';
 import { TenantInfoActivityDto } from './dto/tenantInfoActivityDto';
+import RegisterTenantInput from './dto/registerTenantInput';
+import RegisterTenantOutput from './dto/registerTenantOutput';
 
 class TenantService {
     public async create(createTenantInput: CreateTenantInput): Promise<CreateTenantOutput> {
@@ -22,6 +24,12 @@ class TenantService {
             console.error('Error occurred while creating tenant:', error);
             throw error;
         }
+    }
+
+    // khách tự đăng ký gian hàng (không cần đăng nhập)
+    public async registerTenant(input: RegisterTenantInput): Promise<RegisterTenantOutput> {
+        const result = await http.post('api/services/app/Tenant/RegisterTenant', input, { timeout: 300000 });
+        return result.data.result;
     }
 
     public async delete(entityDto: number) {

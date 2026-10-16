@@ -582,7 +582,7 @@ export default function PageDanhSachTGT() {
                                             variant="outlined"
                                             sx={{ backgroundColor: 'white', color: 'black' }}
                                             onClick={onImportShow}
-                                            startIcon={<FileDownloadIcon />}>
+                                            startIcon={<FileUploadIcon />}>
                                             Import tồn đầu
                                         </Button>
                                     )}
@@ -602,7 +602,7 @@ export default function PageDanhSachTGT() {
                                             variant="outlined"
                                             sx={{ backgroundColor: 'white', color: 'black' }}
                                             onClick={ExportToExcel}
-                                            startIcon={<FileUploadIcon />}>
+                                            startIcon={<FileDownloadIcon />}>
                                             Xuất file
                                         </Button>
                                     )}

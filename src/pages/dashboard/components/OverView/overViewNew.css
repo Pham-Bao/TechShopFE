@@ -47,7 +47,7 @@
     align-items: center;
 }
 .grid-item:nth-child(2) .grid-item-icon {
-    background: #009ef7;
+    background: var(--color-second);
 }
 .grid-item:nth-child(3) .grid-item-icon {
     background: #ffc700;
@@ -143,4 +143,38 @@
     font-size: 14px;
     font-weight: 400;
     color: #666466;
+}
+
+/* Thẻ số liệu trang chủ */
+.ts-stat {
+    height: 100%;
+    padding: 18px 20px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+}
+.ts-stat__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    border-radius: 12px;
+}
+.ts-stat__icon svg {
+    font-size: 24px;
+}
+.ts-stat__label {
+    font-size: 13px !important;
+    color: #6b7280;
+}
+.ts-stat__value {
+    font-size: 22px !important;
+    font-weight: 700 !important;
+    color: #111827;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }

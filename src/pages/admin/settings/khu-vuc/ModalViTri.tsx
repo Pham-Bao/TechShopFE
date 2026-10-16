@@ -254,7 +254,7 @@ const ModalViTri = ({ handleSave, trigger }: any) => {
                     </Button>
                     <Button
                         variant="contained"
-                        sx={{ bgcolor: '#7C3367' }}
+                        sx={{ bgcolor: 'var(--color-main)' }}
                         onClick={saveViTri}
                         className="btn-container-hover">
                         {wasClickSave ? 'Đang lưu' : 'Lưu'}

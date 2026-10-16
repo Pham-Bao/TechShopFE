@@ -41,7 +41,7 @@ class ActionMenuTable extends Component<MenuProps> {
                     onClick={handleView}
                     hidden={!abpCustom.isGrandPermission(permissionView ?? 'notHavePermission')}>
                     <Typography
-                        color="#009EF7"
+                        color="var(--color-second)"
                         fontSize="12px"
                         variant="button"
                         textTransform="unset"
@@ -50,13 +50,13 @@ class ActionMenuTable extends Component<MenuProps> {
                         marginRight="8px">
                         Xem
                     </Typography>
-                    <InfoIcon sx={{ color: '#009EF7' }} />
+                    <InfoIcon sx={{ color: 'var(--color-second)' }} />
                 </MenuItem>
                 <MenuItem
                     onClick={handleEdit}
                     hidden={!abpCustom.isGrandPermission(permissionEdit ?? 'notHavePermission')}>
                     <Typography
-                        color="#009EF7"
+                        color="var(--color-second)"
                         fontSize="12px"
                         variant="button"
                         textTransform="unset"
@@ -65,7 +65,7 @@ class ActionMenuTable extends Component<MenuProps> {
                         marginRight="8px">
                         Sửa
                     </Typography>
-                    <EditIcon sx={{ color: '#009EF7' }} />
+                    <EditIcon sx={{ color: 'var(--color-second)' }} />
                 </MenuItem>
                 <MenuItem
                     onClick={handleDelete}

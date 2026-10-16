@@ -631,13 +631,15 @@ window.onload=function(){
                                         borderRadius: '12px',
                                         py: 1.2,
                                         boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                                        background: 'linear-gradient(135deg, #1976d2, #42a5f5)',
+                                        background:
+                                            'linear-gradient(135deg, var(--color-main), var(--color-main-light))',
                                         '&:hover': {
-                                            background: 'linear-gradient(135deg, #1565c0, #1e88e5)',
+                                            background:
+                                                'linear-gradient(135deg, var(--color-main-dark), var(--color-main-light))',
                                             boxShadow: '0 6px 16px rgba(0,0,0,0.15)'
                                         }
                                     }}>
-                                    {loading ? 'Đang lấy dữ liệu...' : 'Lấy nhanh'}
+                                    {loading ? 'Đang lấy dữ liệu...' : 'Lấy nhanh máy'}
                                 </Button>
 
                                 <Typography
@@ -956,20 +958,20 @@ window.onload=function(){
                                 <>
                                     <Button
                                         variant="contained"
-                                        sx={{ bgcolor: '#7C3367' }}
+                                        sx={{ bgcolor: 'var(--color-main)' }}
                                         onClick={() => saveProduct(false)}>
                                         Lưu
                                     </Button>
 
                                     <Button
                                         variant="contained"
-                                        sx={{ bgcolor: '#1976d2', ml: 1 }}
+                                        sx={{ bgcolor: 'var(--color-main)', ml: 1 }}
                                         onClick={() => saveProduct(true)}>
                                         Lưu & In
                                     </Button>
                                 </>
                             ) : (
-                                <Button variant="contained" sx={{ bgcolor: '#7C3367' }}>
+                                <Button variant="contained" sx={{ bgcolor: 'var(--color-main)' }}>
                                     Đang lưu
                                 </Button>
                             )}

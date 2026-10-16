@@ -56,7 +56,7 @@ import BangBaoLoiFileImport from '../../components/ImportComponent/BangBaoLoiFil
 import { BangBaoLoiFileimportDto } from '../../services/dto/BangBaoLoiFileimportDto';
 import { ModalChuyenNhom } from '../../components/Dialog/modal_chuyen_nhom';
 import { IList } from '../../services/dto/IList';
-import { format, getYear } from 'date-fns';
+import { format } from 'date-fns';
 import { Guid } from 'guid-typescript';
 import CustomerFilterDrawer from './components/CustomerFilterDrawer';
 import CustomerInfor2 from './components/customer_infor2';
@@ -66,7 +66,6 @@ import ZaloService from '../../services/zalo/ZaloService';
 import ModalGuiTinNhanZalo from '../zalo/modal_gui_tin_zalo';
 import { TypeErrorImport } from '../../enum/TypeErrorImport';
 import { Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel } from '@mui/material';
-import VisibilityIcon from '@mui/icons-material/Visibility'; // Import icon con mắt
 
 interface CustomerScreenState {
     selectedColumns: Record<string, boolean>;
@@ -117,7 +116,6 @@ class CustomerScreen extends React.Component<any, CustomerScreenState> {
                 maKhachHang: true,
                 tenKhachHang: true,
                 soDienThoai: true,
-                ngaySinh: true,
                 tenNhomKhach: true,
                 tongChiTieu: true,
                 conNo: true,
@@ -731,24 +729,6 @@ class CustomerScreen extends React.Component<any, CustomerScreenState> {
                 renderHeader: (params) => <Box sx={{ fontWeight: '700' }}>{params.colDef.headerName}</Box>
             },
             {
-                field: 'ngaySinh',
-                headerName: 'Ngày sinh',
-                minWidth: 120,
-                flex: 1,
-                renderHeader: (params) => <Box sx={{ fontWeight: '700' }}>{params.colDef.headerName}</Box>,
-                renderCell: (params) => {
-                    if (params.value) {
-                        const date = new Date(params.value);
-                        if (getYear(date) === 1000) {
-                            return <Typography variant="body2">{format(date, 'dd/MM')}</Typography>;
-                        } else {
-                            return <Typography variant="body2">{format(date, 'dd/MM/yyyy')}</Typography>;
-                        }
-                    }
-                    return <Typography variant="body2"></Typography>;
-                }
-            },
-            {
                 field: 'tenNhomKhach',
                 minWidth: 150,
                 headerName: 'Nhóm khách',
@@ -759,20 +739,6 @@ class CustomerScreen extends React.Component<any, CustomerScreenState> {
                 field: 'tongChiTieu',
                 minWidth: 150,
                 headerName: 'Tổng mua',
-                headerAlign: 'right',
-                align: 'right',
-                flex: 1,
-                renderHeader: (params) => <Box sx={{ fontWeight: '700' }}>{params.colDef.headerName}</Box>,
-                renderCell: (params) => (
-                    <Box title={params.value} fontSize={'var(--font-size-main)'} textAlign="right" width="100%">
-                        {new Intl.NumberFormat('vi-VN').format(params.value)}
-                    </Box>
-                )
-            },
-            {
-                field: 'theGiaTri',
-                minWidth: 150,
-                headerName: 'Thẻ giá trị',
                 headerAlign: 'right',
                 align: 'right',
                 flex: 1,
@@ -813,6 +779,7 @@ class CustomerScreen extends React.Component<any, CustomerScreenState> {
                 field: 'action',
                 headerName: '#',
                 flex: 0.5,
+                minWidth: 110,
                 align: 'center',
                 headerAlign: 'center',
                 disableColumnMenu: true,
@@ -902,86 +869,11 @@ class CustomerScreen extends React.Component<any, CustomerScreenState> {
                                     variant="contained"
                                     sx={{ gap: '3px' }}
                                     className="rounded-4px resize-height">
-                                    <div>
-                                        <Button
-                                            className="border-color btn-outline-hover"
-                                            variant="outlined"
-                                            onClick={this.handleClickOpen}
-                                            sx={{
-                                                textTransform: 'none',
-                                                fontWeight: '400',
-                                                color: '#666466',
-                                                bgcolor: '#fff!important',
-                                                display: abpCustom.isGrandPermission('Pages.KhachHang.Import')
-                                                    ? ''
-                                                    : 'none',
-                                                padding: '6px 12px'
-                                            }}
-                                            startIcon={<VisibilityIcon />}>
-                                            Hiển thị
-                                        </Button>
-                                        <Dialog open={this.state.openDialog} onClose={this.handleClose}>
-                                            <DialogTitle>Chọn các cột hiển thị</DialogTitle>
-                                            <DialogContent>
-                                                <Grid container spacing={2}>
-                                                    {[
-                                                        'maKhachHang',
-                                                        'tenKhachHang',
-                                                        'soDienThoai',
-                                                        'ngaySinh',
-                                                        'tenNhomKhach',
-                                                        'tongChiTieu',
-                                                        'conNo',
-                                                        'creationTime'
-                                                    ].map((column) => (
-                                                        <Grid item xs={6} sm={4} key={column}>
-                                                            <FormControlLabel
-                                                                control={
-                                                                    <Checkbox
-                                                                        checked={this.state.selectedColumns[column]}
-                                                                        onChange={this.handleCheckboxChange(column)}
-                                                                    />
-                                                                }
-                                                                label={
-                                                                    {
-                                                                        maKhachHang: 'Mã khách hàng',
-                                                                        tenKhachHang: 'Tên khách hàng',
-                                                                        soDienThoai: 'Số điện thoại',
-                                                                        ngaySinh: 'Ngày sinh',
-                                                                        tenNhomKhach: 'Nhóm khách hàng',
-                                                                        tongChiTieu: 'Tổng chi tiêu',
-                                                                        conNo: 'Còn nợ',
-                                                                        creationTime: 'Ngày tạo'
-                                                                    }[column]
-                                                                }
-                                                            />
-                                                        </Grid>
-                                                    ))}
-                                                </Grid>
-                                            </DialogContent>
-                                            <DialogActions>
-                                                <button
-                                                    onClick={this.handleClose}
-                                                    className="button-close"
-                                                    style={{
-                                                        backgroundColor: '#dc3546',
-                                                        color: 'white',
-                                                        border: 'none',
-                                                        padding: '10px 20px',
-                                                        cursor: 'pointer',
-                                                        borderRadius: '4px',
-                                                        fontSize: '14px'
-                                                    }}>
-                                                    Đóng
-                                                </button>
-                                            </DialogActions>
-                                        </Dialog>
-                                    </div>
                                     <Button
                                         className="border-color btn-outline-hover"
                                         variant="outlined"
                                         onClick={this.onImportShow}
-                                        startIcon={<img src={DownloadIcon} />}
+                                        startIcon={<img src={UploadIcon} />}
                                         sx={{
                                             textTransform: 'capitalize',
                                             fontWeight: '400',
@@ -997,7 +889,7 @@ class CustomerScreen extends React.Component<any, CustomerScreenState> {
                                         onClick={() => {
                                             this.exportToExcel();
                                         }}
-                                        startIcon={<img src={UploadIcon} />}
+                                        startIcon={<img src={DownloadIcon} />}
                                         sx={{
                                             textTransform: 'capitalize',
                                             fontWeight: '400',

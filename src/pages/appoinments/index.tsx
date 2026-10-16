@@ -22,6 +22,7 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import ClearIcon from '@mui/icons-material/Clear';
 import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined';
 import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
@@ -444,7 +445,7 @@ const LichHen: React.FC<ILichHenProps> = (props) => {
                             variant="outlined"
                             sx={{ backgroundColor: 'white', color: 'black' }}
                             onClick={ExportToExcel}
-                            startIcon={<FileUploadIcon />}>
+                            startIcon={<FileDownloadIcon />}>
                             Xuất file
                         </Button>
                     </Stack>

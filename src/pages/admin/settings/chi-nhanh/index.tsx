@@ -435,7 +435,7 @@ class ChiNhanhScreen extends Component {
                         <Button
                             className="border-color btn-outline-hover"
                             variant="outlined"
-                            startIcon={<img src={DownloadIcon} />}
+                            startIcon={<img src={UploadIcon} />}
                             onClick={this.onImportShow}
                             sx={{
                                 backgroundColor: '#fff!important',
@@ -451,7 +451,7 @@ class ChiNhanhScreen extends Component {
                         <Button
                             className="border-color btn-outline-hover"
                             variant="outlined"
-                            startIcon={<img src={UploadIcon} />}
+                            startIcon={<img src={DownloadIcon} />}
                             onClick={this.exportToExcel}
                             sx={{
                                 textTransform: 'capitalize',

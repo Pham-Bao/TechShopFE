@@ -10,7 +10,8 @@ import {
     InputAdornment,
     IconButton,
     Typography,
-    CircularProgress
+    CircularProgress,
+    Button
 } from '@mui/material';
 import './login.css';
 import LoginModel from '../../../models/Login/loginModel';
@@ -19,7 +20,14 @@ import Cookies from 'js-cookie';
 import { useNavigate } from 'react-router-dom';
 import logo from '../../../images/TechShopLogo.png';
 import { Link } from 'react-router-dom';
-import { Visibility, VisibilityOff } from '@mui/icons-material';
+import {
+    Visibility,
+    VisibilityOff,
+    CheckCircleRounded,
+    StorefrontOutlined,
+    PersonOutlineOutlined,
+    LockOutlined
+} from '@mui/icons-material';
 import nhatKyHoatDongService from '../../../services/nhat_ky_hoat_dong/nhatKyHoatDongService';
 import { enqueueSnackbar } from 'notistack';
 const LoginScreen: React.FC = () => {
@@ -88,151 +96,150 @@ const LoginScreen: React.FC = () => {
     };
 
     return (
-        <div className="login-page">
-            <Grid container className="align-items-center justify-content-center mt-2 h-100">
-                <Grid xs={12} item>
-                    <div className="login-page-inner">
-                        <div className="logo-login" style={{ padding: '12px 0px' }}>
-                            <div className="logo-image">
-                                <img src={logo} alt="TechShop" />
-                            </div>
-                            <div className="logo-text">TechShop</div>
-                        </div>
-                        <Typography
-                            sx={{
-                                textAlign: 'center',
-                                fontSize: '24px',
-                                color: '#00284C',
-                                fontWeight: 700,
-                                fontFamily: 'Roboto'
-                            }}>
-                            Đăng nhập
-                        </Typography>
-                        <form className="login-form" onSubmit={formik.handleSubmit}>
-                            <Grid container>
-                                <span className="login-label">ID đăng nhập</span>
-                                <Grid xs={12} item>
-                                    <TextField
-                                        {...formik.getFieldProps('tenant')}
-                                        error={formik.touched.tenant && formik.errors.tenant ? true : false}
-                                        helperText={formik.touched.tenant && formik.errors.tenant}
-                                        onKeyDown={handleKeyDown}
-                                        variant="outlined"
-                                        name="tenant"
-                                        value={formik.values.tenant}
-                                        placeholder="ID đăng nhập"
-                                        type="text"
-                                        sx={{
-                                            '& .MuiOutlinedInput-root': {
-                                                '& fieldset': {
-                                                    border: 'none!important'
-                                                }
-                                            }
-                                        }}
-                                    />
-                                </Grid>
-                                <span className="login-label">Tên đăng nhập</span>
-                                <Grid xs={12} item>
-                                    <TextField
-                                        {...formik.getFieldProps('userNameOrEmail')}
-                                        error={
-                                            formik.touched.userNameOrEmail && formik.errors.userNameOrEmail
-                                                ? true
-                                                : false
-                                        }
-                                        helperText={formik.touched.userNameOrEmail && formik.errors.userNameOrEmail}
-                                        onKeyDown={handleKeyDown}
-                                        variant="outlined"
-                                        name="userNameOrEmail"
-                                        placeholder="Nhập email hoặc tên tài khoản"
-                                        type="text"
-                                        sx={{
-                                            '& .MuiOutlinedInput-root': {
-                                                '& fieldset': {
-                                                    border: 'none!important'
-                                                }
-                                            }
-                                        }}
-                                    />
-                                </Grid>
-                                <span className="login-label">Mật khẩu</span>
-                                <Grid xs={12} item>
-                                    <TextField
-                                        {...formik.getFieldProps('password')}
-                                        onKeyDown={handleKeyDown}
-                                        variant="outlined"
-                                        name="password"
-                                        placeholder="Nhập mật khẩu"
-                                        error={formik.touched.password && formik.errors.password ? true : false}
-                                        helperText={formik.touched.password && formik.errors.password}
-                                        sx={{
-                                            '& .MuiOutlinedInput-root': {
-                                                display: 'block',
-                                                paddingRight: '0',
-                                                '& fieldset': {
-                                                    border: 'none!important'
-                                                }
-                                            },
-                                            '& .MuiInputBase-root ': {
-                                                background: '#f2f6fa'
-                                            },
-                                            '& button': {
-                                                position: 'absolute',
-                                                right: '0',
-                                                top: '0'
-                                            }
-                                        }}
-                                        type={showPassword ? 'text' : 'password'}
-                                        InputProps={{
-                                            endAdornment: (
-                                                <InputAdornment position="end">
-                                                    <IconButton onClick={handleShowPassword}>
-                                                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                                                    </IconButton>
-                                                </InputAdornment>
-                                            )
-                                        }}
-                                    />
-                                </Grid>
-                                <Grid xs={12} item className="form-item_checkBox">
-                                    <FormControlLabel
-                                        control={
-                                            <Checkbox
-                                                {...formik.getFieldProps('remember')}
-                                                checked={formik.values.remember}
-                                                sx={{
-                                                    color: 'var(--color-main)',
-                                                    '&.Mui-checked': {
-                                                        color: 'var(--color-main)'
-                                                    }
-                                                }}
-                                            />
-                                        }
-                                        label="Ghi nhớ"
-                                    />
-                                    <Link className="login-form-forgot" to="/forgot-password">
-                                        Quên mật khẩu ?
-                                    </Link>
-                                </Grid>
+        <div className="ts-login">
+            {/* Bên trái: giới thiệu thương hiệu (ẩn trên điện thoại) */}
+            <div className="ts-login__brand">
+                <div className="ts-login__brand-logo">
+                    <img src={logo} alt="TechShop" />
+                    <span>TechShop</span>
+                </div>
+                <div className="ts-login__brand-body">
+                    <h1>Quản lý cửa hàng điện thoại, gọn trong một nơi.</h1>
+                    <p>Bán hàng, sửa chữa, kho máy và báo cáo doanh thu, theo dõi mọi lúc trên mọi thiết bị.</p>
+                    <ul>
+                        <li>
+                            <CheckCircleRounded /> Bán hàng &amp; tiếp nhận máy sửa chữa
+                        </li>
+                        <li>
+                            <CheckCircleRounded /> Quản lý máy theo IMEI, bảo hành
+                        </li>
+                        <li>
+                            <CheckCircleRounded /> Kho hàng, thu chi, báo cáo doanh thu
+                        </li>
+                    </ul>
+                </div>
+                <div className="ts-login__brand-footer">© {new Date().getFullYear()} TechShop</div>
+            </div>
 
-                                <Grid xs={12} item>
-                                    <button type="submit" className="btn-login">
-                                        {formik.isSubmitting ? (
-                                            <CircularProgress
-                                                className="text-login"
-                                                sx={{ color: 'white' }}
-                                                size={'32px'}
-                                            />
-                                        ) : (
-                                            <span className="text-login">Đăng nhập</span>
-                                        )}
-                                    </button>
-                                </Grid>
-                            </Grid>
-                        </form>
+            {/* Bên phải: form đăng nhập */}
+            <div className="ts-login__panel">
+                <div className="ts-login__card">
+                    <div className="ts-login__mobile-logo">
+                        <img src={logo} alt="TechShop" />
+                        <span>TechShop</span>
                     </div>
-                </Grid>
-            </Grid>
+                    <Typography component="h2" className="ts-login__title">
+                        Đăng nhập
+                    </Typography>
+                    <Typography className="ts-login__subtitle">
+                        Chào mừng quay lại! Nhập thông tin tài khoản để tiếp tục.
+                    </Typography>
+                    <form className="ts-login__form" onSubmit={formik.handleSubmit}>
+                        <label className="ts-login__label" htmlFor="tenant">
+                            ID đăng nhập
+                        </label>
+                        <TextField
+                            {...formik.getFieldProps('tenant')}
+                            id="tenant"
+                            error={formik.touched.tenant && formik.errors.tenant ? true : false}
+                            helperText={formik.touched.tenant && formik.errors.tenant}
+                            onKeyDown={handleKeyDown}
+                            variant="outlined"
+                            name="tenant"
+                            value={formik.values.tenant}
+                            placeholder="Số điện thoại đăng ký cửa hàng"
+                            type="text"
+                            fullWidth
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <StorefrontOutlined fontSize="small" />
+                                    </InputAdornment>
+                                )
+                            }}
+                        />
+
+                        <label className="ts-login__label" htmlFor="userNameOrEmail">
+                            Tên đăng nhập
+                        </label>
+                        <TextField
+                            {...formik.getFieldProps('userNameOrEmail')}
+                            id="userNameOrEmail"
+                            error={formik.touched.userNameOrEmail && formik.errors.userNameOrEmail ? true : false}
+                            helperText={formik.touched.userNameOrEmail && formik.errors.userNameOrEmail}
+                            onKeyDown={handleKeyDown}
+                            variant="outlined"
+                            name="userNameOrEmail"
+                            placeholder="Nhập email hoặc tên tài khoản"
+                            type="text"
+                            fullWidth
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <PersonOutlineOutlined fontSize="small" />
+                                    </InputAdornment>
+                                )
+                            }}
+                        />
+
+                        <label className="ts-login__label" htmlFor="password">
+                            Mật khẩu
+                        </label>
+                        <TextField
+                            {...formik.getFieldProps('password')}
+                            id="password"
+                            onKeyDown={handleKeyDown}
+                            variant="outlined"
+                            name="password"
+                            placeholder="Nhập mật khẩu"
+                            error={formik.touched.password && formik.errors.password ? true : false}
+                            helperText={formik.touched.password && formik.errors.password}
+                            type={showPassword ? 'text' : 'password'}
+                            fullWidth
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <LockOutlined fontSize="small" />
+                                    </InputAdornment>
+                                ),
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <IconButton onClick={handleShowPassword} edge="end">
+                                            {showPassword ? <VisibilityOff /> : <Visibility />}
+                                        </IconButton>
+                                    </InputAdornment>
+                                )
+                            }}
+                        />
+
+                        <div className="ts-login__row">
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        {...formik.getFieldProps('remember')}
+                                        checked={formik.values.remember}
+                                        size="small"
+                                    />
+                                }
+                                label="Ghi nhớ"
+                            />
+                            <Link className="ts-login__forgot" to="/forgot-password">
+                                Quên mật khẩu?
+                            </Link>
+                        </div>
+
+                        <Button type="submit" variant="contained" fullWidth size="large" className="ts-login__submit">
+                            {formik.isSubmitting ? <CircularProgress sx={{ color: 'white' }} size={24} /> : 'Đăng nhập'}
+                        </Button>
+                    </form>
+                    <Typography sx={{ marginTop: '20px', textAlign: 'center', fontSize: '14px', color: '#4b5563' }}>
+                        Chưa có tài khoản?{' '}
+                        <Link className="ts-login__forgot" to="/register">
+                            Đăng ký gian hàng
+                        </Link>
+                    </Typography>
+                </div>
+            </div>
         </div>
     );
 };

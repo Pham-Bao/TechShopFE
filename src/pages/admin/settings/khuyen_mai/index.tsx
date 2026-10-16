@@ -301,7 +301,7 @@ const KhuyenMaiPage: React.FC = () => {
                     fontSize="13px"
                     fontWeight="400"
                     textAlign={'center'}
-                    color="#009EF7">
+                    color="var(--color-second)">
                     {params.value === 1 ? 'Hoạt động' : 'Ngừng hoạt động'}
                 </Typography>
             )

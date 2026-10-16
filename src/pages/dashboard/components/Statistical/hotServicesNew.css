@@ -29,7 +29,7 @@
 }
 
 .services .recharts-tooltip-item:first-child:before{
-    background: #7C3367;
+    background: var(--color-main);
 
 }
 

@@ -37,8 +37,9 @@ import PageHoaDonDto from '../../../../services/ban_hang/PageHoaDonDto';
 import BankAccount from '../../../../components/Switch/BankAccount';
 import suggestStore from '../../../../stores/suggestStore';
 import { TaiKhoanNganHangDto } from '../../../../services/so_quy/Dto/TaiKhoanNganHangDto';
+import appTheme from '../../../../theme'; // kế thừa theme chung (màu chủ đạo) của app
 
-const themeDate = createTheme({
+const themeDate = createTheme(appTheme, {
     components: {
         MuiFormControl: {
             styleOverrides: {

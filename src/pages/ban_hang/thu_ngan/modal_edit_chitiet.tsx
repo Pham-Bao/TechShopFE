@@ -60,6 +60,8 @@ const ModalEditChiTietGioHang: React.FC<{
     const [lstCTHoaDon, setLstCTHoaDon] = useState<PageHoaDonChiTietDto[]>([]);
     const displayComponent =
         formType === ConstFormNumber.BAN_HANG || formType === ConstFormNumber.CHI_TIET_GDV ? false : true;
+    // chi tiết hóa đơn (giao dịch thanh toán): hiện cột bảo hành cùng hàng với giá bán, số lượng
+    const isFormHoaDon = formType === ConstFormNumber.OTHER;
 
     const [itemVisibility, setItemVisibility] = useState<boolean[]>(lstCTHoaDon.map(() => false)); //expaned cthd
     const [showModalSeachProduct, setShowModalSeachProduct] = useState(false);
@@ -132,6 +134,22 @@ const ModalEditChiTietGioHang: React.FC<{
         setLstCTHoaDon(
             lstCTHoaDon.map((item) => {
                 if (item.id === id) {
+                    return {
+                        ...item,
+                        soThangBaoHanh: soThangNew
+                    };
+                } else {
+                    return item;
+                }
+            })
+        );
+    };
+
+    const tangGiamBaoHanh = (id: string, soThangThayDoi: number) => {
+        setLstCTHoaDon(
+            lstCTHoaDon.map((item) => {
+                if (item.id === id) {
+                    const soThangNew = Math.max((item?.soThangBaoHanh ?? 0) + soThangThayDoi, 0);
                     return {
                         ...item,
                         soThangBaoHanh: soThangNew
@@ -350,7 +368,7 @@ const ModalEditChiTietGioHang: React.FC<{
                 itFor?.soLuong
             } x  ${Intl.NumberFormat('vi-VN').format(itFor?.donGiaTruocCK)}  =  ${Intl.NumberFormat('vi-VN').format(
                 itFor?.thanhTienSauCK ?? 0
-            )}`;
+            )}${isFormHoaDon ? ` (BH: ${itFor?.soThangBaoHanh ?? 0} tháng)` : ''}`;
         }
         sDetailsOld = '<br /> <b> Thông tin cũ: </b> ' + sDetailsOld;
         let sDetailsNew = '';
@@ -360,7 +378,7 @@ const ModalEditChiTietGioHang: React.FC<{
                 itFor?.soLuong
             } x  ${Intl.NumberFormat('vi-VN').format(itFor?.donGiaTruocCK)}  =  ${Intl.NumberFormat('vi-VN').format(
                 itFor?.thanhTienSauCK ?? 0
-            )}`;
+            )}${isFormHoaDon ? ` (BH: ${itFor?.soThangBaoHanh ?? 0} tháng)` : ''}`;
         }
 
         const diary = {
@@ -434,7 +452,7 @@ const ModalEditChiTietGioHang: React.FC<{
                 type={objAlert.type}
                 title={objAlert.mes}
                 handleClose={() => setObjAlert({ show: false, mes: '', type: 1 })}></SnackbarAlert>
-            <Dialog open={isShow} onClose={handleClose} fullWidth maxWidth="sm">
+            <Dialog open={isShow} onClose={handleClose} fullWidth maxWidth={isFormHoaDon ? 'md' : 'sm'}>
                 <DialogTitle className="modal-title">
                     {isAddNewProduct ? 'Thêm chi tiết mới' : 'Chỉnh sửa giỏ hàng'}
                 </DialogTitle>
@@ -548,7 +566,12 @@ const ModalEditChiTietGioHang: React.FC<{
                                         </Grid>
                                     )}
 
-                                    <Grid item xs={12} sm={7} md={7} lg={7}>
+                                    <Grid
+                                        item
+                                        xs={12}
+                                        sm={isFormHoaDon ? 4 : 7}
+                                        md={isFormHoaDon ? 4 : 7}
+                                        lg={isFormHoaDon ? 4 : 7}>
                                         <Stack direction="column" spacing={1}>
                                             <Typography variant="body2">Giá bán</Typography>
 
@@ -564,7 +587,12 @@ const ModalEditChiTietGioHang: React.FC<{
                                             />
                                         </Stack>
                                     </Grid>
-                                    <Grid item xs={12} sm={5} md={5} lg={5}>
+                                    <Grid
+                                        item
+                                        xs={12}
+                                        sm={isFormHoaDon ? 4 : 5}
+                                        md={isFormHoaDon ? 4 : 5}
+                                        lg={isFormHoaDon ? 4 : 5}>
                                         <Stack direction="column" spacing={1}>
                                             <Typography
                                                 sx={{
@@ -602,6 +630,48 @@ const ModalEditChiTietGioHang: React.FC<{
                                             </Stack>
                                         </Stack>
                                     </Grid>
+                                    {isFormHoaDon && (
+                                        <Grid item xs={12} sm={4} md={4} lg={4}>
+                                            <Stack direction="column" spacing={1}>
+                                                <Typography
+                                                    sx={{
+                                                        textAlign: {
+                                                            lg: 'center',
+                                                            md: 'center',
+                                                            xs: 'left'
+                                                        }
+                                                    }}
+                                                    variant="body2">
+                                                    Bảo hành (tháng)
+                                                </Typography>
+                                                <Stack
+                                                    direction="row"
+                                                    spacing={1}
+                                                    sx={{ '& .btnIcon': { cursor: 'pointer' } }}>
+                                                    <ButtonOnlyIcon
+                                                        icon={<Remove onClick={() => tangGiamBaoHanh(ct.id, -1)} />}
+                                                        style={{ width: 60, height: 37 }}
+                                                    />
+                                                    <TextField
+                                                        size="small"
+                                                        type="number"
+                                                        sx={{
+                                                            ' input': {
+                                                                textAlign: 'center'
+                                                            }
+                                                        }}
+                                                        fullWidth
+                                                        value={ct.soThangBaoHanh ?? ''}
+                                                        onChange={(event) => handleChangeBaoHanh(event, ct.id)}
+                                                    />
+                                                    <ButtonOnlyIcon
+                                                        icon={<Add onClick={() => tangGiamBaoHanh(ct.id, 1)} />}
+                                                        style={{ width: 60, height: 37 }}
+                                                    />
+                                                </Stack>
+                                            </Stack>
+                                        </Grid>
+                                    )}
                                     <Grid
                                         item
                                         lg={5}
@@ -703,7 +773,7 @@ const ModalEditChiTietGioHang: React.FC<{
                                         md={3}
                                         xs={4}
                                         sx={{
-                                            display: itemVisibility[index] ? '' : 'none'
+                                            display: itemVisibility[index] && !isFormHoaDon ? '' : 'none'
                                         }}>
                                         <Stack direction="column" spacing={1}>
                                             <Typography variant="body2">Bảo hành (tháng)</Typography>

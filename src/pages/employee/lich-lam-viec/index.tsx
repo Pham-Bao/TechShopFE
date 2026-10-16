@@ -66,7 +66,7 @@ const LichLamViecScreen: React.FC = () => {
                                     minWidth: 'unset',
                                     bgcolor: 'unset!important',
                                     '&:hover svg': {
-                                        color: '#7C3367'
+                                        color: 'var(--color-main)'
                                     }
                                 }}>
                                 <MoreHorizIcon

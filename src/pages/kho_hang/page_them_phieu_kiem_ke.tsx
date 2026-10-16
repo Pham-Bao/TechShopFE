@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
     Autocomplete,
     Box,
@@ -15,7 +15,6 @@ import {
 
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import SaveIcon from '@mui/icons-material/Save';
-import PrintIcon from '@mui/icons-material/Print';
 
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SearchIcon from '@mui/icons-material/Search';
@@ -26,11 +25,11 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import ProductService from '../../services/product/ProductService';
 import { ModelHangHoaDto, PagedProductSearchDto } from '../../services/product/dto';
 import HoaDonService from '../../services/ban_hang/HoaDonService';
-import CreateOrEditDM_TheKhoDto from '../../services/the_kho/dto';
 import { LoaiChungTu } from '../../lib/appconst';
-import PageHoaDonDto from '../../services/ban_hang/PageHoaDonDto';
-import TheKhoService from '../../services/the_kho/sevice';
-import PageHoaDonChiTietDto from '../../services/ban_hang/PageHoaDonChiTietDto';
+import KhoHangService from '../../services/kho_hang/KhoHangService';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { enqueueSnackbar } from 'notistack';
+import { format } from 'date-fns';
 
 interface IHangHoa {
     id: string;
@@ -74,6 +73,53 @@ const Page_them_phieu_kiem_ke = () => {
     };
 
     const idChiNhanhChosed = getCookie('IdChiNhanh');
+    const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const idPhieu = searchParams.get('id'); // mở lại phiếu tạm lưu
+    const [maPhieu, setMaPhieu] = useState('');
+    const [ngayLap, setNgayLap] = useState(format(new Date(), "yyyy-MM-dd'T'HH:mm"));
+    const [ghiChu, setGhiChu] = useState('');
+
+    useEffect(() => {
+        if (!idPhieu) return;
+        (async () => {
+            const dataPhieu = await HoaDonService.GetInforHoaDon_byId(idPhieu);
+            const dataCT: any[] = await HoaDonService.GetChiTietHoaDon_byIdHoaDon(idPhieu);
+            const phieu = dataPhieu?.[0];
+            if (!phieu) return;
+            if (phieu.trangThai !== 1) {
+                enqueueSnackbar('Phiếu đã hoàn thành, không sửa được', { variant: 'warning' });
+                navigate('/phieu-kiem-kes');
+                return;
+            }
+            setMaPhieu(phieu.maHoaDon ?? '');
+            setGhiChu(phieu.ghiChuHD ?? '');
+            if (phieu.ngayLapHoaDon) setNgayLap(format(new Date(phieu.ngayLapHoaDon), "yyyy-MM-dd'T'HH:mm"));
+            // tồn phần mềm lấy lại theo hiện tại
+            const tonKho = await KhoHangService.GetTonKho(
+                (dataCT ?? []).map((x) => x.idHangHoa),
+                phieu.idChiNhanh ?? idChiNhanhChosed
+            );
+            setListHangHoa(
+                (dataCT ?? []).map((x) => {
+                    const ton = tonKho.find((t) => t.idHangHoa === x.idHangHoa)?.soLuongTon ?? 0;
+                    return {
+                        id: x.idHangHoa,
+                        idDonViQuyDoi: x.idDonViQuyDoi,
+                        maHang: x.maHangHoa,
+                        tenHang: x.tenHangHoa,
+                        soLuongTon: ton,
+                        soLuongThucTe: x.soLuong ?? 0,
+                        soLuongLech: (x.soLuong ?? 0) - ton,
+                        donGia: 0,
+                        giamGia: 0,
+                        ghiChu: x.ghiChu ?? ''
+                    };
+                })
+            );
+        })();
+    }, [idPhieu]);
+
     const getListHangHoa = async (value: string) => {
         if (!value?.trim()) {
             setListSearch([]);
@@ -87,6 +133,7 @@ const Page_them_phieu_kiem_ke = () => {
                 idNhomHangHoas: [],
                 textSearch: value,
                 idLoaiHangHoa: 1,
+                idChiNhanhs: idChiNhanhChosed ? [idChiNhanhChosed] : [],
                 currentPage: 0,
                 pageSize: 20
             } as PagedProductSearchDto;
@@ -183,68 +230,42 @@ const Page_them_phieu_kiem_ke = () => {
         return listHangHoa.filter((x) => x.soLuongLech > 0).length;
     }, [listHangHoa]);
 
-    const [hoadon, setHoaDon] = useState<PageHoaDonDto>(
-        new PageHoaDonDto({
-            idKhachHang: null,
-            idLoaiChungTu: LoaiChungTu.PHIEU_KIEM_KE,
-            tenKhachHang: 'Chưa chọn khách'
-        })
-    );
-    const savePhieuKiem = async () => {
+    // trangThai: 1.Tạm lưu (chưa ảnh hưởng tồn kho), 3.Hoàn thành (điều chỉnh tồn kho theo số lệch)
+    const savePhieuKiem = async (trangThai: number) => {
         if (isSavingHoaDon) return;
+        if (listHangHoa.length === 0) {
+            enqueueSnackbar('Phiếu kiểm kê chưa có hàng hóa', { variant: 'warning' });
+            return;
+        }
 
         setIsSavingHoaDon(true);
 
         try {
-            const dataSave = { ...hoadon };
-
-            dataSave.hoaDonChiTiet = listHangHoa.map((item, index) => {
-                const ct = new PageHoaDonChiTietDto({
-                    idHangHoa: item.id as never,
-
-                    idDonViQuyDoi: item.idDonViQuyDoi as never,
-
-                    maHangHoa: item.maHang,
-
-                    tenHangHoa: item.tenHang,
-
-                    giaBan: item.donGia,
-
-                    soLuong: item.soLuongLech
-                });
-
-                ct.stt = index + 1;
-
-                return ct;
+            const hoadonDB = await KhoHangService.SavePhieuKho({
+                id: idPhieu,
+                idLoaiChungTu: LoaiChungTu.PHIEU_KIEM_KE,
+                idChiNhanh: idChiNhanhChosed ?? null,
+                maHoaDon: maPhieu,
+                ngayLapHoaDon: ngayLap ? new Date(ngayLap).toISOString() : new Date().toISOString(),
+                ghiChuHD: ghiChu,
+                trangThai: trangThai,
+                chiTiet: listHangHoa.map((item) => ({
+                    idDonViQuyDoi: item.idDonViQuyDoi ?? '',
+                    soLuong: item.soLuongThucTe,
+                    tonLuyKe: item.soLuongTon,
+                    ghiChu: item.ghiChu
+                }))
             });
-
-            dataSave.idLoaiChungTu = LoaiChungTu.PHIEU_KIEM_KE;
-            dataSave.idChiNhanh = idChiNhanhChosed ?? undefined;
-            dataSave.ngayLapHoaDon = new Date().toISOString();
-
-            const hoadonDB = await HoaDonService.CreateHoaDon(dataSave);
 
             if (!hoadonDB) return;
 
-            const listTheKho = listHangHoa.map((item) => {
-                const tonTruoc = item.soLuongTon;
-                const tonSau = item.soLuongThucTe;
-                const lech = tonSau - tonTruoc;
-
-                return new CreateOrEditDM_TheKhoDto({
-                    idHoaDon: hoadonDB.id,
-                    idHangHoa: item.id,
-                    idLoaiChungTu: LoaiChungTu.PHIEU_KIEM_KE,
-                    tonTruoc,
-                    tonSau,
-                    soLuong: lech,
-                    creationTime: new Date().toISOString()
-                });
-            });
-
-            await TheKhoService.CreateTheKho(listTheKho);
-
-            setListHangHoa([]);
+            enqueueSnackbar(
+                trangThai === 1
+                    ? `Đã tạm lưu phiếu ${hoadonDB.maHoaDon ?? ''}`
+                    : `Hoàn thành phiếu ${hoadonDB.maHoaDon ?? ''}, tồn kho đã được cân bằng`,
+                { variant: 'success' }
+            );
+            navigate('/phieu-kiem-kes');
 
             return hoadonDB;
         } catch (error: any) {
@@ -266,7 +287,7 @@ const Page_them_phieu_kiem_ke = () => {
                     sx={{
                         fontSize: 13,
                         fontWeight: 700,
-                        color: '#1976d2'
+                        color: 'var(--color-main)'
                     }}>
                     {params.row.maHang}
                 </Typography>
@@ -405,7 +426,7 @@ const Page_them_phieu_kiem_ke = () => {
                     mb: 2
                 }}>
                 <Stack direction="row" alignItems="center" spacing={1}>
-                    <IconButton>
+                    <IconButton onClick={() => navigate('/phieu-kiem-kes')}>
                         <ArrowBackIcon />
                     </IconButton>
 
@@ -472,7 +493,7 @@ const Page_them_phieu_kiem_ke = () => {
                                                     sx={{
                                                         //fontWeight: 500,
                                                         fontSize: 13,
-                                                        color: '#1976d2',
+                                                        color: 'var(--color-main)',
                                                         minWidth: 90
                                                     }}>
                                                     Mã:{option.maHangHoa}
@@ -493,7 +514,7 @@ const Page_them_phieu_kiem_ke = () => {
                                             <Box
                                                 sx={{
                                                     background: '#eff6ff',
-                                                    color: '#1976d2',
+                                                    color: 'var(--color-main)',
                                                     px: 1.2,
                                                     py: 0.3,
                                                     borderRadius: 10,
@@ -601,20 +622,38 @@ const Page_them_phieu_kiem_ke = () => {
                             Thông tin phiếu
                         </Typography>
 
-                        <TextField fullWidth label="Mã phiếu" size="small" sx={{ mb: 2 }} />
+                        <TextField
+                            fullWidth
+                            label="Mã phiếu"
+                            placeholder="Tự động"
+                            size="small"
+                            value={maPhieu}
+                            onChange={(e) => setMaPhieu(e.target.value)}
+                            sx={{ mb: 2 }}
+                        />
 
                         <TextField
                             fullWidth
                             type="datetime-local"
                             size="small"
+                            label="Ngày kiểm"
                             InputLabelProps={{
                                 shrink: true
                             }}
-                            defaultValue={new Date().toISOString().slice(0, 16)}
+                            value={ngayLap}
+                            onChange={(e) => setNgayLap(e.target.value)}
                             sx={{ mb: 2 }}
                         />
 
-                        <TextField fullWidth multiline rows={3} label="Ghi chú" sx={{ mb: 2 }} />
+                        <TextField
+                            fullWidth
+                            multiline
+                            rows={3}
+                            label="Ghi chú"
+                            value={ghiChu}
+                            onChange={(e) => setGhiChu(e.target.value)}
+                            sx={{ mb: 2 }}
+                        />
 
                         <Box
                             sx={{
@@ -691,9 +730,11 @@ const Page_them_phieu_kiem_ke = () => {
                             }}>
                             <Button
                                 variant="contained"
-                                startIcon={<PrintIcon />}
+                                startIcon={<SaveIcon />}
+                                onClick={() => savePhieuKiem(1)}
+                                disabled={isSavingHoaDon}
                                 sx={{
-                                    flex: 3,
+                                    flex: 4,
                                     backgroundColor: '#9e9e9e',
                                     color: '#fff',
                                     textTransform: 'none',
@@ -705,17 +746,17 @@ const Page_them_phieu_kiem_ke = () => {
                                         boxShadow: 'none'
                                     }
                                 }}>
-                                In nháp
+                                Tạm lưu
                             </Button>
 
                             <Button
                                 variant="contained"
                                 startIcon={<SaveIcon />}
-                                onClick={savePhieuKiem}
+                                onClick={() => savePhieuKiem(3)}
                                 disabled={isSavingHoaDon}
                                 sx={{
-                                    flex: 7,
-                                    backgroundColor: '#1976d2',
+                                    flex: 6,
+                                    backgroundColor: 'var(--color-main)',
                                     color: '#fff',
                                     textTransform: 'none',
                                     fontWeight: 800,
@@ -723,11 +764,11 @@ const Page_them_phieu_kiem_ke = () => {
                                     py: 1.2,
                                     opacity: isSavingHoaDon ? 0.7 : 1,
                                     '&:hover': {
-                                        backgroundColor: '#1565c0',
+                                        backgroundColor: 'var(--color-main-dark)',
                                         boxShadow: 'none'
                                     }
                                 }}>
-                                {isSavingHoaDon ? 'Đang lưu...' : 'Lưu phiếu nhập'}
+                                {isSavingHoaDon ? 'Đang lưu...' : 'Hoàn thành'}
                             </Button>
                         </Box>
                     </Paper>

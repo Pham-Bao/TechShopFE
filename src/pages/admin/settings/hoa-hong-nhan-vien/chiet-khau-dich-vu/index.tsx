@@ -485,7 +485,7 @@ class ChietKhauDichVuScreen extends Component {
                             className="border-color btn-outline-hover"
                             //hidden={!abpCustom.isGrandPermission('Pages.KhachHang.Import')}
                             variant="outlined"
-                            startIcon={<img src={DownloadIcon} />}
+                            startIcon={<img src={UploadIcon} />}
                             sx={{
                                 textTransform: 'capitalize',
                                 fontWeight: '400',
@@ -499,7 +499,7 @@ class ChietKhauDichVuScreen extends Component {
                             className="border-color btn-outline-hover"
                             variant="outlined"
                             //hidden={!abpCustom.isGrandPermission('Pages.KhachHang.Export')}
-                            startIcon={<img src={UploadIcon} />}
+                            startIcon={<img src={DownloadIcon} />}
                             sx={{
                                 textTransform: 'capitalize',
                                 fontWeight: '400',
@@ -514,7 +514,7 @@ class ChietKhauDichVuScreen extends Component {
                         <Button
                             startIcon={<img src={AddIcon} />}
                             variant="contained"
-                            sx={{ bgcolor: '#7C3367', height: 40 }}
+                            sx={{ bgcolor: 'var(--color-main)', height: 40 }}
                             onClick={() => {
                                 this.createOrUpdateModalOpen('');
                             }}
@@ -533,10 +533,10 @@ class ChietKhauDichVuScreen extends Component {
                             sx={{
                                 fontSize: '16px',
                                 textTransform: 'unset',
-                                color: '#319DFF',
+                                color: 'var(--color-second)',
                                 backgroundColor: '#FFF',
                                 border: 'none !important',
-                                borderBottom: '2px outset #319DFF !important'
+                                borderBottom: '2px outset var(--color-second) !important'
                             }}>
                             Theo dịch vụ
                         </Button>
@@ -550,10 +550,10 @@ class ChietKhauDichVuScreen extends Component {
                                 borderColor: 'transparent!important',
                                 boxShadow: 'none!important',
                                 '&:hover': {
-                                    color: '#319DFF',
+                                    color: 'var(--color-second)',
                                     backgroundColor: '#FFF',
                                     border: 'none !important',
-                                    borderBottom: '2px outset #319DFF !important',
+                                    borderBottom: '2px outset var(--color-second) !important',
                                     boxShadow: 'none!important'
                                 }
                             }}
@@ -571,7 +571,7 @@ class ChietKhauDichVuScreen extends Component {
                             (suggestStore.suggestNhanVien?.length > 0 ? suggestStore.suggestNhanVien[0] : null)
                         }
                         size="small"
-                        sx={{ width: '15%', border: '1px soid #319DFF' }}
+                        sx={{ width: '15%', border: '1px soid var(--color-second)' }}
                         fullWidth
                         disablePortal
                         onChange={async (event, value) => {

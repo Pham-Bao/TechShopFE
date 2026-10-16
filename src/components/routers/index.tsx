@@ -238,7 +238,7 @@ export const appRouters: AppRouteProps = {
                             icon: <BsDot style={{ fontSize: 20 }} />,
                             iconActive: null,
                             children: [],
-                            showInMenu: true,
+                            showInMenu: false, // tạm ẩn
                             isLayout: false,
                             featureName: AppFeatures.GOI_DICH_VU,
                             component: LoadableComponent(() => import('../../pages/goi_dich_vu/page_danh_sach_gdv'))
@@ -251,7 +251,7 @@ export const appRouters: AppRouteProps = {
                             icon: <BsDot style={{ fontSize: 20 }} />,
                             iconActive: null,
                             children: [],
-                            showInMenu: true,
+                            showInMenu: false, // tạm ẩn
                             isLayout: false,
                             featureName: AppFeatures.THE_GIA_TRI,
                             component: LoadableComponent(() => import('../../pages/the_gia_tri/page_danh_sach'))
@@ -304,7 +304,7 @@ export const appRouters: AppRouteProps = {
                             name: 'sms',
                             icon: <BsDot width="20px" />,
                             iconActive: null,
-                            showInMenu: true,
+                            showInMenu: false, // tạm ẩn
                             isLayout: false,
                             children: [],
                             component: LoadableComponent(() => import('../../pages/sms/index'))
@@ -316,7 +316,7 @@ export const appRouters: AppRouteProps = {
                             name: 'templateSMS',
                             icon: <BsDot width="20px" />,
                             iconActive: null,
-                            showInMenu: true,
+                            showInMenu: false, // tạm ẩn
                             isLayout: false,
                             children: [],
                             component: LoadableComponent(() => import('../../pages/sms/mau_tin_nhan/index'))
@@ -445,6 +445,78 @@ export const appRouters: AppRouteProps = {
                             isLayout: false,
                             children: [],
                             component: LoadableComponent(() => import('../../pages/kho_hang/kiem_ke'))
+                        },
+                        {
+                            path: '/xuat-hangs',
+                            permission: 'Pages.DM_HangHoa',
+                            title: 'Xuất hàng',
+                            icon: <BsDot style={{ fontSize: 20 }} />,
+                            iconActive: null,
+                            name: 'xuathang',
+                            showInMenu: true,
+                            isLayout: false,
+                            children: [],
+                            component: LoadableComponent(() => import('../../pages/kho_hang/xuat_hang'))
+                        },
+                        {
+                            path: '/xuat-hang/tao-moi',
+                            permission: 'Pages.DM_HangHoa',
+                            title: 'Tạo phiếu xuất',
+                            icon: <BsDot style={{ fontSize: 20 }} />,
+                            iconActive: null,
+                            name: 'taophieuxuat',
+                            showInMenu: false,
+                            isLayout: false,
+                            children: [],
+                            component: LoadableComponent(() => import('../../pages/kho_hang/page_them_phieu_xuat_hang'))
+                        },
+                        {
+                            path: '/khach-tra-hangs',
+                            permission: 'Pages.DM_HangHoa',
+                            title: 'Khách trả hàng',
+                            icon: <BsDot style={{ fontSize: 20 }} />,
+                            iconActive: null,
+                            name: 'khachtrahang',
+                            showInMenu: true,
+                            isLayout: false,
+                            children: [],
+                            component: LoadableComponent(() => import('../../pages/kho_hang/khach_tra_hang'))
+                        },
+                        {
+                            path: '/khach-tra-hang/tao-moi',
+                            permission: 'Pages.DM_HangHoa',
+                            title: 'Tạo phiếu khách trả hàng',
+                            icon: <BsDot style={{ fontSize: 20 }} />,
+                            iconActive: null,
+                            name: 'taokhachtrahang',
+                            showInMenu: false,
+                            isLayout: false,
+                            children: [],
+                            component: LoadableComponent(() => import('../../pages/kho_hang/page_them_khach_tra_hang'))
+                        },
+                        {
+                            path: '/tra-hang-nccs',
+                            permission: 'Pages.DM_HangHoa',
+                            title: 'Trả hàng NCC',
+                            icon: <BsDot style={{ fontSize: 20 }} />,
+                            iconActive: null,
+                            name: 'trahangncc',
+                            showInMenu: true,
+                            isLayout: false,
+                            children: [],
+                            component: LoadableComponent(() => import('../../pages/kho_hang/tra_hang_ncc'))
+                        },
+                        {
+                            path: '/tra-hang-ncc/tao-moi',
+                            permission: 'Pages.DM_HangHoa',
+                            title: 'Tạo phiếu trả hàng NCC',
+                            icon: <BsDot style={{ fontSize: 20 }} />,
+                            iconActive: null,
+                            name: 'taotrahangncc',
+                            showInMenu: false,
+                            isLayout: false,
+                            children: [],
+                            component: LoadableComponent(() => import('../../pages/kho_hang/page_them_tra_hang_ncc'))
                         }
                     ],
                     component: null
@@ -615,7 +687,7 @@ export const appRouters: AppRouteProps = {
                             name: 'baoCaoGoiDichVu',
                             icon: <BsDot style={{ fontSize: 20 }} />,
                             iconActive: null,
-                            showInMenu: true,
+                            showInMenu: false, // tạm ẩn
                             isLayout: false,
                             featureName: AppFeatures.GOI_DICH_VU,
                             children: [],
@@ -630,7 +702,7 @@ export const appRouters: AppRouteProps = {
                             name: 'baoCaoTheGiaTri',
                             icon: <BsDot style={{ fontSize: 20 }} />,
                             iconActive: null,
-                            showInMenu: true,
+                            showInMenu: false, // tạm ẩn
                             isLayout: false,
                             featureName: AppFeatures.THE_GIA_TRI,
                             children: [],

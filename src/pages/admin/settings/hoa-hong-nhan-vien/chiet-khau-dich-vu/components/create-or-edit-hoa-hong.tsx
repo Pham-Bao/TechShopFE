@@ -264,7 +264,7 @@ class CreateOrEditChietKhauDichVuModal extends Component<DialogProps> {
                                                     fontSize: '14px',
                                                     textTransform: 'unset',
                                                     color: '#fff',
-                                                    backgroundColor: '#7C3367',
+                                                    backgroundColor: 'var(--color-main)',
                                                     border: 'none'
                                                 }}
                                                 className="btn-container-hover">
@@ -278,7 +278,7 @@ class CreateOrEditChietKhauDichVuModal extends Component<DialogProps> {
                                                     fontSize: '14px',
                                                     textTransform: 'unset',
                                                     color: '#fff',
-                                                    backgroundColor: '#7C3367',
+                                                    backgroundColor: 'var(--color-main)',
                                                     border: 'none'
                                                 }}
                                                 className="btn-container-hover">

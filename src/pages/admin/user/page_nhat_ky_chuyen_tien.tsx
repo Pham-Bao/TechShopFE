@@ -250,7 +250,7 @@ export default function PageNhatKyChuyenTien({ isShowModalAdd, txtSearch, onClos
                                     id: '1',
                                     text: 'Sửa',
                                     isShow: abpCustom.isGrandPermission('Pages.Brandname.ChuyenTien.Edit'),
-                                    icon: <Edit sx={{ color: '#009EF7' }} />
+                                    icon: <Edit sx={{ color: 'var(--color-second)' }} />
                                 },
                                 {
                                     id: '2',

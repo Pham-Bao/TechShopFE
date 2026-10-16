@@ -105,7 +105,7 @@ const TabCuocHen = ({ khachHangId }: any) => {
                             : params.row.trangThai == 2
                             ? '#7DC1FF'
                             : params.row.trangThai == 3
-                            ? '#009EF7'
+                            ? 'var(--color-second)'
                             : params.row.trangThai == 4
                             ? '#50CD89'
                             : '#F1416C'

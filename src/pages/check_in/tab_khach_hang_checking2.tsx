@@ -221,7 +221,7 @@ export default function TabKhachHangChecking2(props: IPropsTabKhachHangCheckIn) 
                                                 <Typography
                                                     variant="body2"
                                                     sx={{
-                                                        color: '#1976d2',
+                                                        color: 'var(--color-main)',
                                                         '&:hover': {
                                                             color: '#3c9977',
                                                             cursor: 'pointer'

@@ -1,24 +1,27 @@
 :root {
-    --color-main: #007FC7;
-    --color-second:#9c27b0;
+    --color-main: #111827; /* đen xám - màu chủ đạo (nút chính, tiêu đề) */
+    --color-main-dark: #030712;
+    --color-main-light: #374151;
+    --color-second: #2563EB; /* xanh dương - màu nhấn (link, focus) */
     --color-text-blur: rgb(153, 150, 153); /*chữ mờ */
-    --color-title: #00284c;
-    --color-bg: #e5f3ff; 
+    --color-title: #111827;
+    --color-bg: #F3F4F6;
     --color-bg-vung-nhan-manh: rgb(245 241 241);
-    --color-text-secondary: #839bb1;
+    --color-text-secondary: #6B7280;
     --white: #fff;
-    --secondary-1: '#009EF7';
-    --primary-100: #e5d6e1;
-    --border-color: #c2c9d6;
+    --secondary-1: #2563EB;
+    --primary-100: #E5E7EB;
+    --border-color: #E5E7EB;
     --font-color-main: black;
-    --fc-now-indicator-color: #009ef7;
+    --fc-now-indicator-color: #2563EB;
     --font-size-main: 0.875rem;
     /* --font-family-main: "Helvetica Neue", Helvetica, Arial, sans-serif; */
     --font-family-main: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
         sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
-    --color-hoverIcon: brightness(0) saturate(100%) invert(45%) sepia(84%) saturate(2392%) hue-rotate(174deg)
-        brightness(98%) contrast(103%);
-    --color-header-table: #eef0f4;
+    /* tô icon khi hover thành màu xanh dương (#2563EB) */
+    --color-hoverIcon: brightness(0) saturate(100%) invert(30%) sepia(94%) saturate(2470%) hue-rotate(215deg)
+        brightness(94%) contrast(93%);
+    --color-header-table: #F9FAFB;
     --color-tin-giao-dich: rgb(80, 205, 137);
     --color-tin-sinh-nhat: rgb(128, 10, 199);
     --color-tin-lich-hen: rgb(255, 125, 161);
@@ -75,7 +78,7 @@
     font-family: 'Roboto';
     font-style: normal;
     font-weight: 400;
-    color: #009ef7;
+    color: var(--color-second);
 }
 
 .text-neutral-90 {
@@ -345,7 +348,7 @@
     left: -6px;
     width: 12px;
     height: 12px;
-    background-color: #319dff;
+    background-color: var(--color-second);
     border-radius: 50%;
 }
 .fc-timeGridWeek-view .fc-timegrid-now-indicator-container {
@@ -405,4 +408,69 @@
 .table > thead {
     vertical-align: bottom;
     --bs-table-bg: #eef0f4;
+}
+
+/* ===================== GIAO DIỆN MỚI: tông sáng trung tính (nút đen, viền mảnh, nhấn xanh dương) ===================== */
+
+/* Tiêu đề trang */
+.page-title {
+    font-size: 20px !important;
+    font-weight: 600 !important;
+    color: #111827 !important;
+    letter-spacing: -0.01em;
+}
+
+/* Nút phụ (Nhập / Xuất / Lọc...): nền trắng, viền mảnh, chữ xám đậm */
+.btnNhapXuat {
+    color: #374151 !important;
+    border-color: #e5e7eb !important;
+    border-radius: 8px !important;
+}
+.btnNhapXuat:hover {
+    background-color: #f9fafb !important;
+    border-color: #d1d5db !important;
+}
+
+/* Khung bảng: viền mảnh thay cho bóng, bo góc 12px */
+.page-box-left,
+.page-box-right {
+    border: 1px solid #e5e7eb;
+    border-radius: 12px !important;
+    box-shadow: none !important;
+    overflow: hidden;
+}
+
+/* Bảng DataGrid / Table: tiêu đề cột nhẹ, dòng thoáng, hover xám nhạt */
+.MuiDataGrid-columnHeaders {
+    border-bottom: 1px solid #e5e7eb !important;
+}
+.MuiDataGrid-columnHeaderTitleContainerContent,
+.MuiDataGrid-columnHeaderTitleContainerContent .MuiBox-root,
+.MuiDataGrid-columnHeaderTitle {
+    color: #6b7280 !important;
+    font-weight: 500 !important;
+}
+.MuiDataGrid-cell {
+    color: #111827;
+    border-bottom: 1px solid #f0f1f3 !important;
+}
+.MuiDataGrid-row:hover {
+    background-color: #f9fafb !important;
+}
+.MuiTableHead-root .MuiTableCell-root {
+    color: #6b7280;
+    font-weight: 500;
+    border-bottom: 1px solid #e5e7eb;
+}
+.MuiTableBody-root .MuiTableCell-root {
+    border-bottom: 1px solid #f0f1f3;
+}
+.MuiTableBody-root .MuiTableRow-root:hover {
+    background-color: #f9fafb;
+}
+
+/* Link trong bảng / nội dung: xanh dương như mẫu */
+.MuiDataGrid-cell a,
+.MuiTableCell-root a {
+    color: var(--color-second);
 }

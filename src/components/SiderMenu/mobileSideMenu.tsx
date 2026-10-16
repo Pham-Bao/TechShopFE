@@ -27,21 +27,27 @@ function convertMenuItemsToMenu(menuItems: any[], listPermission: string[]): Men
     routerMenu.forEach((item) => {
         // Check if item has permission to be added to menu
         if (listPermission.includes(item.permission) || item.permission === '') {
+            const children = item.children.length > 0 ? convertMenuItemsToMenu(item.children, listPermission) : [];
+            // nhóm có mục con nhưng không còn mục con nào được hiển thị (không có quyền / đang ẩn) -> ẩn luôn nhóm
+            if (item.children.length > 0 && children.length === 0) return;
+            // nhóm chỉ còn 1 mục con -> bấm vào nhóm đi thẳng tới trang của mục con
+            const singleChild = children.length === 1 && !children[0].children?.length ? children[0] : null;
+            const path = singleChild ? singleChild.path : item.path;
+            const hasChildren = children.length > 0 && !singleChild;
             const menuItem: MenuItem = {
-                key: item.path,
-                path: item.path, // Add path property
-                label:
-                    item.children.length > 0 ? (
-                        item.title
-                    ) : (
-                        <Link to={item.path} title={item.title} style={{ textDecoration: 'none' }}>
-                            {item.title}
-                        </Link>
-                    ),
+                key: path,
+                path: path, // Add path property
+                label: hasChildren ? (
+                    item.title
+                ) : (
+                    <Link to={path} title={item.title} style={{ textDecoration: 'none' }}>
+                        {item.title}
+                    </Link>
+                ),
                 icon: item.icon,
                 iconActive: item.iconActive,
                 type: item.isLayout ? 'group' : undefined,
-                children: item.children.length > 0 ? convertMenuItemsToMenu(item.children, listPermission) : undefined
+                children: hasChildren ? children : undefined
             };
             menu.push(menuItem);
         }
@@ -92,11 +98,16 @@ const RecursiveMenuItem: React.FC<{ route: MenuItem; key: number }> = ({ route, 
                         backgroundColor:
                             location.pathname === route.path ||
                             route.children?.some((dropdownItem) => location.pathname === dropdownItem.path)
-                                ? 'var(--color-bg)!important'
+                                ? '#F3F4F6!important'
                                 : 'transparent',
+                        boxShadow:
+                            location.pathname === route.path ||
+                            route.children?.some((dropdownItem) => location.pathname === dropdownItem.path)
+                                ? 'inset 0 0 0 1px #E5E7EB'
+                                : 'none',
                         borderRadius: '8px',
                         ':hover': {
-                            backgroundColor: 'var(--color-bg)!important'
+                            backgroundColor: '#F3F4F6!important'
                         }
                     }}
                     onClick={route.children ? () => handleDropdown(key) : undefined}>
@@ -107,8 +118,8 @@ const RecursiveMenuItem: React.FC<{ route: MenuItem; key: number }> = ({ route, 
                             filter:
                                 location.pathname === route.path ||
                                 route.children?.some((dropdownItem) => location.pathname === dropdownItem.key)
-                                    ? 'brightness(0) saturate(100%) invert(17%) sepia(0%) saturate(399%) hue-rotate(341deg) brightness(95%) contrast(87%)'
-                                    : 'unset'
+                                    ? 'brightness(0)'
+                                    : 'brightness(0) invert(40%)'
                         }}>
                         {location.pathname === route.path ||
                         route.children?.some((dropdownItem) => location.pathname === dropdownItem.key)
@@ -127,9 +138,13 @@ const RecursiveMenuItem: React.FC<{ route: MenuItem; key: number }> = ({ route, 
                                 //     route.children?.some(
                                 //         (dropdownItem) => location.pathname === dropdownItem.key
                                 //     )
-                                //         ? '#00284C'
+                                //         ? 'var(--color-title)'
                                 //         : '#3B4758',
-                                color: 'black',
+                                color:
+                                    location.pathname === route.path ||
+                                    route.children?.some((dropdownItem) => location.pathname === dropdownItem.path)
+                                        ? '#111827'
+                                        : '#4B5563',
                                 fontWeight:
                                     location.pathname === route.path ||
                                     route.children?.some((dropdownItem) => location.pathname === dropdownItem.key)
@@ -152,7 +167,11 @@ const RecursiveMenuItem: React.FC<{ route: MenuItem; key: number }> = ({ route, 
                                 //     )
                                 //         ? '#3B4758'
                                 //         : '#3D475C',
-                                color: 'black',
+                                color:
+                                    location.pathname === route.path ||
+                                    route.children?.some((dropdownItem) => location.pathname === dropdownItem.path)
+                                        ? '#111827'
+                                        : '#4B5563',
                                 fontWeight:
                                     location.pathname === route.path ||
                                     route.children?.some((dropdownItem) => location.pathname === dropdownItem.path)
@@ -165,7 +184,7 @@ const RecursiveMenuItem: React.FC<{ route: MenuItem; key: number }> = ({ route, 
                         (openMenuItem[key] ? (
                             <ExpandLessIcon
                                 sx={{
-                                    color: '#343234!important',
+                                    color: '#9CA3AF!important',
                                     ml: 'auto',
                                     transition: '.4s',
                                     position: 'relative'
@@ -175,7 +194,7 @@ const RecursiveMenuItem: React.FC<{ route: MenuItem; key: number }> = ({ route, 
                         ) : (
                             <ExpandMoreIcon
                                 sx={{
-                                    color: '#343234!important',
+                                    color: '#9CA3AF!important',
                                     ml: 'auto',
                                     transition: '.4s',
                                     position: 'relative'
@@ -222,8 +241,8 @@ const RecursiveMenuItem: React.FC<{ route: MenuItem; key: number }> = ({ route, 
                                         '& svg': {
                                             filter:
                                                 location.pathname === dropdownItem.path
-                                                    ? 'var(--color-hoverIcon)'
-                                                    : 'black'
+                                                    ? 'brightness(0)'
+                                                    : 'brightness(0) invert(40%)'
                                         },
                                         minWidth: '20px'
                                     }}>
@@ -234,12 +253,11 @@ const RecursiveMenuItem: React.FC<{ route: MenuItem; key: number }> = ({ route, 
                                     sx={{
                                         '& a': {
                                             fontSize: '14px',
-                                            color: location.pathname === dropdownItem.path ? '#319DFF' : '#3D475C'
+                                            color: location.pathname === dropdownItem.path ? '#111827' : '#4B5563'
                                             //color: 'black'
                                         },
                                         ':hover a': {
-                                            //color: '#319DFF'
-                                            color: 'black'
+                                            color: '#111827'
                                         }
                                     }}
                                 />
@@ -262,7 +280,9 @@ const ResponsiveDrawer: React.FC<Props> = ({ isOpen, onOpen }) => {
             sx={{
                 '& .MuiDrawer-paper': {
                     boxSizing: 'border-box',
-                    width: isOpen ? '0px' : '240px'
+                    width: isOpen ? '0px' : '240px',
+                    // menu nền trắng đồng bộ với sidebar trên máy tính
+                    backgroundColor: '#fff'
                 }
             }}
             ModalProps={{

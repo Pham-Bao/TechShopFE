@@ -35,3 +35,70 @@
 .main_page_thu_ngan .tab-bottom, .tab-hoadon .not-active{
     border-bottom:  1px solid var(--color-main);
 }
+
+/* Điện thoại: iOS Safari tự phóng to trang khi focus vào ô nhập có font-size < 16px */
+@media (max-width: 599.98px) {
+    .main_page_thu_ngan input,
+    .main_page_thu_ngan textarea {
+        font-size: 16px !important;
+    }
+}
+
+/* Điện thoại: khóa trang thu ngân vừa đúng 1 màn hình (không vuốt/kéo nảy trang),
+   header cố định trên cùng, chỉ danh sách bên trong mới cuộn */
+@media (max-width: 599.98px) {
+    html:has(.main_page_thu_ngan),
+    body:has(.main_page_thu_ngan) {
+        height: 100%;
+        overflow: hidden !important;
+        overscroll-behavior: none;
+    }
+
+    .main_page_thu_ngan {
+        height: 100vh;
+        height: 100dvh;
+        flex-direction: column;
+        flex-wrap: nowrap !important;
+        overflow: hidden;
+        padding: 8px !important;
+    }
+
+    /* Header: giữ chiều cao, thu gọn khoảng cách để dành chỗ cho danh sách sản phẩm */
+    .main_page_thu_ngan .thu-ngan-header {
+        flex-shrink: 0;
+    }
+    .main_page_thu_ngan .thu-ngan-header > .MuiGrid-container {
+        width: calc(100% + 8px);
+        margin-top: -8px;
+        margin-left: -8px;
+    }
+    .main_page_thu_ngan .thu-ngan-header > .MuiGrid-container > .MuiGrid-item {
+        padding-top: 8px;
+        padding-left: 8px;
+    }
+    .main_page_thu_ngan .thu-ngan-header .MuiTabs-root,
+    .main_page_thu_ngan .thu-ngan-header .MuiTab-root {
+        min-height: 40px;
+    }
+
+    /* TabPanel (Check in / Thu ngân): chiếm phần còn lại của màn hình */
+    .main_page_thu_ngan .thu-ngan-header ~ .MuiStack-root {
+        flex: 1;
+        min-height: 0;
+    }
+    .main_page_thu_ngan .thu-ngan-header ~ .MuiStack-root > .MuiBox-root {
+        flex: 1;
+        /* !important để thắng style inline minHeight: 86vh của tab Check in */
+        min-height: 0 !important;
+        margin-top: 8px;
+        display: flex;
+        flex-direction: column;
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+    /* Nội dung tab Thu ngân lấp đầy phần còn lại, tự chia vùng cuộn bên trong (không cuộn cả khung) */
+    .main_page_thu_ngan .thu-ngan-header ~ .MuiStack-root > .MuiBox-root > .MuiGrid-container {
+        flex: 1;
+        min-height: 0;
+    }
+}

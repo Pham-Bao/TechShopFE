@@ -1,7 +1,8 @@
 import { createTheme } from '@mui/material/styles';
+import appTheme from './theme'; // kế thừa theme chung (màu chủ đạo) của app
 
 class StyleOveride {
-    placeholderTextField = createTheme({
+    placeholderTextField = createTheme(appTheme, {
         components: {
             MuiInputBase: {
                 styleOverrides: {

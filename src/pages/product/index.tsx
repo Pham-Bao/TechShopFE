@@ -15,7 +15,9 @@ import {
     Popover,
     Checkbox,
     Tab,
-    Tabs
+    Tabs,
+    Menu,
+    MenuItem
 } from '@mui/material';
 import { Add, Category, DeleteOutline, LocalOfferOutlined, Search } from '@mui/icons-material';
 import { ReactComponent as FilterIcon } from '../../images/icons/i-filter.svg';
@@ -82,6 +84,9 @@ const PageProduct = () => {
     const [rowSelectionModel, setRowSelectionModel] = React.useState<GridRowSelectionModel>([]);
     const [isShowModalChuyenNhom, setIsShowModalChuyenNhom] = useState(false);
     const [anchorElFilter, setAnchorElFilter] = useState<any>(null);
+    // Mobile: gộp 2 nút Thêm hàng hóa / Thêm dịch vụ thành 1 nút "Thêm" có menu
+    const isMobileLayout = window.screen.width <= 650;
+    const [anchorElAddMenu, setAnchorElAddMenu] = useState<null | HTMLElement>(null);
     const [openTheKho, setOpenTheKho] = useState(false);
     const [theKhoData, setTheKhoData] = useState<any>(null);
     const [pageDataProduct, setPageDataProduct] = useState<PagedResultDto<ModelHangHoaDto>>({
@@ -613,7 +618,7 @@ const PageProduct = () => {
     };
     const handleOpenTheKho = (row: any) => {
         setTheKhoData({
-            idHangHoa: row.idHangHoa,
+            idHangHoa: row.idHangHoa ?? row.id,
             tenHangHoa: row.tenHangHoa,
             maHangHoa: row.maHangHoa
         });
@@ -716,7 +721,7 @@ const PageProduct = () => {
                     renderHeader: (params) => <Box component="span">{params.colDef.headerName}</Box>,
                     renderCell: (params) => (
                         <VisibilityOutlinedIcon
-                            style={{ cursor: 'pointer', fontSize: 18, color: '#1976d2' }}
+                            style={{ cursor: 'pointer', fontSize: 18, color: 'var(--color-main)' }}
                             titleAccess="Xem thẻ kho"
                             onClick={() => handleOpenTheKho(params.row)}
                         />
@@ -911,7 +916,7 @@ const PageProduct = () => {
                             size="small"
                             onClick={onImportShow}
                             variant="outlined"
-                            startIcon={<DownIcon />}
+                            startIcon={<UploadIcon />}
                             className="btnNhapXuat btn-outline-hover"
                             sx={{
                                 bgcolor: '#fff!important',
@@ -924,7 +929,7 @@ const PageProduct = () => {
                             size="small"
                             onClick={exportToExcel}
                             variant="outlined"
-                            startIcon={<UploadIcon />}
+                            startIcon={<DownIcon />}
                             className="btnNhapXuat btn-outline-hover"
                             sx={{
                                 bgcolor: '#fff!important',
@@ -933,32 +938,72 @@ const PageProduct = () => {
                             }}>
                             Xuất
                         </Button>
-                        <Button
-                            size="small"
-                            variant="contained"
-                            className=" btn-container-hover"
-                            sx={{
-                                minWidth: '143px',
-                                fontSize: '14px',
-                                display: abpCustom.isGrandPermission('Pages.DM_HangHoa.Create') ? '' : 'none'
-                            }}
-                            startIcon={<Add />}
-                            onClick={() => showModalAddProduct(undefined, '', 1)}>
-                            Thêm hàng hóa
-                        </Button>
-                        <Button
-                            size="small"
-                            variant="contained"
-                            className=" btn-container-hover"
-                            sx={{
-                                minWidth: '143px',
-                                fontSize: '14px',
-                                display: abpCustom.isGrandPermission('Pages.DM_HangHoa.Create') ? '' : 'none'
-                            }}
-                            startIcon={<Add />}
-                            onClick={() => showModalAddProduct(undefined, '', 2)}>
-                            Thêm dịch vụ
-                        </Button>
+                        {isMobileLayout ? (
+                            <>
+                                <Button
+                                    size="small"
+                                    variant="contained"
+                                    className=" btn-container-hover"
+                                    sx={{
+                                        fontSize: '14px',
+                                        display: abpCustom.isGrandPermission('Pages.DM_HangHoa.Create') ? '' : 'none'
+                                    }}
+                                    startIcon={<Add />}
+                                    onClick={(e) => setAnchorElAddMenu(e.currentTarget)}>
+                                    Thêm
+                                </Button>
+                                <Menu
+                                    anchorEl={anchorElAddMenu}
+                                    open={Boolean(anchorElAddMenu)}
+                                    onClose={() => setAnchorElAddMenu(null)}
+                                    anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                                    transformOrigin={{ vertical: 'top', horizontal: 'right' }}>
+                                    <MenuItem
+                                        onClick={() => {
+                                            setAnchorElAddMenu(null);
+                                            showModalAddProduct(undefined, '', 1);
+                                        }}>
+                                        Thêm hàng hóa
+                                    </MenuItem>
+                                    <MenuItem
+                                        onClick={() => {
+                                            setAnchorElAddMenu(null);
+                                            showModalAddProduct(undefined, '', 2);
+                                        }}>
+                                        Thêm dịch vụ
+                                    </MenuItem>
+                                </Menu>
+                            </>
+                        ) : (
+                            <>
+                                <Button
+                                    size="small"
+                                    variant="contained"
+                                    className=" btn-container-hover"
+                                    sx={{
+                                        minWidth: '143px',
+                                        fontSize: '14px',
+                                        display: abpCustom.isGrandPermission('Pages.DM_HangHoa.Create') ? '' : 'none'
+                                    }}
+                                    startIcon={<Add />}
+                                    onClick={() => showModalAddProduct(undefined, '', 1)}>
+                                    Thêm hàng hóa
+                                </Button>
+                                <Button
+                                    size="small"
+                                    variant="contained"
+                                    className=" btn-container-hover"
+                                    sx={{
+                                        minWidth: '143px',
+                                        fontSize: '14px',
+                                        display: abpCustom.isGrandPermission('Pages.DM_HangHoa.Create') ? '' : 'none'
+                                    }}
+                                    startIcon={<Add />}
+                                    onClick={() => showModalAddProduct(undefined, '', 2)}>
+                                    Thêm dịch vụ
+                                </Button>
+                            </>
+                        )}
                     </Grid>
                 </Grid>
                 <Tabs
@@ -984,12 +1029,12 @@ const PageProduct = () => {
                         },
 
                         '& .Mui-selected': {
-                            color: '#1976d2',
+                            color: 'var(--color-main)',
                             fontWeight: 600
                         },
 
                         '& .Mui-selected .MuiSvgIcon-root': {
-                            color: '#1976d2' // tab active icon xanh
+                            color: 'var(--color-main)' // tab active icon xanh
                         }
                     }}>
                     <Tab icon={<AppsIcon />} iconPosition="start" label="Tất cả" />

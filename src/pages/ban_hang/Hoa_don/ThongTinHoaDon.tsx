@@ -43,7 +43,8 @@ import uploadFileService from '../../../services/uploadFileService';
 import ModalAddCustomerCheckIn from '../../check_in/modal_add_cus_checkin';
 import { PageKhachHangCheckInDto } from '../../../services/check_in/CheckinDto';
 import { Guid } from 'guid-typescript';
-const themOutlineInput = createTheme({
+import appTheme from '../../../theme'; // kế thừa theme chung (màu chủ đạo) của app
+const themOutlineInput = createTheme(appTheme, {
     components: {
         MuiOutlinedInput: {
             styleOverrides: {

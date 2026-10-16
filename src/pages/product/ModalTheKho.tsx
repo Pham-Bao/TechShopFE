@@ -5,7 +5,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 
 import { useEffect, useState } from 'react';
-import ProductService from '../../services/product/ProductService';
+import KhoHangService from '../../services/kho_hang/KhoHangService';
 type Props = {
     open: boolean;
     onClose: () => void;
@@ -17,7 +17,15 @@ export default function ModalTheKho({ open, onClose, data }: Props) {
 
     const [rows, setRows] = useState<any[]>([]);
     const loadData = async () => {
-        const list = await ProductService.Get_DMHangHoaTheKho(data.idHangHoa);
+        if (!data?.idHangHoa) return;
+        setLoading(true);
+        try {
+            // tất cả chi nhánh, khớp với cột SL tồn ở danh sách hàng hóa
+            const list = await KhoHangService.GetTheKho(data.idHangHoa);
+            setRows(list.map((x) => ({ ...x, id: x.idHoaDon })));
+        } finally {
+            setLoading(false);
+        }
     };
 
     useEffect(() => {

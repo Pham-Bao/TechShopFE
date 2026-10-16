@@ -229,7 +229,7 @@ const Header: React.FC<HeaderProps> = (
                         display="flex"
                         gap="8px"
                         marginLeft="16px"
-                        alignItems={'baseline'}
+                        alignItems={'center'}
                         sx={{ cursor: 'pointer' }}
                         onClick={() => {
                             navigate('/home');
@@ -237,8 +237,9 @@ const Header: React.FC<HeaderProps> = (
                         <img style={{ width: '2rem', height: '2rem' }} src={TechShopLogo} />
                         {window.screen.width <= 650 ? null : (
                             <Typography
-                                color="#319DFF"
+                                color="var(--color-main)"
                                 fontSize="1.375rem"
+                                fontWeight={700}
                                 variant="body1"
                                 sx={{
                                     opacity: collapsed && !isChildHovered ? '0' : '1',
@@ -253,17 +254,17 @@ const Header: React.FC<HeaderProps> = (
                         sx={{
                             minWidth: 'unset!important',
                             marginLeft: collapsed && !isChildHovered ? '-116px' : '0',
-                            marginTop: '8px',
+                            marginTop: '0',
                             backgroundColor: 'unset!important',
                             transition: '.4s',
                             ':hover': {
                                 backgroundColor: 'unset!important'
                             },
                             ':hover .icon1': {
-                                color: 'rgba(49, 157, 255, 1)!important'
+                                color: 'rgba(17, 24, 39, 1)!important'
                             },
                             ':hover .icon2': {
-                                color: 'rgba(49, 157, 255, 0.7)'
+                                color: 'rgba(17, 24, 39, 0.7)'
                             },
                             '& .MuiTouchRipple-root': {
                                 display: 'none'
@@ -271,14 +272,11 @@ const Header: React.FC<HeaderProps> = (
                             transform: collapsed && !isChildHovered ? 'rotate(-180deg)' : 'rotate(0deg)'
                         }}
                         onClick={toggle}>
-                        <ArrowBackIosIcon
-                            className="icon1"
-                            sx={{ color: 'rgba(49, 157, 255, 0.7)', fontSize: '16px' }}
-                        />
+                        <ArrowBackIosIcon className="icon1" sx={{ color: 'rgba(17, 24, 39, 0.7)', fontSize: '16px' }} />
                         <ArrowBackIosIcon
                             className="icon2"
                             sx={{
-                                color: 'rgba(49, 157, 255, 0.4)',
+                                color: 'rgba(17, 24, 39, 0.4)',
                                 fontSize: '16px',
                                 marginLeft: '-8px'
                             }}
@@ -556,7 +554,7 @@ const Header: React.FC<HeaderProps> = (
                                     notificationStore.notifications?.totalCount ? null : (
                                         <Button
                                             variant="text"
-                                            sx={{ color: '#319DFF', margin: 'auto' }}
+                                            sx={{ color: 'var(--color-second)', margin: 'auto' }}
                                             onClick={async () => {
                                                 notificationStore.skipCountNotification = 0;
                                                 notificationStore.maxResultCountNotification += 5;
