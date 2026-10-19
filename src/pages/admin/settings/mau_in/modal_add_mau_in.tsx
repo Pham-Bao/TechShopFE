@@ -121,6 +121,9 @@ export default function ModalAddMauIn({
                 case 12:
                     txt = 'phiếu chi';
                     break;
+                case 4:
+                    txt = 'phiếu nhập';
+                    break;
                 default:
                     txt = 'hóa đơn';
                     break;

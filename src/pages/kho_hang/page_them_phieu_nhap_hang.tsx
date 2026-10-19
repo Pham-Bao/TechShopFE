@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useContext } from 'react';
 import {
     Autocomplete,
     Box,
@@ -39,9 +39,26 @@ import SoQuyServices from '../../services/so_quy/SoQuyServices';
 import { HINH_THUC_THANH_TOAN, LoaiChungTu } from '../../lib/appconst';
 import HoaDonDto from '../../services/ban_hang/HoaDonDto';
 import HoaDonChiTietDto from '../../services/ban_hang/HoaDonChiTietDto';
-import KhoHangService from '../../services/kho_hang/KhoHangService';
-import { useNavigate } from 'react-router-dom';
+import KhoHangService, { PhieuKhoViewChiTietDto, PhieuKhoViewDto } from '../../services/kho_hang/KhoHangService';
+import ImportExcel from '../../components/ImportComponent/ImportExcel';
+import BangBaoLoiFileImport from '../../components/ImportComponent/BangBaoLoiFileImport';
+import { BangBaoLoiFileimportDto } from '../../services/dto/BangBaoLoiFileimportDto';
+import { FileUpload } from '../../services/dto/FileUpload';
+import uploadFileService from '../../services/uploadFileService';
+import fileDowloadService from '../../services/file-dowload.service';
+import { inPhieuNhap } from './components/inPhieuNhap';
+import { AppContext } from '../../services/chi_nhanh/ChiNhanhContext';
+import TaiKhoanNganHangServices from '../../services/so_quy/TaiKhoanNganHangServices';
+import { TaiKhoanNganHangDto } from '../../services/so_quy/Dto/TaiKhoanNganHangDto';
+import AutocompleteAccountBank from '../../components/Autocomplete/AccountBank';
+import ModalNhapDienThoai, { IDienThoaiNhap } from './components/ModalNhapDienThoai';
+import utils from '../../utils/utils';
+import PhoneIphoneIcon from '@mui/icons-material/PhoneIphone';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { enqueueSnackbar } from 'notistack';
+
+// hình thức thanh toán phiếu nhập: Nợ = không trả tiền, toàn bộ là nợ nhà cung cấp
+const HINH_THUC_NO = 0;
 
 interface IHangHoa {
     id: string;
@@ -59,6 +76,9 @@ interface IHangHoa {
     giamGia: number;
 
     ghiChu?: string;
+
+    // dòng là 1 máy điện thoại mới (số lượng luôn = 1, Backend tạo máy khi lưu phiếu)
+    dienThoai?: IDienThoaiNhap;
 }
 
 const Page_Them_Phieu_Nhap_Hang = () => {
@@ -72,7 +92,13 @@ const Page_Them_Phieu_Nhap_Hang = () => {
     const [anchorDropdownCustomer, setAnchorDropdownCustomer] = useState<HTMLElement | null>(null);
     const [expandSearchCus, setExpandSearchCus] = useState(false);
     const [ghiChu, setGhiChu] = useState('');
+    const [isShowModalDienThoai, setIsShowModalDienThoai] = useState(false);
     const navigate = useNavigate();
+    const appContext = useContext(AppContext);
+    const [searchParams, setSearchParams] = useSearchParams();
+    // phiếu tạm lưu đang sửa (lưu lại sẽ cập nhật đúng phiếu này)
+    const [idPhieu, setIdPhieu] = useState<string | null>(null);
+    const [maPhieu, setMaPhieu] = useState('');
     const getCookie = (name: string) => {
         const value = `; ${document.cookie}`;
         const parts = value.split(`; ${name}=`);
@@ -93,10 +119,36 @@ const Page_Them_Phieu_Nhap_Hang = () => {
             return prev + item.soLuong * item.donGia - item.giamGia;
         }, 0);
     }, [listHangHoa]);
+    const [hinhThucThanhToan, setHinhThucThanhToan] = useState<number>(HINH_THUC_THANH_TOAN.TIEN_MAT);
+    const [idTaiKhoanNganHang, setIdTaiKhoanNganHang] = useState<string | null>(null);
+    const [allBankAccount, setAllBankAccount] = useState<TaiKhoanNganHangDto[]>([]);
     const [soTienThanhToan, setSoTienThanhToan] = useState<number>(tongTienHang);
+    const conNo = Math.max(tongTienHang - soTienThanhToan, 0);
     useEffect(() => {
-        setSoTienThanhToan(tongTienHang);
+        // mặc định trả đủ; chọn "Nợ" thì không trả
+        setSoTienThanhToan(hinhThucThanhToan === HINH_THUC_NO ? 0 : tongTienHang);
     }, [tongTienHang]);
+    useEffect(() => {
+        const getAllBankAccount = async () => {
+            const data = await TaiKhoanNganHangServices.GetAllBankAccount(idChiNhanhChosed ?? Guid.EMPTY);
+            setAllBankAccount(data ?? []);
+        };
+        getAllBankAccount();
+    }, []);
+    const changeHinhThucThanhToan = (value: number) => {
+        setHinhThucThanhToan(value);
+        if (value === HINH_THUC_NO) {
+            setSoTienThanhToan(0);
+        } else if (soTienThanhToan === 0) {
+            setSoTienThanhToan(tongTienHang);
+        }
+        if (value !== HINH_THUC_THANH_TOAN.CHUYEN_KHOAN) {
+            setIdTaiKhoanNganHang(null);
+        } else if (!idTaiKhoanNganHang) {
+            // chọn sẵn tài khoản mặc định nếu có
+            setIdTaiKhoanNganHang(allBankAccount.find((x) => x.isDefault)?.id ?? null);
+        }
+    };
     const getListHangHoa = async (value: string) => {
         if (!value?.trim()) {
             setListSearch([]);
@@ -147,7 +199,8 @@ const Page_Them_Phieu_Nhap_Hang = () => {
                 maHang: item.maHangHoa,
                 tenHang: item.tenHangHoa,
                 soLuong: 1,
-                donGia: item.giaBan || 0,
+                // đơn giá nhập mặc định = giá vốn hiện tại (vẫn sửa được)
+                donGia: item.giaVon || 0,
                 giamGia: 0,
                 idDonViQuyDoi: item.idDonViQuyDoi,
                 ghiChu: ''
@@ -155,10 +208,26 @@ const Page_Them_Phieu_Nhap_Hang = () => {
         ]);
     };
 
+    const addDienThoai = (dt: IDienThoaiNhap) => {
+        setListHangHoa((prev) => [
+            ...prev,
+            {
+                id: `dt_${Date.now()}_${dt.imel}`,
+                maHang: 'Máy mới',
+                tenHang: dt.tenHangHoa,
+                soLuong: 1,
+                donGia: dt.giaNhap,
+                giamGia: 0,
+                ghiChu: '',
+                dienThoai: dt
+            }
+        ]);
+    };
+
     const updateSoLuong = (id: string, value: number) => {
         setListHangHoa((prev) =>
             prev.map((x) => {
-                if (x.id === id) {
+                if (x.id === id && !x.dienThoai) {
                     return {
                         ...x,
                         soLuong: value < 1 ? 1 : value
@@ -246,7 +315,167 @@ const Page_Them_Phieu_Nhap_Hang = () => {
             idLoaiKhach: 1
         });
     };
-    const savePhieuNhap = async () => {
+    // mở lại phiếu đang tạm lưu: /nhap-hang/tao-moi?id=...
+    useEffect(() => {
+        const id = searchParams.get('id');
+        if (id) {
+            loadPhieuTamLuu(id);
+        }
+    }, []);
+    const loadPhieuTamLuu = async (id: string) => {
+        const phieu = await KhoHangService.GetPhieuKho(id);
+        if (!phieu) {
+            return;
+        }
+        if (phieu.idLoaiChungTu !== LoaiChungTu.NHAP_HANG || phieu.trangThai !== 1) {
+            enqueueSnackbar('Chỉ mở lại được phiếu nhập đang tạm lưu', { variant: 'warning' });
+            navigate('/nhap-hangs');
+            return;
+        }
+        setIdPhieu(phieu.id);
+        setMaPhieu(phieu.maHoaDon);
+        setGhiChu(phieu.ghiChuHD ?? '');
+        setCustomerChosed(
+            phieu.idKhachHang
+                ? ({
+                      id: phieu.idKhachHang,
+                      maKhachHang: phieu.maKhachHang ?? '',
+                      tenKhachHang: phieu.tenKhachHang ?? '',
+                      soDienThoai: phieu.soDienThoai ?? ''
+                  } as CreateOrEditKhachHangDto)
+                : ({} as CreateOrEditKhachHangDto)
+        );
+        setListHangHoa(phieu.chiTiet.map((ct) => toDongHang(ct)));
+    };
+
+    // 1 dòng chi tiết (từ phiếu đã lưu hoặc từ file Excel) -> 1 dòng trên lưới
+    const toDongHang = (ct: PhieuKhoViewChiTietDto): IHangHoa => {
+        const giamGia = (ct.tienChietKhau ?? 0) * ct.soLuong;
+        if (ct.dienThoai) {
+            return {
+                id: `dt_${Date.now()}_${ct.stt}_${ct.dienThoai.imel}`,
+                maHang: 'Máy mới',
+                tenHang: ct.tenHangHoa,
+                soLuong: 1,
+                donGia: ct.donGiaTruocCK,
+                giamGia: giamGia,
+                ghiChu: ct.ghiChu ?? '',
+                dienThoai: {
+                    tenHangHoa: ct.dienThoai.tenHangHoa,
+                    idNhomHangHoa: ct.dienThoai.idNhomHangHoa,
+                    imel: ct.dienThoai.imel,
+                    mau: ct.dienThoai.mau,
+                    dungLuong: ct.dienThoai.dungLuong,
+                    pin: ct.dienThoai.pin,
+                    tinhTrang: ct.dienThoai.tinhTrang,
+                    giaNhap: ct.donGiaTruocCK,
+                    giaBan: ct.dienThoai.giaBan ?? 0
+                }
+            };
+        }
+        return {
+            id: ct.idHangHoa,
+            idDonViQuyDoi: ct.idDonViQuyDoi,
+            maHang: ct.maHangHoa,
+            tenHang: ct.tenHangHoa,
+            soLuong: ct.soLuong,
+            donGia: ct.donGiaTruocCK,
+            giamGia: giamGia,
+            ghiChu: ct.ghiChu ?? ''
+        };
+    };
+
+    // nhập Excel: file sai mẫu / có lỗi thì hiện bảng lỗi, không thêm dòng nào
+    const [isShowImport, setIsShowImport] = useState(false);
+    const [isImporting, setIsImporting] = useState(false);
+    const [lstErrImport, setLstErrImport] = useState<BangBaoLoiFileimportDto[]>([]);
+    const downloadImportTemplate = async () => {
+        const result = await uploadFileService.downloadImportTemplate('PhieuNhapHang_ImportTemplate.xlsx');
+        fileDowloadService.downloadExportFile(result);
+    };
+    const importExcel = async (input: FileUpload) => {
+        setIsImporting(true);
+        try {
+            const data = await KhoHangService.ImportChiTietPhieuNhap(input);
+            if (data?.errors?.length > 0) {
+                setLstErrImport(data.errors);
+                return;
+            }
+            // gộp vào phiếu: hàng hóa đã có thì cộng số lượng; máy trùng IMEI với dòng đang có thì bỏ qua
+            let soMayTrung = 0;
+            const next = [...listHangHoa];
+            for (const ct of data?.chiTiet ?? []) {
+                const dong = toDongHang(ct);
+                if (dong.dienThoai) {
+                    if (next.some((x) => x.dienThoai?.imel === dong.dienThoai?.imel)) {
+                        soMayTrung++;
+                        continue;
+                    }
+                    next.push(dong);
+                    continue;
+                }
+                const idx = next.findIndex((x) => !x.dienThoai && x.id === dong.id);
+                if (idx > -1) {
+                    next[idx] = { ...next[idx], soLuong: next[idx].soLuong + dong.soLuong, donGia: dong.donGia };
+                } else {
+                    next.push(dong);
+                }
+            }
+            setListHangHoa(next);
+            setIsShowImport(false);
+            enqueueSnackbar(
+                `Đã thêm ${data?.chiTiet?.length ?? 0} dòng từ file Excel` +
+                    (soMayTrung > 0 ? `, bỏ qua ${soMayTrung} máy trùng IMEI trên phiếu` : ''),
+                { variant: 'success' }
+            );
+        } finally {
+            setIsImporting(false);
+        }
+    };
+
+    // in theo dữ liệu đang nhập trên màn hình (chưa cần lưu)
+    const inNhap = async () => {
+        if (listHangHoa.length === 0) {
+            enqueueSnackbar('Phiếu nhập chưa có hàng hóa', { variant: 'warning' });
+            return;
+        }
+        const tongTienChuaCK = listHangHoa.reduce((prev, item) => prev + item.soLuong * item.donGia, 0);
+        const phieu: PhieuKhoViewDto = {
+            id: idPhieu ?? '',
+            idLoaiChungTu: LoaiChungTu.NHAP_HANG,
+            maHoaDon: maPhieu,
+            ngayLapHoaDon: new Date().toISOString(),
+            trangThai: 1,
+            tenChiNhanh: appContext?.chinhanhCurrent?.tenChiNhanh ?? '',
+            tenKhachHang: customerChosed?.tenKhachHang ?? '',
+            soDienThoai: customerChosed?.soDienThoai ?? '',
+            ghiChuHD: ghiChu,
+            tongTienHangChuaChietKhau: tongTienChuaCK,
+            tongChietKhauHangHoa: tongTienChuaCK - tongTienHang,
+            tongTienHang: tongTienHang,
+            tongThanhToan: tongTienHang,
+            daThanhToan: soTienThanhToan,
+            conNo: conNo,
+            chiTiet: listHangHoa.map((item, index) => ({
+                stt: index + 1,
+                idDonViQuyDoi: item.idDonViQuyDoi ?? '',
+                idHangHoa: item.id,
+                idLoaiHangHoa: item.dienThoai ? 4 : 1,
+                maHangHoa: item.maHang,
+                tenHangHoa: item.tenHang,
+                soLuong: item.soLuong,
+                donGiaTruocCK: item.donGia,
+                tienChietKhau: item.soLuong > 0 ? item.giamGia / item.soLuong : 0,
+                donGiaSauCK: item.soLuong > 0 ? item.donGia - item.giamGia / item.soLuong : item.donGia,
+                thanhTienSauCK: item.soLuong * item.donGia - item.giamGia,
+                dienThoai: item.dienThoai ? { tenHangHoa: item.dienThoai.tenHangHoa, imel: item.dienThoai.imel } : null
+            }))
+        };
+        await inPhieuNhap([phieu], appContext.congty);
+    };
+
+    // trangThai: 1.Lưu tạm (chưa nhập kho, chưa chi tiền), 3.Hoàn thành
+    const savePhieuNhap = async (trangThai: number) => {
         if (isSavingHoaDon) return;
 
         setIsSavingHoaDon(true);
@@ -255,24 +484,56 @@ const Page_Them_Phieu_Nhap_Hang = () => {
                 enqueueSnackbar('Phiếu nhập chưa có hàng hóa', { variant: 'warning' });
                 return;
             }
+            const laHoanThanh = trangThai === 3;
+            if (laHoanThanh && (soTienThanhToan < 0 || soTienThanhToan > tongTienHang)) {
+                enqueueSnackbar('Số tiền thanh toán phải từ 0 đến số tiền cần trả', { variant: 'warning' });
+                return;
+            }
+            if (
+                laHoanThanh &&
+                hinhThucThanhToan === HINH_THUC_THANH_TOAN.CHUYEN_KHOAN &&
+                soTienThanhToan > 0 &&
+                !idTaiKhoanNganHang
+            ) {
+                enqueueSnackbar('Vui lòng chọn tài khoản ngân hàng', { variant: 'warning' });
+                return;
+            }
             const tongTienChuaCK = listHangHoa.reduce((prev, item) => prev + item.soLuong * item.donGia, 0);
 
-            // tồn kho, giá vốn bình quân do Backend tính khi lưu phiếu
+            // tồn kho, giá vốn bình quân, phiếu chi trả nhà cung cấp do Backend tạo khi phiếu hoàn thành
             const hoadonDB = await KhoHangService.SavePhieuKho({
+                id: idPhieu,
                 idLoaiChungTu: LoaiChungTu.NHAP_HANG,
                 idChiNhanh: idChiNhanhChosed ?? null,
                 idKhachHang: customerChosed?.id ?? null,
                 ngayLapHoaDon: new Date().toISOString(),
                 ghiChuHD: ghiChu,
-                trangThai: 3,
+                trangThai: trangThai,
                 tongTienHangChuaChietKhau: tongTienChuaCK,
                 tongChietKhauHangHoa: tongTienChuaCK - tongTienHang,
                 tongTienHang: tongTienHang,
-                tongThanhToan: soTienThanhToan,
+                tongThanhToan: tongTienHang,
+                hinhThucThanhToan: soTienThanhToan > 0 ? hinhThucThanhToan : HINH_THUC_NO,
+                soTienThanhToan: soTienThanhToan,
+                idTaiKhoanNganHang: idTaiKhoanNganHang,
                 chiTiet: listHangHoa.map((item) => {
                     const giamGia1Sp = item.soLuong > 0 ? item.giamGia / item.soLuong : 0;
+                    const dt = item.dienThoai;
                     return {
-                        idDonViQuyDoi: item.idDonViQuyDoi ?? '',
+                        idDonViQuyDoi: dt ? Guid.EMPTY : item.idDonViQuyDoi ?? '',
+                        dienThoai: dt
+                            ? {
+                                  tenHangHoa: dt.tenHangHoa,
+                                  tenHangHoa_KhongDau: utils.strToEnglish(dt.tenHangHoa),
+                                  idNhomHangHoa: dt.idNhomHangHoa,
+                                  imel: dt.imel,
+                                  mau: dt.mau,
+                                  dungLuong: dt.dungLuong,
+                                  pin: dt.pin,
+                                  tinhTrang: dt.tinhTrang,
+                                  giaBan: dt.giaBan
+                              }
+                            : undefined,
                         soLuong: item.soLuong,
                         donGiaTruocCK: item.donGia,
                         tienChietKhau: giamGia1Sp,
@@ -284,12 +545,25 @@ const Page_Them_Phieu_Nhap_Hang = () => {
                 })
             });
 
+            if (hoadonDB != null && !laHoanThanh) {
+                // lưu tạm: giữ nguyên màn hình để nhập tiếp, các lần lưu sau cập nhật đúng phiếu này
+                setIdPhieu(hoadonDB.id);
+                setMaPhieu(hoadonDB.maHoaDon ?? '');
+                setSearchParams({ id: hoadonDB.id });
+                enqueueSnackbar(`Đã lưu tạm phiếu nhập ${hoadonDB.maHoaDon ?? ''}`, { variant: 'success' });
+                return hoadonDB;
+            }
             if (hoadonDB != null) {
-                enqueueSnackbar(`Lưu phiếu nhập ${hoadonDB.maHoaDon ?? ''} thành công`, { variant: 'success' });
+                enqueueSnackbar(`Hoàn thành phiếu nhập ${hoadonDB.maHoaDon ?? ''}`, { variant: 'success' });
 
+                setIdPhieu(null);
+                setMaPhieu('');
+                setSearchParams({});
                 setListHangHoa([]);
 
                 setSoTienThanhToan(0);
+                setHinhThucThanhToan(HINH_THUC_THANH_TOAN.TIEN_MAT);
+                setIdTaiKhoanNganHang(null);
 
                 setCustomerChosed({} as CreateOrEditKhachHangDto);
                 setGhiChu('');
@@ -303,6 +577,10 @@ const Page_Them_Phieu_Nhap_Hang = () => {
                 error?.response?.data?.error?.details || error?.response?.data?.error?.message || error?.message;
 
             console.error('Lỗi lưu phiếu nhập:', message);
+            // lỗi từ Backend đã được httpService hiển thị; chỉ báo khi không có phản hồi (mất mạng, timeout)
+            if (!error?.response) {
+                enqueueSnackbar(message || 'Lưu phiếu nhập thất bại', { variant: 'error' });
+            }
         } finally {
             setIsSavingHoaDon(false);
         }
@@ -348,13 +626,22 @@ const Page_Them_Phieu_Nhap_Hang = () => {
                         {params.row.tenHang}
                     </Typography>
 
-                    <Typography
-                        sx={{
-                            fontSize: 11,
-                            color: '#9ca3af'
-                        }}>
-                        {params.row.ghiChu || '✎ Ghi chú'}
-                    </Typography>
+                    {params.row.dienThoai ? (
+                        <Typography noWrap sx={{ fontSize: 11, color: '#6b7280' }}>
+                            IMEI: {params.row.dienThoai.imel}
+                            {params.row.dienThoai.mau ? ` · ${params.row.dienThoai.mau}` : ''}
+                            {params.row.dienThoai.dungLuong ? ` · ${params.row.dienThoai.dungLuong}GB` : ''}
+                            {params.row.dienThoai.pin ? ` · Pin ${params.row.dienThoai.pin}%` : ''}
+                        </Typography>
+                    ) : (
+                        <Typography
+                            sx={{
+                                fontSize: 11,
+                                color: '#9ca3af'
+                            }}>
+                            {params.row.ghiChu || '✎ Ghi chú'}
+                        </Typography>
+                    )}
                 </Box>
             )
         },
@@ -366,35 +653,39 @@ const Page_Them_Phieu_Nhap_Hang = () => {
             sortable: false,
             align: 'center',
             headerAlign: 'center',
-            renderCell: (params) => (
-                <Stack
-                    direction="row"
-                    alignItems="center"
-                    sx={{
-                        border: '1px solid #dbe2ea',
-                        borderRadius: 1.5,
-                        overflow: 'hidden',
-                        height: 36
-                    }}>
-                    <IconButton size="small" onClick={() => updateSoLuong(params.row.id, params.row.soLuong - 1)}>
-                        <RemoveIcon sx={{ fontSize: 16 }} />
-                    </IconButton>
-
-                    <Box
+            renderCell: (params) =>
+                params.row.dienThoai ? (
+                    // điện thoại: mỗi dòng 1 máy
+                    <Typography sx={{ fontWeight: 700, fontSize: 13 }}>1</Typography>
+                ) : (
+                    <Stack
+                        direction="row"
+                        alignItems="center"
                         sx={{
-                            width: 40,
-                            textAlign: 'center',
-                            fontWeight: 700,
-                            fontSize: 13
+                            border: '1px solid #dbe2ea',
+                            borderRadius: 1.5,
+                            overflow: 'hidden',
+                            height: 36
                         }}>
-                        {params.row.soLuong}
-                    </Box>
+                        <IconButton size="small" onClick={() => updateSoLuong(params.row.id, params.row.soLuong - 1)}>
+                            <RemoveIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
 
-                    <IconButton size="small" onClick={() => updateSoLuong(params.row.id, params.row.soLuong + 1)}>
-                        <AddIcon sx={{ fontSize: 16 }} />
-                    </IconButton>
-                </Stack>
-            )
+                        <Box
+                            sx={{
+                                width: 40,
+                                textAlign: 'center',
+                                fontWeight: 700,
+                                fontSize: 13
+                            }}>
+                            {params.row.soLuong}
+                        </Box>
+
+                        <IconButton size="small" onClick={() => updateSoLuong(params.row.id, params.row.soLuong + 1)}>
+                            <AddIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                    </Stack>
+                )
         },
 
         {
@@ -514,6 +805,26 @@ const Page_Them_Phieu_Nhap_Hang = () => {
                 title="Thêm mới khách hàng"
                 formRef={newCus}
             />
+            <ImportExcel
+                tieude={'Nhập chi tiết phiếu nhập từ Excel'}
+                isOpen={isShowImport}
+                isImporting={isImporting}
+                onClose={() => setIsShowImport(false)}
+                downloadImportTemplate={downloadImportTemplate}
+                importFile={importExcel}
+            />
+            <BangBaoLoiFileImport
+                isOpen={lstErrImport.length > 0}
+                lstError={lstErrImport}
+                onClose={() => setLstErrImport([])}
+                clickImport={() => setLstErrImport([])}
+            />
+            <ModalNhapDienThoai
+                open={isShowModalDienThoai}
+                onClose={() => setIsShowModalDienThoai(false)}
+                onAdd={addDienThoai}
+                imeiDaCo={listHangHoa.filter((x) => x.dienThoai).map((x) => x.dienThoai?.imel ?? '')}
+            />
             <MenuWithDataFromDB
                 open={expandSearchCus}
                 anchorEl={anchorDropdownCustomer}
@@ -548,7 +859,7 @@ const Page_Them_Phieu_Nhap_Hang = () => {
                                 fontWeight: 800,
                                 fontSize: 18
                             }}>
-                            Phiếu nhập hàng
+                            {maPhieu ? `Phiếu nhập hàng ${maPhieu} (tạm lưu)` : 'Phiếu nhập hàng'}
                         </Typography>
                     </Stack>
                 </Paper>
@@ -671,6 +982,7 @@ const Page_Them_Phieu_Nhap_Hang = () => {
                                     <Button
                                         variant="outlined"
                                         startIcon={<UploadFileIcon sx={{ fontSize: 20 }} />}
+                                        onClick={() => setIsShowImport(true)}
                                         sx={{
                                             height: 42,
                                             px: 2,
@@ -701,6 +1013,25 @@ const Page_Them_Phieu_Nhap_Hang = () => {
                                             }
                                         }}>
                                         Hàng hóa
+                                    </Button>
+
+                                    <Button
+                                        variant="contained"
+                                        startIcon={<PhoneIphoneIcon sx={{ fontSize: 20 }} />}
+                                        onClick={() => setIsShowModalDienThoai(true)}
+                                        sx={{
+                                            height: 42,
+                                            px: 2.5,
+                                            whiteSpace: 'nowrap',
+                                            textTransform: 'none',
+                                            fontWeight: 800,
+                                            fontSize: 14,
+                                            boxShadow: 'none',
+                                            '&:hover': {
+                                                boxShadow: 'none'
+                                            }
+                                        }}>
+                                        Điện thoại
                                     </Button>
                                 </Stack>
                             </Box>
@@ -822,7 +1153,26 @@ const Page_Them_Phieu_Nhap_Hang = () => {
                                     {formatMoney(tongTienHang)}
                                 </Typography>
                             </Stack>
-                            <Stack direction="row" justifyContent="space-between" sx={{ mb: 3 }}>
+                            <Box sx={{ mb: 2 }}>
+                                <Typography
+                                    sx={{
+                                        mb: 1,
+                                        fontWeight: 600
+                                    }}>
+                                    Hình thức thanh toán
+                                </Typography>
+
+                                <Select
+                                    fullWidth
+                                    size="small"
+                                    value={hinhThucThanhToan}
+                                    onChange={(e) => changeHinhThucThanhToan(Number(e.target.value))}>
+                                    <MenuItem value={HINH_THUC_THANH_TOAN.TIEN_MAT}>Tiền mặt</MenuItem>
+                                    <MenuItem value={HINH_THUC_THANH_TOAN.CHUYEN_KHOAN}>Chuyển khoản</MenuItem>
+                                    <MenuItem value={HINH_THUC_NO}>Nợ</MenuItem>
+                                </Select>
+                            </Box>
+                            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
                                 <Typography
                                     sx={{
                                         fontWeight: 500,
@@ -833,9 +1183,12 @@ const Page_Them_Phieu_Nhap_Hang = () => {
 
                                 <TextField
                                     value={formatMoney(soTienThanhToan)}
+                                    disabled={hinhThucThanhToan === HINH_THUC_NO}
                                     onChange={(e) => {
                                         const raw = e.target.value.replace(/\./g, '').replace(/,/g, '');
-                                        setSoTienThanhToan(Number(raw || 0));
+                                        const value = Number(raw || 0);
+                                        // không trả quá số cần trả; phần còn lại là nợ nhà cung cấp
+                                        setSoTienThanhToan(Number.isNaN(value) ? 0 : Math.min(value, tongTienHang));
                                     }}
                                     size="small"
                                     sx={{
@@ -848,21 +1201,28 @@ const Page_Them_Phieu_Nhap_Hang = () => {
                                     }}
                                 />
                             </Stack>
-                            <Box sx={{ mb: 3 }}>
+                            {hinhThucThanhToan === HINH_THUC_THANH_TOAN.CHUYEN_KHOAN && (
+                                <Box sx={{ mb: 2 }}>
+                                    <AutocompleteAccountBank
+                                        handleChoseItem={(item: TaiKhoanNganHangDto | null) =>
+                                            setIdTaiKhoanNganHang(item?.id || null)
+                                        }
+                                        idChosed={idTaiKhoanNganHang}
+                                        listOption={allBankAccount}
+                                    />
+                                </Box>
+                            )}
+                            <Stack direction="row" justifyContent="space-between" sx={{ mb: 3 }}>
+                                <Typography sx={{ fontWeight: 500, fontSize: 13 }}>Còn nợ nhà cung cấp</Typography>
                                 <Typography
                                     sx={{
-                                        mb: 1,
-                                        fontWeight: 600
+                                        fontWeight: 700,
+                                        fontSize: 13,
+                                        color: conNo > 0 ? '#d32f2f' : 'inherit'
                                     }}>
-                                    Hình thức thanh toán
+                                    {formatMoney(conNo)}
                                 </Typography>
-
-                                <Select fullWidth defaultValue="TienMat" size="small">
-                                    <MenuItem value="TienMat">Tiền mặt</MenuItem>
-
-                                    <MenuItem value="ChuyenKhoan">Chuyển khoản</MenuItem>
-                                </Select>
-                            </Box>
+                            </Stack>
 
                             <TextField
                                 fullWidth
@@ -883,6 +1243,7 @@ const Page_Them_Phieu_Nhap_Hang = () => {
                                 <Button
                                     variant="contained"
                                     startIcon={<PrintIcon />}
+                                    onClick={inNhap}
                                     sx={{
                                         flex: 3,
                                         backgroundColor: '#9e9e9e',
@@ -900,12 +1261,25 @@ const Page_Them_Phieu_Nhap_Hang = () => {
                                 </Button>
 
                                 <Button
-                                    variant="contained"
-                                    startIcon={<SaveIcon />}
-                                    onClick={savePhieuNhap}
+                                    variant="outlined"
+                                    onClick={() => savePhieuNhap(1)}
                                     disabled={isSavingHoaDon}
                                     sx={{
-                                        flex: 7,
+                                        flex: 3,
+                                        textTransform: 'none',
+                                        fontWeight: 700,
+                                        py: 1.2
+                                    }}>
+                                    Lưu tạm
+                                </Button>
+
+                                <Button
+                                    variant="contained"
+                                    startIcon={<SaveIcon />}
+                                    onClick={() => savePhieuNhap(3)}
+                                    disabled={isSavingHoaDon}
+                                    sx={{
+                                        flex: 5,
                                         backgroundColor: 'var(--color-main)',
                                         color: '#fff',
                                         textTransform: 'none',
@@ -918,7 +1292,7 @@ const Page_Them_Phieu_Nhap_Hang = () => {
                                             boxShadow: 'none'
                                         }
                                     }}>
-                                    {isSavingHoaDon ? 'Đang lưu...' : 'Lưu phiếu nhập'}
+                                    {isSavingHoaDon ? 'Đang lưu...' : 'Hoàn thành'}
                                 </Button>
                             </Box>
                         </Paper>

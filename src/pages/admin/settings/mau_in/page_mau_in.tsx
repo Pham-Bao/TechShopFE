@@ -53,6 +53,7 @@ export default function PageMauIn() {
             case LoaiChungTu.HOA_DON_BAN_LE:
             case LoaiChungTu.BAO_GIA:
             case LoaiChungTu.GOI_DICH_VU:
+            case LoaiChungTu.NHAP_HANG:
                 {
                     let dataAfter = DataMauIn.replaceChiTietHoaDon(shtml);
                     dataAfter = DataMauIn.replaceChiNhanh(dataAfter);
@@ -246,6 +247,9 @@ export default function PageMauIn() {
             case LoaiChungTu.PHIEU_CHI:
                 sLoai = 'SQPC';
                 break;
+            case LoaiChungTu.NHAP_HANG:
+                sLoai = 'PNK';
+                break;
         }
         return sLoai;
     };
@@ -336,6 +340,7 @@ export default function PageMauIn() {
                             <Tab label="Phiếu thu" value={LoaiChungTu.PHIEU_THU} />
                             <Tab label="Phiếu chi" value={LoaiChungTu.PHIEU_CHI} />
                             <Tab label="Báo Giá" value={LoaiChungTu.BAO_GIA} />
+                            <Tab label="Phiếu nhập" value={LoaiChungTu.NHAP_HANG} />
                         </Tabs>
                     </Box>
                 </Grid>

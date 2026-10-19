@@ -5,6 +5,7 @@ import { Box, Grid, TextField, IconButton, Button, SelectChangeEvent, Stack, Tab
 import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
 
 import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
+import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import DeleteSweepOutlinedIcon from '@mui/icons-material/DeleteSweepOutlined';
 import { Search } from '@mui/icons-material';
 import { DataGrid, GridColDef, GridRowSelectionModel } from '@mui/x-data-grid';
@@ -46,6 +47,7 @@ import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import AddIcon from '@mui/icons-material/Add';
 import { useNavigate } from 'react-router-dom';
 import KhoHangService from '../../services/kho_hang/KhoHangService';
+import { inPhieuNhap } from './components/inPhieuNhap';
 const NhapHang: React.FC = () => {
     const today = new Date();
     const firstLoad = useRef(true);
@@ -269,38 +271,23 @@ const NhapHang: React.FC = () => {
                 break;
             case 2:
                 {
-                    let htmlPrint = '';
-                    for (let i = 0; i < rowSelectionModel.length; i++) {
-                        const idHoaDon = rowSelectionModel[i].toString();
-                        const dataHoaDon = await HoaDonService.GetInforHoaDon_byId(idHoaDon);
-                        const dataCTHD = await HoaDonService.GetChiTietHoaDon_byIdHoaDon(idHoaDon);
-
-                        if (dataHoaDon.length > 0) {
-                            DataMauIn.hoadon = dataHoaDon[0];
-                            DataMauIn.hoadonChiTiet = dataCTHD;
-                            DataMauIn.khachhang = {
-                                maKhachHang: dataHoaDon[0]?.maKhachHang,
-                                tenKhachHang: dataHoaDon[0]?.tenKhachHang,
-                                soDienThoai: hoadon?.soDienThoai
-                            } as KhachHangItemDto;
-                            DataMauIn.chinhanh = {
-                                tenChiNhanh: hoadon?.tenChiNhanh
-                            } as ChiNhanhDto;
-                            DataMauIn.congty = appContext.congty;
-                            DataMauIn.congty.logo = uploadFileService.GoogleApi_NewLink(DataMauIn.congty?.logo);
-                            const tempMauIn = await MauInServices.GetContentMauInMacDinh(1, 1);
-                            let newHtml = DataMauIn.replaceChiTietHoaDon(tempMauIn);
-                            newHtml = DataMauIn.replaceChiNhanh(newHtml);
-                            newHtml = DataMauIn.replaceHoaDon(newHtml);
-                            newHtml = await DataMauIn.replacePhieuThuChi(newHtml);
-                            if (i < rowSelectionModel.length - 1) {
-                                htmlPrint = htmlPrint.concat(newHtml, `<p style="page-break-before:always;"></p>`);
-                            } else {
-                                htmlPrint = htmlPrint.concat(newHtml);
-                            }
-                        }
+                    // in theo mẫu phiếu nhập (trước đây dùng mẫu hóa đơn bán); bỏ dòng tổng cuối bảng có id rỗng
+                    const lstId = rowSelectionModel.map((x) => x.toString()).filter((x) => x !== Guid.EMPTY);
+                    const lstPhieu = await Promise.all(lstId.map((id) => KhoHangService.GetPhieuKho(id)));
+                    await inPhieuNhap(
+                        lstPhieu.filter((x) => x),
+                        appContext.congty
+                    );
+                }
+                break;
+            case 3:
+                {
+                    // mỗi phiếu xuất ra 1 file Excel riêng
+                    const lstId = rowSelectionModel.map((x) => x.toString()).filter((x) => x !== Guid.EMPTY);
+                    for (const id of lstId) {
+                        const file = await KhoHangService.ExportPhieuKho(id);
+                        fileDowloadService.downloadExportFile(file);
                     }
-                    DataMauIn.Print(htmlPrint);
                 }
                 break;
         }
@@ -339,11 +326,24 @@ const NhapHang: React.FC = () => {
             minWidth: 100,
             flex: 0.8,
             renderHeader: (params: any) => <Box title={params.value}>{params.colDef.headerName}</Box>,
-            renderCell: (params: any) => (
-                <Box component="span" title={params.value}>
-                    {params.value}
-                </Box>
-            )
+            renderCell: (params: any) =>
+                params.row.trangThai === 1 ? (
+                    // phiếu tạm lưu: bấm để mở lại và sửa tiếp
+                    <Box
+                        component="span"
+                        title="Phiếu tạm lưu - bấm để sửa tiếp"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/nhap-hang/tao-moi?id=${params.row.id}`);
+                        }}
+                        sx={{ color: 'var(--color-main)', textDecoration: 'underline', cursor: 'pointer' }}>
+                        {params.value}
+                    </Box>
+                ) : (
+                    <Box component="span" title={params.value}>
+                        {params.value}
+                    </Box>
+                )
         },
         {
             field: 'ngayLapHoaDon',
@@ -680,6 +680,12 @@ const NhapHang: React.FC = () => {
                                         text: 'In hóa đơn',
                                         isShow: abpCustom.isGrandPermission('Pages.HoaDon.Print'),
                                         icon: <PrintOutlinedIcon sx={{ width: '1rem', height: '1rem' }} />
+                                    },
+                                    {
+                                        id: '3',
+                                        text: 'Xuất Excel phiếu',
+                                        isShow: abpCustom.isGrandPermission('Pages.HoaDon.Export'),
+                                        icon: <FileDownloadOutlinedIcon sx={{ width: '1rem', height: '1rem' }} />
                                     }
                                 ] as IList[]
                             }
