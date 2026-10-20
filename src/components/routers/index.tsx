@@ -423,6 +423,32 @@ export const appRouters: AppRouteProps = {
                             component: LoadableComponent(() => import('../../pages/kho_hang/page_them_phieu_nhap_hang'))
                         },
                         {
+                            path: '/nhap-hang/hang-hoa',
+                            permission: 'Pages.DM_HangHoa',
+                            title: 'Lập phiếu nhập hàng hóa',
+                            icon: <BsDot style={{ fontSize: 20 }} />,
+                            iconActive: null,
+                            name: 'taophieunhaphanghoa',
+                            showInMenu: false,
+                            isLayout: false,
+                            children: [],
+                            component: LoadableComponent(() => import('../../pages/kho_hang/page_them_phieu_nhap_hang'))
+                        },
+                        {
+                            path: '/nhap-hang/dien-thoai',
+                            permission: 'Pages.DM_HangHoa',
+                            title: 'Lập phiếu nhập điện thoại',
+                            icon: <BsDot style={{ fontSize: 20 }} />,
+                            iconActive: null,
+                            name: 'taophieunhapdienthoai',
+                            showInMenu: false,
+                            isLayout: false,
+                            children: [],
+                            component: LoadableComponent(
+                                () => import('../../pages/kho_hang/page_them_phieu_nhap_dien_thoai')
+                            )
+                        },
+                        {
                             path: '/kiem-ke/tao-moi',
                             permission: 'Pages.DM_HangHoa',
                             title: 'Tạo kiểm kê',

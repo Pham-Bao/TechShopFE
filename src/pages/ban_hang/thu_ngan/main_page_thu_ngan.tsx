@@ -656,6 +656,7 @@ export default function MainPageThuNgan() {
                         onSetActiveTabLoaiHoaDon={onSetActiveTabLoaiHoaDon}
                         onAddHoaDon_toCache={() => setIsAddInvoiceToCache(() => isAddInvoiceToCache + 1)}
                         onRemoveHoaDon_toCache={() => setIsRemoveInvoiceToCache(() => isRemoveInvoiceToCache + 1)}
+                        onLuuNhapHoaDon={() => setPageThuNgan_IdInvoiceWaiting('')}
                     />
                 </TabPanel>
             )}

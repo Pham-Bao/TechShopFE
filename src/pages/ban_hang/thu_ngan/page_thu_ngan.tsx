@@ -99,6 +99,7 @@ import ModalHangHoaDienThoai from '../../dien_thoai/ModalPhone';
 import ModalHangHoaDienThoaiSua from '../../dien_thoai/ModalDienThoaiSua';
 
 import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
+import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import HandymanOutlinedIcon from '@mui/icons-material/HandymanOutlined';
 import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined';
@@ -138,6 +139,8 @@ export type IPropsPageThuNgan = {
     onSetActiveTabLoaiHoaDon: (idLoaiChungTu: number) => void;
     onAddHoaDon_toCache: () => void;
     onRemoveHoaDon_toCache: () => void;
+    // sau khi lưu nháp: bỏ chọn hóa đơn chờ đang mở để lần sau chọn lại đúng hóa đơn đó vẫn nạp được
+    onLuuNhapHoaDon?: () => void;
 };
 
 export default function PageThuNgan(props: IPropsPageThuNgan) {
@@ -154,7 +157,8 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
         arrIdNhomHangFilter,
         onSetActiveTabLoaiHoaDon,
         onAddHoaDon_toCache,
-        onRemoveHoaDon_toCache
+        onRemoveHoaDon_toCache,
+        onLuuNhapHoaDon
     } = props;
     const firstLoad = useRef(true);
     const firstLoad_changeLoaiHD = useRef(true);
@@ -344,7 +348,13 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                 ...hdCache[0]
             });
             setHoaDonChiTiet([...(hdCache[0]?.hoaDonChiTiet ?? [])]);
-            setPhoneChosed(null);
+            // hóa đơn sửa: nạp lại máy sửa đã chọn (trước đây bị bỏ trống khi mở lại hóa đơn chờ)
+            const idMaySua = hdCache[0]?.idHangHoa;
+            if (!utils.checkNull_OrEmpty(idMaySua ?? '') && idMaySua !== Guid.EMPTY) {
+                await GetInforPhone_byId(idMaySua ?? '');
+            } else {
+                setPhoneChosed(null);
+            }
             await GetInforCustomer_byId(hdCache[0]?.idKhachHang ?? Guid.EMPTY);
 
             onSetActiveTabLoaiHoaDon(hdCache[0]?.idLoaiChungTu ?? loaiHoaDon);
@@ -1481,6 +1491,30 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
             setIsSavingHoaDon(false);
         }
     };
+    // Lưu nháp: cất hóa đơn đang tạo vào "Hóa đơn chờ" (icon giỏ hàng, lưu trên trình duyệt) rồi mở hóa đơn mới
+    const luuNhapHoaDon = async () => {
+        if (isSavingHoaDon) return;
+        const coKhach = !utils.checkNull_OrEmpty(customerChosed?.id ?? '') && customerChosed?.id !== Guid.EMPTY;
+        const coMay = !utils.checkNull_OrEmpty(phoneChosed?.id ?? '') && phoneChosed?.id !== Guid.EMPTY;
+        if (!coKhach && !coMay && (hoaDonChiTiet?.length ?? 0) === 0) {
+            setObjAlert({ show: true, type: 2, mes: 'Hóa đơn chưa có thông tin để lưu nháp' });
+            return;
+        }
+        await AddHD_toCache_IfNotExists();
+        await dbDexie.hoaDon.update(hoadon?.id, {
+            ...hoadon,
+            hoaDonChiTiet: [...(hoaDonChiTiet ?? [])],
+            idKhachHang: coKhach ? customerChosed?.id : hoadon?.idKhachHang ?? null,
+            maKhachHang: coKhach ? customerChosed?.maKhachHang : 'KL',
+            tenKhachHang: coKhach ? customerChosed?.tenKhachHang : 'Chưa chọn khách',
+            soDienThoai: coKhach ? customerChosed?.soDienThoai : '',
+            idHangHoa: coMay ? phoneChosed?.id : hoadon?.idHangHoa ?? null
+        });
+        await ResetState_AfterSave();
+        onLuuNhapHoaDon?.();
+        setObjAlert({ show: true, type: 1, mes: 'Đã lưu nháp vào hóa đơn chờ' });
+    };
+
     const handleBaoGia = async () => {
         try {
             if (!hoadon || !hoaDonChiTiet || hoaDonChiTiet.length === 0) {
@@ -2712,6 +2746,28 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                                             <PrintOutlinedIcon fontSize="small" />
                                             <Typography fontSize="14px" fontWeight={500}>
                                                 IN BÁO GIÁ
+                                            </Typography>
+                                        </Stack>
+
+                                        {/* Lưu nháp vào hóa đơn chờ (icon giỏ hàng) */}
+                                        <Stack
+                                            sx={{
+                                                border: '1px solid var(--color-main)',
+                                                borderRadius: '8px',
+                                                justifyContent: 'center',
+                                                alignItems: 'center',
+                                                color: 'var(--color-main)',
+                                                px: 2,
+                                                py: 1,
+                                                cursor: 'pointer',
+                                                whiteSpace: 'nowrap'
+                                            }}
+                                            direction="row"
+                                            onClick={luuNhapHoaDon}
+                                            spacing={1}>
+                                            <SaveOutlinedIcon fontSize="small" />
+                                            <Typography fontSize="14px" fontWeight={500}>
+                                                LƯU NHÁP
                                             </Typography>
                                         </Stack>
 

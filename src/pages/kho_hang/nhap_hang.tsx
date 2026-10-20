@@ -1,264 +1,167 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import React, { useEffect, useRef, useState, useContext } from 'react';
-import { Box, Grid, TextField, IconButton, Button, SelectChangeEvent, Stack, Tabs, Tab } from '@mui/material';
-import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
-
+import React, { useContext, useEffect, useRef, useState } from 'react';
+import {
+    Box,
+    Button,
+    Grid,
+    IconButton,
+    ListItemIcon,
+    Menu,
+    MenuItem,
+    Select,
+    SelectChangeEvent,
+    Stack,
+    TextField
+} from '@mui/material';
+import { Search } from '@mui/icons-material';
 import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import DeleteSweepOutlinedIcon from '@mui/icons-material/DeleteSweepOutlined';
-import { Search } from '@mui/icons-material';
+import AddIcon from '@mui/icons-material/Add';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
+import PhoneIphoneOutlinedIcon from '@mui/icons-material/PhoneIphoneOutlined';
 import { DataGrid, GridColDef, GridRowSelectionModel } from '@mui/x-data-grid';
-import { ReactComponent as UploadIcon } from '../../images/upload.svg';
 import { ReactComponent as DownloadIcon } from '../../images/download.svg';
 import { TextTranslate } from '../../components/TableLanguage';
 import CustomTablePagination from '../../components/Pagination/CustomTablePagination';
-import ThongTinHoaDon from '../ban_hang/Hoa_don/ThongTinHoaDon';
 import { AppContext } from '../../services/chi_nhanh/ChiNhanhContext';
-import { ChiNhanhDto } from '../../services/chi_nhanh/Dto/chiNhanhDto';
-import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
-import Utils from '../../utils/utils'; // func common.
-import { format, lastDayOfMonth } from 'date-fns';
-import PageHoaDonDto from '../../services/ban_hang/PageHoaDonDto';
-import { HoaDonRequestDto } from '../../services/dto/ParamSearchDto';
-import HoaDonService from '../../services/ban_hang/HoaDonService';
-import { PagedResultDto } from '../../services/dto/pagedResultDto';
+import { format } from 'date-fns';
 import SnackbarAlert from '../../components/AlertDialog/SnackbarAlert';
 import fileDowloadService from '../../services/file-dowload.service';
-import MauInServices from '../../services/mau_in/MauInServices';
 import ActionRowSelect from '../../components/DataGrid/ActionRowSelect';
 import ConfirmDelete from '../../components/AlertDialog/ConfirmDelete';
 import { PropConfirmOKCancel } from '../../utils/PropParentToChild';
-import DataMauIn from '../admin/settings/mau_in/DataMauIn';
-import { KhachHangItemDto } from '../../services/khach-hang/dto/KhachHangItemDto';
 import DateFilterCustom from '../../components/DatetimePicker/DateFilterCustom';
-import AppConsts, { LoaiChungTu, TypeAction } from '../../lib/appconst';
+import AppConsts from '../../lib/appconst';
 import abpCustom from '../../components/abp-custom';
 import { IList } from '../../services/dto/IList';
 import { Guid } from 'guid-typescript';
 import utils from '../../utils/utils';
-import PopoverFilterHoaDon from '../ban_hang/Giao_dich_thanh_toan/PopoverFilterHoaDon';
 import Cookies from 'js-cookie';
-import { TrangThaiHoaDon } from '../../services/ban_hang/HoaDonConst';
-import suggestStore from '../../stores/suggestStore';
-import uploadFileService from '../../services/uploadFileService';
-import ButtonOnlyIcon from '../../components/Button/ButtonOnlyIcon';
-import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
-import AddIcon from '@mui/icons-material/Add';
 import { useNavigate } from 'react-router-dom';
-import KhoHangService from '../../services/kho_hang/KhoHangService';
+import KhoHangService, { PhieuNhapListItemDto, PhieuNhapListRequestDto } from '../../services/kho_hang/KhoHangService';
 import { inPhieuNhap } from './components/inPhieuNhap';
+
+const formatMoney = (value: number) => new Intl.NumberFormat('vi-VN').format(value ?? 0);
+
+// trạng thái lọc: '' = tất cả trừ đã hủy
+const LOC_TRANG_THAI = [
+    { value: '', text: 'Tất cả trạng thái' },
+    { value: '3', text: 'Hoàn thành' },
+    { value: '1', text: 'Tạm lưu' },
+    { value: '0', text: 'Đã hủy' }
+];
+
 const NhapHang: React.FC = () => {
-    const today = new Date();
     const firstLoad = useRef(true);
-    const firstLoad2 = useRef(true);
     const appContext = useContext(AppContext);
     const chinhanhCurrent = appContext.chinhanhCurrent;
     const idChiNhanhCookies = Cookies.get('IdChiNhanh') ?? '';
-    const [objAlert, setObjAlert] = useState({ show: false, type: 1, mes: '' });
-
-    // khai báo txtSearch này, để gán lại paramSearch.textSearch khi enter/click search
-    const [txtSearch, setTxtSearch] = useState('');
-    const [idHoadonChosing, setIdHoadonChosing] = useState('');
-    const [hoadon, setHoaDon] = useState<PageHoaDonDto>(new PageHoaDonDto({ id: '' }));
-    const [inforDelete, setInforDelete] = useState<PropConfirmOKCancel>(new PropConfirmOKCancel({ show: false }));
     const navigate = useNavigate();
-    const [paramSearch, setParamSearch] = useState<HoaDonRequestDto>({
+    const [objAlert, setObjAlert] = useState({ show: false, type: 1, mes: '' });
+    const [inforDelete, setInforDelete] = useState<PropConfirmOKCancel>(new PropConfirmOKCancel({ show: false }));
+
+    const [txtSearch, setTxtSearch] = useState('');
+    const [txtThoiGian, setTxtThoiGian] = useState('Tất cả');
+    const [trangThai, setTrangThai] = useState('');
+    const [paramSearch, setParamSearch] = useState<PhieuNhapListRequestDto>({
         textSearch: '',
-        idChiNhanhs: [idChiNhanhCookies],
-        idLoaiChungTus: [LoaiChungTu.NHAP_HANG],
+        loaiHang: 0,
+        idChiNhanhs: idChiNhanhCookies ? [idChiNhanhCookies] : [],
         currentPage: 1,
         pageSize: AppConsts.pageOption[0].value,
-        columnSort: 'NgayLapHoaDon',
-        typeSort: 'DESC',
         fromDate: null,
         toDate: null,
-        trangThais: [TrangThaiHoaDon.HOAN_THANH]
+        trangThais: []
     });
-
-    const [pageDataHoaDon, setPageDataHoaDon] = useState<PagedResultDto<PageHoaDonDto>>({
+    const [pageData, setPageData] = useState<{ totalCount: number; totalPage: number; items: any[] }>({
         totalCount: 0,
         totalPage: 0,
         items: []
     });
     const [rowSelectionModel, setRowSelectionModel] = React.useState<GridRowSelectionModel>([]);
-    useEffect(() => {
-        const invoiceHubConnection = new HubConnectionBuilder()
-            .withUrl(process.env.REACT_APP_REMOTE_SERVICE_BASE_URL + 'invoiceHub')
-            .build();
 
-        invoiceHubConnection
-            .start()
-            .then(() => console.log('Connected to InvoiceHub'))
-            .catch((err) => console.error('Error connecting to Hub:', err));
-
-        invoiceHubConnection.on('ReceiveInvoiceListReload', async (tenantId: string) => {
-            if (Cookies.get('Abp.TenantId') && Cookies.get('Abp.TenantId') === tenantId) {
-                setParamSearch({ ...paramSearch, currentPage: 1 });
-                GetListHoaDon();
-            }
-        });
-
-        return () => {
-            invoiceHubConnection.off('ReceiveInvoiceListReload');
-            invoiceHubConnection.stop();
-        };
-    }, []);
-
-    const GetListHoaDon = async () => {
-        const data = await HoaDonService.GetListHoaDon(paramSearch);
-        if (data?.items.length > 0) {
-            const itFirst = data?.items[0];
-            const footerRow = new PageHoaDonDto({
+    const getListPhieuNhap = async () => {
+        const data = await KhoHangService.GetListPhieuNhap(paramSearch);
+        const items: any[] = data?.items ?? [];
+        if (items.length > 0) {
+            // dòng tổng cuối bảng (id rỗng, không chọn được)
+            items.push({
                 id: Guid.EMPTY,
                 maHoaDon: 'Tổng',
                 ngayLapHoaDon: '',
-                tenKhachHang: '',
-                tongTienHang: itFirst?.sumTongTienHang ?? 0,
-                daThanhToan: itFirst?.sumDaThanhToan ?? 0,
-                maKhachHang: ''
-            });
-            footerRow.tongThanhToan = itFirst?.sumTongThanhToan ?? 0;
-            footerRow.conNo = (itFirst?.sumTongThanhToan ?? 0) - (itFirst?.sumDaThanhToan ?? 0);
-            footerRow.txtTrangThaiHD = '';
-
-            setPageDataHoaDon({
-                totalCount: data.totalCount,
-                totalPage: Utils.getTotalPage(data.totalCount, paramSearch.pageSize),
-                items: [...data.items, footerRow]
-            });
-        } else {
-            setPageDataHoaDon({
-                totalCount: data.totalCount,
-                totalPage: Utils.getTotalPage(data.totalCount, paramSearch.pageSize),
-                items: data.items
+                maKhachHang: '',
+                loaiHang: '',
+                ghiChuHD: '',
+                soLuong: data.sumSoLuong,
+                tongThanhToan: data.sumTongThanhToan,
+                daThanhToan: data.sumDaThanhToan,
+                txtTrangThai: '',
+                trangThai: -1
             });
         }
-    };
-
-    const PageLoad = async () => {
-        GetListHoaDon();
-        GetAllBacnkAccount();
-    };
-
-    const GetAllBacnkAccount = async (idChiNhanh?: string) => {
-        if (utils.checkNull(idChiNhanh)) {
-            idChiNhanh = idChiNhanhCookies;
-        }
-        await suggestStore.GetAllBankAccount(idChiNhanh ?? '');
-    };
-
-    useEffect(() => {
-        PageLoad();
-    }, []);
-
-    const [prevItems, setPrevItems] = useState(paramSearch);
-    if (paramSearch !== prevItems) {
-        setPrevItems(paramSearch);
-    }
-
-    useEffect(() => {
-        if (firstLoad2.current) {
-            firstLoad2.current = false;
-            return;
-        }
-        setParamSearch({
-            ...paramSearch,
-            idChiNhanhs: chinhanhCurrent?.id === '' ? [idChiNhanhCookies] : [chinhanhCurrent?.id]
+        setPageData({
+            totalCount: data?.totalCount ?? 0,
+            totalPage: utils.getTotalPage(data?.totalCount ?? 0, paramSearch.pageSize),
+            items
         });
-        GetAllBacnkAccount(chinhanhCurrent?.id);
-    }, [chinhanhCurrent?.id]);
+    };
+
+    useEffect(() => {
+        getListPhieuNhap();
+    }, [paramSearch]);
 
     useEffect(() => {
         if (firstLoad.current) {
             firstLoad.current = false;
             return;
         }
-        GetListHoaDon();
-    }, [prevItems]);
+        const id = chinhanhCurrent?.id || idChiNhanhCookies;
+        setParamSearch((prev) => ({ ...prev, idChiNhanhs: id ? [id] : [], currentPage: 1 }));
+    }, [chinhanhCurrent?.id]);
 
-    const handleKeyDownTextSearch = (event: any) => {
-        if (event.keyCode === 13) {
-            hanClickIconSearch();
-        }
+    const timKiem = () => setParamSearch({ ...paramSearch, textSearch: txtSearch, currentPage: 1 });
+
+    const handleChangePage = (event: any, value: number) => setParamSearch({ ...paramSearch, currentPage: value });
+    const handlePerPageChange = (event: SelectChangeEvent<number>) =>
+        setParamSearch({ ...paramSearch, currentPage: 1, pageSize: parseInt(event.target.value.toString(), 10) });
+
+    const [anchorDateEl, setAnchorDateEl] = useState<HTMLDivElement | null>(null);
+    // DateFilterCustom trả về (từ ngày, đến ngày, loại ngày, chữ hiển thị loại ngày)
+    const onApplyFilterDate = async (from: string, to: string, dateType: string, dateTypeText: string) => {
+        setAnchorDateEl(null);
+        setTxtThoiGian(
+            from && to && !from.startsWith('2000-01-01') // "Toàn thời gian" tính từ 01/01/2000
+                ? `${format(new Date(from), 'dd/MM/yyyy')} - ${format(new Date(to), 'dd/MM/yyyy')}`
+                : dateTypeText || 'Tất cả'
+        );
+        setParamSearch({ ...paramSearch, fromDate: from || null, toDate: to || null, currentPage: 1 });
     };
 
-    const hanClickIconSearch = () => {
-        setParamSearch({
-            ...paramSearch,
-            textSearch: txtSearch,
-            currentPage: 1
-        });
+    const changeTrangThai = (value: string) => {
+        setTrangThai(value);
+        setParamSearch({ ...paramSearch, trangThais: value === '' ? [] : [Number(value)], currentPage: 1 });
     };
 
-    const handleChangePage = (event: any, value: number) => {
-        setParamSearch({
-            ...paramSearch,
-            currentPage: value
-        });
-    };
-    const handlePerPageChange = (event: SelectChangeEvent<number>) => {
-        setParamSearch({
-            ...paramSearch,
-            currentPage: 1,
-            pageSize: parseInt(event.target.value.toString(), 10)
-        });
-    };
-
-    const [openDetail, setOpenDetail] = useState(false);
-
-    const choseRow = (param: any) => {
-        setIdHoadonChosing(param.id);
-        setHoaDon(param.row);
-        setOpenDetail(true);
-    };
-
-    const childGotoBack = (hoadonAfterChange: PageHoaDonDto, typeAction = 0) => {
-        setOpenDetail(false);
-        setIdHoadonChosing('');
-
-        switch (typeAction) {
-            case TypeAction.UPDATE:
-                if (hoadonAfterChange.idChiNhanh !== hoadon?.idChiNhanh) {
-                    // remove if huyhoadon or change chinhanh
-                    setPageDataHoaDon({
-                        ...pageDataHoaDon,
-                        items: pageDataHoaDon.items.filter((x: any) => x.id !== hoadonAfterChange.id)
-                    });
-                } else {
-                    setPageDataHoaDon({
-                        ...pageDataHoaDon,
-                        items: pageDataHoaDon.items.map((itemHD: PageHoaDonDto) => {
-                            if (itemHD.id === hoadonAfterChange.id) {
-                                return hoadonAfterChange;
-                            } else {
-                                return itemHD;
-                            }
-                        })
-                    });
-                }
-                break;
-            case TypeAction.DELETE:
-                setPageDataHoaDon({
-                    ...pageDataHoaDon,
-                    items: pageDataHoaDon.items.map((itemHD: PageHoaDonDto) => {
-                        if (itemHD.id === hoadonAfterChange.id) {
-                            return { ...itemHD, trangThai: 0, txtTrangThaiHD: 'Đã hủy' };
-                        } else {
-                            return itemHD;
-                        }
-                    })
-                });
-                setObjAlert({ ...objAlert, show: true, mes: 'Hủy hóa đơn thành công' });
-                break;
-            default:
-                break;
-        }
-    };
     const exportToExcel = async () => {
-        const data = await HoaDonService.ExportToExcel(paramSearch);
-        fileDowloadService.downloadExportFile(data);
+        const file = await KhoHangService.ExportListPhieuNhap(paramSearch);
+        fileDowloadService.downloadExportFile(file);
     };
+
+    // nút Lập phiếu: chọn loại phiếu
+    const [anchorLapPhieu, setAnchorLapPhieu] = useState<HTMLElement | null>(null);
+    const lapPhieu = (loai: 'hang-hoa' | 'dien-thoai') => {
+        setAnchorLapPhieu(null);
+        navigate(`/nhap-hang/${loai}`);
+    };
+    // phiếu tạm lưu cũ trên server: mở đúng màn theo loại hàng
+    const moPhieuTamLuu = (row: PhieuNhapListItemDto) => {
+        const loai = row.loaiHang === 'Điện thoại' ? 'dien-thoai' : 'hang-hoa';
+        navigate(`/nhap-hang/${loai}?id=${row.id}`);
+    };
+
+    const lstIdChon = () => rowSelectionModel.map((x) => x.toString()).filter((x) => x !== Guid.EMPTY);
 
     const DataGrid_handleAction = async (item: any) => {
         switch (parseInt(item.id)) {
@@ -266,14 +169,12 @@ const NhapHang: React.FC = () => {
                 setInforDelete({
                     ...inforDelete,
                     show: true,
-                    mes: 'Bạn có chắc chắn muốn xóa những hóa đơn này không?'
+                    mes: 'Bạn có chắc chắn muốn hủy những phiếu nhập này không?'
                 });
                 break;
             case 2:
                 {
-                    // in theo mẫu phiếu nhập (trước đây dùng mẫu hóa đơn bán); bỏ dòng tổng cuối bảng có id rỗng
-                    const lstId = rowSelectionModel.map((x) => x.toString()).filter((x) => x !== Guid.EMPTY);
-                    const lstPhieu = await Promise.all(lstId.map((id) => KhoHangService.GetPhieuKho(id)));
+                    const lstPhieu = await Promise.all(lstIdChon().map((id) => KhoHangService.GetPhieuKho(id)));
                     await inPhieuNhap(
                         lstPhieu.filter((x) => x),
                         appContext.congty
@@ -281,156 +182,85 @@ const NhapHang: React.FC = () => {
                 }
                 break;
             case 3:
-                {
-                    // mỗi phiếu xuất ra 1 file Excel riêng
-                    const lstId = rowSelectionModel.map((x) => x.toString()).filter((x) => x !== Guid.EMPTY);
-                    for (const id of lstId) {
-                        const file = await KhoHangService.ExportPhieuKho(id);
-                        fileDowloadService.downloadExportFile(file);
-                    }
+                // mỗi phiếu xuất ra 1 file Excel riêng
+                for (const id of lstIdChon()) {
+                    const file = await KhoHangService.ExportPhieuKho(id);
+                    fileDowloadService.downloadExportFile(file);
                 }
                 break;
         }
     };
 
-    const Delete_MultipleHoaDon = async () => {
-        // hủy phiếu nhập: tồn kho tự tính lại (bỏ dòng tổng cuối bảng có id rỗng)
-        await KhoHangService.HuyPhieuKho(rowSelectionModel.map((x) => x.toString()).filter((x) => x !== Guid.EMPTY));
+    const huyPhieu = async () => {
+        await KhoHangService.HuyPhieuKho(lstIdChon());
         setInforDelete({ ...inforDelete, show: false });
-        setObjAlert({ show: true, mes: 'Xóa thành công', type: 1 });
-
-        setPageDataHoaDon({
-            ...pageDataHoaDon,
-            items: pageDataHoaDon.items.map((itemHD: PageHoaDonDto) => {
-                if (rowSelectionModel.toString().indexOf(itemHD.id) > -1) {
-                    return { ...itemHD, trangThai: 0, txtTrangThaiHD: 'Đã hủy' };
-                } else {
-                    return itemHD;
-                }
-            })
-        });
+        setRowSelectionModel([]);
+        setObjAlert({ show: true, mes: 'Hủy phiếu nhập thành công', type: 1 });
+        getListPhieuNhap();
     };
 
-    const [anchorDateEl, setAnchorDateEl] = useState<HTMLDivElement | null>(null);
-    const openDateFilter = Boolean(anchorDateEl);
-
-    const onApplyFilterDate = async (from: string, to: string, txtShow: string) => {
-        setAnchorDateEl(null);
-        setParamSearch({ ...paramSearch, fromDate: from, toDate: to, currentPage: 1 });
-    };
+    const renderText = (params: any) => (
+        <Box component="span" title={params.value} sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {params.value}
+        </Box>
+    );
+    const renderMoney = (params: any) => <Box title={params.value}>{formatMoney(params.value)}</Box>;
 
     const columns: GridColDef[] = [
         {
             field: 'maHoaDon',
-            headerName: 'Mã hóa đơn',
-            minWidth: 100,
+            headerName: 'Mã phiếu nhập',
+            minWidth: 120,
             flex: 0.8,
-            renderHeader: (params: any) => <Box title={params.value}>{params.colDef.headerName}</Box>,
             renderCell: (params: any) =>
                 params.row.trangThai === 1 ? (
-                    // phiếu tạm lưu: bấm để mở lại và sửa tiếp
+                    // phiếu tạm lưu cũ trên server: bấm để sửa tiếp
                     <Box
                         component="span"
                         title="Phiếu tạm lưu - bấm để sửa tiếp"
                         onClick={(e) => {
                             e.stopPropagation();
-                            navigate(`/nhap-hang/tao-moi?id=${params.row.id}`);
+                            moPhieuTamLuu(params.row);
                         }}
                         sx={{ color: 'var(--color-main)', textDecoration: 'underline', cursor: 'pointer' }}>
                         {params.value}
                     </Box>
                 ) : (
-                    <Box component="span" title={params.value}>
-                        {params.value}
-                    </Box>
+                    renderText(params)
                 )
         },
         {
             field: 'ngayLapHoaDon',
-            headerName: 'Ngày tạo',
+            headerName: 'Ngày tạo phiếu',
             headerAlign: 'center',
             align: 'center',
             minWidth: 130,
-            flex: 1,
-            renderHeader: (params) => <Box>{params.colDef.headerName}</Box>,
+            flex: 0.9,
             renderCell: (params) => (
-                <Box title={params.value}>
-                    {utils?.checkNull(params.value) ? '' : format(new Date(params.value), 'dd/MM/yyyy HH:mm')}
-                </Box>
+                <Box>{utils.checkNull(params.value) ? '' : format(new Date(params.value), 'dd/MM/yyyy HH:mm')}</Box>
             )
         },
         {
             field: 'maKhachHang',
             headerName: 'Mã nhà cung cấp',
-            minWidth: 100,
-            flex: 0.8,
-            renderHeader: (params: any) => <Box title={params.value}>{params.colDef.headerName}</Box>,
-            renderCell: (params: any) => (
-                <Box component="span" title={params.value}>
-                    {params.value}
-                </Box>
-            )
-        },
-        {
-            field: 'soDienThoai',
-            headerName: 'Điện thoại',
-            minWidth: 80,
-            flex: 1.5,
-            renderHeader: (params: any) => <Box title={params.value}>{params.colDef.headerName}</Box>,
-            renderCell: (params: any) => (
-                <Box title={params.value} component="span" textOverflow={'ellipsis'}>
-                    {params.value}
-                </Box>
-            )
-        },
-        {
-            field: 'tenKhachHang',
-            headerName: 'Nhà cung cấp',
             minWidth: 120,
             flex: 0.8,
-            renderHeader: (params: any) => <Box title={params.value}>{params.colDef.headerName}</Box>,
             renderCell: (params: any) => (
-                <Box title={params.value} component="span" textOverflow={'ellipsis'}>
+                <Box component="span" title={params.row.tenKhachHang}>
                     {params.value}
                 </Box>
             )
         },
-        {
-            field: 'tenHangHoa',
-            headerName: 'Tên hàng hóa',
-            minWidth: 120,
-            flex: 0.5,
-            renderHeader: (params: any) => <Box title={params.value}>{params.colDef.headerName}</Box>,
-            renderCell: (params: any) => (
-                <Box title={params.value} component="span" textOverflow={'ellipsis'}>
-                    {params.value}
-                </Box>
-            )
-        },
-        {
-            field: 'noiDung',
-            headerName: 'Nội dung',
-            minWidth: 140,
-            flex: 1.5,
-            renderHeader: (params: any) => <Box title={params.value}>{params.colDef.headerName}</Box>,
-            renderCell: (params: any) => (
-                <Box title={params.value} component="span" textOverflow={'ellipsis'}>
-                    {params.value}
-                </Box>
-            )
-        },
-
+        { field: 'loaiHang', headerName: 'Loại hàng hóa', minWidth: 130, flex: 0.9, renderCell: renderText },
+        { field: 'ghiChuHD', headerName: 'Ghi chú', minWidth: 140, flex: 1.2, renderCell: renderText },
         {
             field: 'tongThanhToan',
-            headerName: 'Tổng phải trả',
+            headerName: 'Tổng giá tiền',
             headerAlign: 'right',
             align: 'right',
             minWidth: 118,
-            flex: 1,
-            renderHeader: (params: any) => <Box title={params.value}>{params.colDef.headerName}</Box>,
-            renderCell: (params: any) => (
-                <Box title={params.value}>{new Intl.NumberFormat('vi-VN').format(params.value)}</Box>
-            )
+            flex: 0.9,
+            renderCell: renderMoney
         },
         {
             field: 'daThanhToan',
@@ -438,228 +268,178 @@ const NhapHang: React.FC = () => {
             headerAlign: 'right',
             align: 'right',
             minWidth: 118,
-            flex: 1,
-            renderHeader: (params: any) => <Box title={params.value}>{params.colDef.headerName}</Box>,
-            renderCell: (params: any) => (
-                <Box title={params.value}>{new Intl.NumberFormat('vi-VN').format(params.value)}</Box>
-            )
+            flex: 0.9,
+            renderCell: renderMoney
         },
         {
-            field: 'conNo',
-            headerName: 'Còn nợ',
+            field: 'soLuong',
+            headerName: 'Số lượng',
             headerAlign: 'right',
             align: 'right',
-            minWidth: 100,
-            flex: 0.5,
-            renderHeader: (params: any) => <Box title={params.value}>{params.colDef.headerName}</Box>,
-            renderCell: (params: any) => (
-                <Box title={params.value} component={'span'}>
-                    {new Intl.NumberFormat('vi-VN').format(params.value)}
-                </Box>
-            )
+            minWidth: 90,
+            flex: 0.6,
+            renderCell: renderMoney
         },
         {
-            field: 'txtTrangThaiHD',
+            field: 'txtTrangThai',
             headerAlign: 'center',
             align: 'center',
             headerName: 'Trạng thái',
             minWidth: 118,
-            flex: 1,
-            renderHeader: (params: any) => <Box title={params.value}>{params.colDef.headerName}</Box>,
-            renderCell: (params: any) => (
-                <Box
-                    title={params.value}
-                    className={
-                        params.row.trangThai === 3
-                            ? 'data-grid-cell-trangthai-active'
-                            : 'data-grid-cell-trangthai-notActive'
-                    }>
-                    {params.value}
-                </Box>
-            )
-        },
-        {
-            field: 'actions',
-            headerAlign: 'center',
-            align: 'center',
-            headerName: '',
-            minWidth: 150,
-            flex: 1,
-            renderCell: (params: any) => {
-                return (
-                    <Stack direction="row" spacing={1} alignItems="center" justifyContent="center">
-                        <VisibilityOutlinedIcon
-                            style={{ cursor: 'pointer' }}
-                            sx={{
-                                fontSize: '18px',
-                                color: '#9e9e9e',
-                                '&:hover': {
-                                    color: '#757575'
-                                }
-                            }}
-                            onClick={() => choseRow(params)} // Gọi hàm khi click
-                            titleAccess="Xem chi tiết"
-                        />
-
-                        {/* <DeleteOutlinedIcon
-                            style={{ cursor: 'pointer' }}
-                            sx={{
-                                fontSize: '18px',
-                                color: '#9e9e9e',
-                                '&:hover': {
-                                    color: '#f44336'
-                                }
-                            }}
-                            titleAccess="Xóa"
-                            // onClick={() => handleDelete(params.row)} // Thay bằng hàm xử lý của bạn
-                        /> */}
-                    </Stack>
-                );
-            }
+            flex: 0.8,
+            renderCell: (params: any) =>
+                params.row.trangThai < 0 ? null : (
+                    <Box
+                        title={params.value}
+                        className={
+                            params.row.trangThai === 3
+                                ? 'data-grid-cell-trangthai-active'
+                                : 'data-grid-cell-trangthai-notActive'
+                        }>
+                        {params.value}
+                    </Box>
+                )
         }
     ];
 
-    const [anchorElFilter, setAnchorElFilter] = useState<SVGSVGElement | null>(null);
-    const ApplyFilter = (paramFilter: HoaDonRequestDto) => {
-        setAnchorElFilter(null);
-        setParamSearch({
-            ...paramSearch,
-            currentPage: 1,
-            trangThaiNos: paramFilter.trangThaiNos,
-            trangThais: paramFilter.trangThais,
-            idChiNhanhs: paramFilter.idChiNhanhs
-        });
-    };
-
     return (
         <>
-            <ThongTinHoaDon
-                idHoaDon={idHoadonChosing}
-                hoadon={hoadon}
-                open={openDetail}
-                handleGotoBack={childGotoBack}
-            />
             <SnackbarAlert
                 showAlert={objAlert.show}
                 type={objAlert.type}
                 title={objAlert.mes}
                 handleClose={() => setObjAlert({ show: false, mes: '', type: 1 })}></SnackbarAlert>
-
             <ConfirmDelete
                 isShow={inforDelete.show}
                 title={inforDelete.title}
                 mes={inforDelete.mes}
-                onOk={Delete_MultipleHoaDon}
+                onOk={huyPhieu}
                 onCancel={() => setInforDelete({ ...inforDelete, show: false })}></ConfirmDelete>
 
             <Box paddingTop={2}>
                 <Grid container spacing={1}>
-                    <Grid item xs={12} sm={12} md={12} lg={6} alignItems="center" gap="10px">
+                    <Grid item xs={12} lg={6}>
                         <Grid container spacing={1} alignItems="center">
-                            <Grid item xs={12} sm={6} md={4}>
+                            <Grid item xs={12} sm={4} md={3}>
                                 <span className="page-title"> Phiếu nhập hàng</span>
                             </Grid>
-                            <Grid item xs={12} sm={6} md={6}>
+                            <Grid item xs={12} sm={8} md={6}>
                                 <TextField
                                     size="small"
                                     fullWidth
                                     className="text-search"
                                     variant="outlined"
                                     type="search"
-                                    placeholder="Tìm kiếm"
+                                    placeholder="Tìm theo mã phiếu, mã / tên nhà cung cấp"
                                     InputProps={{
                                         startAdornment: (
-                                            <IconButton type="button" onClick={hanClickIconSearch}>
+                                            <IconButton type="button" onClick={timKiem}>
                                                 <Search />
                                             </IconButton>
                                         )
                                     }}
-                                    onChange={(event) => {
-                                        setTxtSearch(event.target.value);
-                                    }}
+                                    onChange={(event) => setTxtSearch(event.target.value)}
                                     onKeyDown={(event) => {
-                                        handleKeyDownTextSearch(event);
+                                        if (event.key === 'Enter') timKiem();
                                     }}
                                 />
                             </Grid>
+                            <Grid item xs={12} sm={6} md={3}>
+                                <Select
+                                    size="small"
+                                    fullWidth
+                                    value={paramSearch.loaiHang}
+                                    onChange={(e) =>
+                                        setParamSearch({
+                                            ...paramSearch,
+                                            loaiHang: Number(e.target.value),
+                                            currentPage: 1
+                                        })
+                                    }
+                                    sx={{ height: 40, backgroundColor: 'white' }}>
+                                    <MenuItem value={0}>Tất cả loại hàng</MenuItem>
+                                    <MenuItem value={1}>Hàng hóa</MenuItem>
+                                    <MenuItem value={4}>Điện thoại</MenuItem>
+                                </Select>
+                            </Grid>
                         </Grid>
                     </Grid>
-                    <Grid item xs={12} sm={12} md={12} lg={6}>
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                gap: '8px',
-                                justifyContent: { lg: 'end' }
-                            }}>
+                    <Grid item xs={12} lg={6}>
+                        <Box sx={{ display: 'flex', gap: '8px', justifyContent: { lg: 'end' }, flexWrap: 'wrap' }}>
+                            <Select
+                                size="small"
+                                value={trangThai}
+                                displayEmpty
+                                onChange={(e) => changeTrangThai(e.target.value)}
+                                sx={{ height: 40, minWidth: 150, backgroundColor: 'white' }}>
+                                {LOC_TRANG_THAI.map((x) => (
+                                    <MenuItem key={x.value} value={x.value}>
+                                        {x.text}
+                                    </MenuItem>
+                                ))}
+                            </Select>
                             <Stack>
                                 <TextField
                                     label="Thời gian"
                                     size="small"
-                                    fullWidth
                                     variant="outlined"
+                                    InputProps={{ readOnly: true }}
                                     sx={{
-                                        '& .MuiInputBase-root': {
-                                            height: '40px!important'
-                                        },
+                                        '& .MuiInputBase-root': { height: '40px!important' },
                                         backgroundColor: 'white'
                                     }}
                                     onClick={(event) => setAnchorDateEl(event.currentTarget)}
-                                    value={`${format(
-                                        new Date(paramSearch.fromDate as string),
-                                        'dd/MM/yyyy'
-                                    )} - ${format(new Date(paramSearch.toDate as string), 'dd/MM/yyyy')}`}
+                                    value={txtThoiGian}
                                 />
                                 <DateFilterCustom
                                     id="popover-date-filter"
-                                    open={openDateFilter}
+                                    open={Boolean(anchorDateEl)}
                                     anchorEl={anchorDateEl}
                                     onClose={() => setAnchorDateEl(null)}
                                     onApplyDate={onApplyFilterDate}
                                 />
                             </Stack>
-
                             <Button
                                 variant="outlined"
                                 onClick={exportToExcel}
                                 startIcon={<DownloadIcon />}
-                                sx={{
-                                    display: abpCustom.isGrandPermission('Pages.HoaDon.Export') ? '' : 'none'
-                                }}
+                                sx={{ display: abpCustom.isGrandPermission('Pages.HoaDon.Export') ? '' : 'none' }}
                                 className="btn-outline-hover">
-                                Xuất
+                                Xuất Excel
                             </Button>
                             <Button
                                 variant="contained"
                                 startIcon={<AddIcon />}
-                                onClick={() => navigate('/nhap-hang/tao-moi')}
+                                endIcon={<KeyboardArrowDownIcon />}
+                                onClick={(e) => setAnchorLapPhieu(e.currentTarget)}
                                 sx={{
                                     backgroundColor: 'var(--color-main)',
                                     color: '#fff',
                                     textTransform: 'none',
                                     boxShadow: 'none',
-                                    '&:hover': {
-                                        backgroundColor: 'var(--color-main-dark)',
-                                        boxShadow: 'none'
-                                    }
+                                    '&:hover': { backgroundColor: 'var(--color-main-dark)', boxShadow: 'none' }
                                 }}>
-                                Lập Phiếu
+                                Lập phiếu
                             </Button>
-                            <ButtonOnlyIcon
-                                icon={
-                                    <FilterAltOutlinedIcon
-                                        titleAccess="Lọc nâng cao"
-                                        sx={{ width: 20 }}
-                                        onClick={(event) => setAnchorElFilter(event.currentTarget)}
-                                    />
-                                }
-                                style={{ width: 40, backgroundColor: 'white' }}
-                            />
-                            <PopoverFilterHoaDon
-                                anchorEl={anchorElFilter}
-                                paramFilter={paramSearch}
-                                handleClose={() => setAnchorElFilter(null)}
-                                handleApply={ApplyFilter}
-                            />
+                            <Menu
+                                anchorEl={anchorLapPhieu}
+                                open={Boolean(anchorLapPhieu)}
+                                onClose={() => setAnchorLapPhieu(null)}
+                                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                                transformOrigin={{ vertical: 'top', horizontal: 'right' }}>
+                                <MenuItem onClick={() => lapPhieu('hang-hoa')}>
+                                    <ListItemIcon>
+                                        <Inventory2OutlinedIcon fontSize="small" />
+                                    </ListItemIcon>
+                                    Lập phiếu hàng hóa
+                                </MenuItem>
+                                <MenuItem onClick={() => lapPhieu('dien-thoai')}>
+                                    <ListItemIcon>
+                                        <PhoneIphoneOutlinedIcon fontSize="small" />
+                                    </ListItemIcon>
+                                    Lập phiếu điện thoại
+                                </MenuItem>
+                            </Menu>
                         </Box>
                     </Grid>
                 </Grid>
@@ -671,13 +451,13 @@ const NhapHang: React.FC = () => {
                                 [
                                     {
                                         id: '1',
-                                        text: 'Xóa hóa đơn',
+                                        text: 'Hủy phiếu',
                                         isShow: abpCustom.isGrandPermission('Pages.HoaDon.Delete'),
                                         icon: <DeleteSweepOutlinedIcon sx={{ width: '1rem', height: '1rem' }} />
                                     },
                                     {
                                         id: '2',
-                                        text: 'In hóa đơn',
+                                        text: 'In phiếu',
                                         isShow: abpCustom.isGrandPermission('Pages.HoaDon.Print'),
                                         icon: <PrintOutlinedIcon sx={{ width: '1rem', height: '1rem' }} />
                                     },
@@ -689,12 +469,10 @@ const NhapHang: React.FC = () => {
                                     }
                                 ] as IList[]
                             }
-                            countRowSelected={rowSelectionModel.length}
-                            title="hóa đơn"
+                            countRowSelected={lstIdChon().length}
+                            title="phiếu nhập"
                             choseAction={DataGrid_handleAction}
-                            removeItemChosed={() => {
-                                setRowSelectionModel([]);
-                            }}
+                            removeItemChosed={() => setRowSelectionModel([])}
                         />
                     </div>
                 )}
@@ -704,16 +482,14 @@ const NhapHang: React.FC = () => {
                         disableRowSelectionOnClick
                         className={rowSelectionModel.length > 0 ? 'data-grid-row-chosed' : 'data-grid-row'}
                         rowHeight={40}
-                        autoHeight={pageDataHoaDon.items.length === 0}
+                        autoHeight={pageData.items.length === 0}
                         columns={columns}
-                        rows={pageDataHoaDon.items}
+                        rows={pageData.items}
                         hideFooter
                         checkboxSelection
-                        // onRowClick={(item) => choseRow(item)}
+                        isRowSelectable={(params) => params.id !== Guid.EMPTY}
                         localeText={TextTranslate}
-                        onRowSelectionModelChange={(newRowSelectionModel) => {
-                            setRowSelectionModel(newRowSelectionModel);
-                        }}
+                        onRowSelectionModelChange={(newRowSelectionModel) => setRowSelectionModel(newRowSelectionModel)}
                         rowSelectionModel={rowSelectionModel}
                         sx={{
                             ' & .MuiDataGrid-row--lastVisible': {
@@ -725,8 +501,8 @@ const NhapHang: React.FC = () => {
                     <CustomTablePagination
                         currentPage={paramSearch.currentPage ?? 1}
                         rowPerPage={paramSearch.pageSize ?? 10}
-                        totalRecord={pageDataHoaDon.totalCount}
-                        totalPage={pageDataHoaDon.totalPage}
+                        totalRecord={pageData.totalCount}
+                        totalPage={pageData.totalPage}
                         handlePerPageChange={handlePerPageChange}
                         handlePageChange={handleChangePage}
                     />

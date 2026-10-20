@@ -8,6 +8,7 @@ const KhachTraHang = () => {
             idLoaiChungTu={LoaiChungTu.KHACH_TRA_HANG}
             pathTaoMoi="/khach-tra-hang/tao-moi"
             labelDoiTuong="Khách hàng"
+            coTamLuu
         />
     );
 };

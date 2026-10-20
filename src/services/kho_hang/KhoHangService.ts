@@ -34,6 +34,47 @@ export interface PhieuNhapDienThoaiDto {
     pin?: number | null;
     tinhTrang?: string;
     giaBan?: number;
+    matKhau?: string;
+    loi?: string;
+    ghiChu?: string;
+}
+
+// danh sách phiếu nhập
+export interface PhieuNhapListRequestDto {
+    textSearch?: string; // mã phiếu, mã / tên nhà cung cấp
+    loaiHang: number; // 0.Tất cả, 1.Hàng hóa, 4.Điện thoại
+    fromDate?: string | null;
+    toDate?: string | null;
+    idChiNhanhs?: string[];
+    trangThais?: number[]; // trống: tất cả trừ đã hủy
+    currentPage: number;
+    pageSize: number;
+}
+
+export interface PhieuNhapListItemDto {
+    id: string;
+    maHoaDon: string;
+    ngayLapHoaDon: string;
+    idKhachHang?: string | null;
+    maKhachHang: string;
+    tenKhachHang: string;
+    loaiHang: string;
+    ghiChuHD?: string;
+    soLuong: number;
+    tongThanhToan: number;
+    daThanhToan: number;
+    conNo: number;
+    trangThai: number;
+    txtTrangThai: string;
+    soLanKiemKe: number; // số phiếu kiểm kê đã lập theo phiếu nhập này
+}
+
+export interface PhieuNhapListResultDto {
+    totalCount: number;
+    items: PhieuNhapListItemDto[];
+    sumSoLuong: number;
+    sumTongThanhToan: number;
+    sumDaThanhToan: number;
 }
 
 export interface PhieuKhoDto {
@@ -89,6 +130,9 @@ export interface PhieuKhoViewDto {
     tenKhachHang?: string;
     soDienThoai?: string;
     ghiChuHD?: string;
+    // phiếu kiểm kê: phiếu nhập được kiểm
+    idHoaDon?: string | null;
+    maHoaDonLienQuan?: string | null;
     tongTienHangChuaChietKhau: number;
     tongChietKhauHangHoa: number;
     tongTienHang: number;
@@ -124,6 +168,13 @@ export interface ChiTietTraHangDto {
     soLuongMua: number;
     soLuongDaTra: number;
     donGia: number;
+    // điện thoại: thông tin máy (tình trạng hiện tại = tình trạng trước khi trả)
+    imel?: string;
+    mau?: string;
+    dungLuong?: number | null;
+    pin?: number | null;
+    tinhTrang?: string;
+    trangThaiMay: number; // 1.Đang kinh doanh, 2.Đã bán
 }
 
 class KhoHangService {
@@ -145,6 +196,14 @@ class KhoHangService {
     // đọc file Excel chi tiết phiếu nhập (không lưu, chỉ trả về dòng để thêm vào phiếu)
     ImportChiTietPhieuNhap = async (input: FileUpload): Promise<ImportPhieuNhapResultDto> => {
         const result = await http.post('api/services/app/KhoHang/ImportChiTietPhieuNhap', input);
+        return result.data.result;
+    };
+    GetListPhieuNhap = async (input: PhieuNhapListRequestDto): Promise<PhieuNhapListResultDto> => {
+        const result = await http.post('api/services/app/KhoHang/GetListPhieuNhap', input);
+        return result.data.result;
+    };
+    ExportListPhieuNhap = async (input: PhieuNhapListRequestDto): Promise<IFileDto> => {
+        const result = await http.post('api/services/app/KhoHang/ExportListPhieuNhap', input);
         return result.data.result;
     };
     // xuất 1 phiếu ra Excel
