@@ -18,6 +18,7 @@ import NotificationsActiveOutlinedIcon from '@mui/icons-material/NotificationsAc
 import LoaiHoaDonSetting from './LoaiHoaDonSetting';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import KhoHangSetting from './KhoHangSetting';
+import PhoneIphoneOutlinedIcon from '@mui/icons-material/PhoneIphoneOutlined';
 
 type SettingItem = {
     title: string;
@@ -123,6 +124,12 @@ const settingGroups: SettingGroup[] = [
                 description: 'Cho phép bán / xuất khi không đủ tồn',
                 icon: <Inventory2OutlinedIcon />,
                 content: <KhoHangSetting />
+            },
+            {
+                title: 'Cài đặt lấy máy nhanh',
+                description: 'Cài iTunes + PhoneAgent để đọc nhanh thông tin iPhone cắm USB',
+                icon: <PhoneIphoneOutlinedIcon />,
+                path: '/settings/lay-may-nhanh'
             }
         ]
     },

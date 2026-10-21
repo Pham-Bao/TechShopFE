@@ -39,6 +39,7 @@ export interface IDienThoaiNhap {
     ghiChu?: string;
     giaNhap: number;
     giaBan: number;
+    daGiaoDich?: boolean; // sửa phiếu nhập đã hoàn thành: máy đã bán / đã giao dịch -> không sửa / xóa được
 }
 
 type PropsModalNhapDienThoai = {
@@ -262,7 +263,7 @@ const ModalNhapDienThoai = ({ open, onClose, onAdd, imeiDaCo, duLieu }: PropsMod
                                         setForm((prev) => ({ ...prev, dungLuong: newValue?.value ?? null }))
                                     }
                                     renderInput={(params) => (
-                                        <TextField {...params} variant="outlined" size="small" label="Dung lượng" />
+                                        <TextField {...params} variant="outlined" size="small" label="Dung lượng *" />
                                     )}
                                 />
                                 <Autocomplete
@@ -281,7 +282,7 @@ const ModalNhapDienThoai = ({ open, onClose, onAdd, imeiDaCo, duLieu }: PropsMod
                                     inputValue={form.mau || ''}
                                     onInputChange={(event, newValue) => setForm((prev) => ({ ...prev, mau: newValue }))}
                                     renderInput={(params) => (
-                                        <TextField {...params} variant="outlined" size="small" label="Màu sắc" />
+                                        <TextField {...params} variant="outlined" size="small" label="Màu sắc *" />
                                     )}
                                 />
                             </Stack>
@@ -291,7 +292,7 @@ const ModalNhapDienThoai = ({ open, onClose, onAdd, imeiDaCo, duLieu }: PropsMod
                                 <TextField
                                     size="small"
                                     sx={{ flex: 0.7 }}
-                                    label="Pin"
+                                    label="Pin *"
                                     value={form.pin ?? ''}
                                     onChange={(e) => {
                                         const so = parseInt(e.target.value, 10);
@@ -362,6 +363,9 @@ const ModalNhapDienThoai = ({ open, onClose, onAdd, imeiDaCo, duLieu }: PropsMod
                             </Stack>
 
                             {/* TÌNH TRẠNG */}
+                            <Typography variant="body2" sx={{ mb: -1.5, color: '#6b7280' }}>
+                                Tình trạng *
+                            </Typography>
                             <Stack direction="row" spacing={4}>
                                 {[0, 4, 8].map((start) => (
                                     <Stack key={start} spacing={0}>

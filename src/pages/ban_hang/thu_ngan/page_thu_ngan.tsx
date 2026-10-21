@@ -263,6 +263,8 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
             IdNhomHangHoas: arrIdNhomHang,
             TextSearch: txtSearch,
             IdLoaiHangHoa: 0, // all
+            // chỉ dùng để tính số lượng tồn của hàng hóa theo chi nhánh đang bán (không lọc danh sách)
+            IdChiNhanhs: idChiNhanhChosed ? [idChiNhanhChosed] : [],
             CurrentPage: 0,
             idLoaiChungTu: loaiHoaDon,
             PageSize: 50
@@ -1483,6 +1485,8 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
 
             ResetState_AfterSave();
             onRemoveHoaDon_toCache();
+            // cập nhật lại số lượng tồn hiển thị sau khi bán
+            getListHangHoa_groupbyNhom(txtSearch, arrIdNhomHangChosed, loaiHoaDon);
 
             return hoadonDB;
         } catch (error) {
@@ -2170,6 +2174,24 @@ export default function PageThuNgan(props: IPropsPageThuNgan) {
                                                                               item?.giaBan as number
                                                                           )}
                                                                       </Typography>
+                                                                      {/* hàng hóa (sạc, ốp...): số lượng tồn tại chi nhánh */}
+                                                                      {item?.idLoaiHangHoa === LoaiHangHoa.HANG_HOA && (
+                                                                          <Typography
+                                                                              variant="caption"
+                                                                              sx={{
+                                                                                  lineHeight: 1,
+                                                                                  fontWeight: 600,
+                                                                                  color:
+                                                                                      (item?.soLuongTon ?? 0) > 0
+                                                                                          ? '#2563eb'
+                                                                                          : '#dc2626'
+                                                                              }}>
+                                                                              Tồn:{' '}
+                                                                              {Intl.NumberFormat('vi-VN').format(
+                                                                                  item?.soLuongTon ?? 0
+                                                                              )}
+                                                                          </Typography>
+                                                                      )}
                                                                   </Stack>
                                                               </Stack>
                                                           </Grid>

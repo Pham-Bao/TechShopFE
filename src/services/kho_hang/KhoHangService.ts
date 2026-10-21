@@ -37,6 +37,7 @@ export interface PhieuNhapDienThoaiDto {
     matKhau?: string;
     loi?: string;
     ghiChu?: string;
+    daGiaoDich?: boolean; // xem / sửa phiếu nhập đã hoàn thành: máy đã bán / đã giao dịch -> khóa
 }
 
 // danh sách phiếu nhập

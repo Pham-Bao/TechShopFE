@@ -283,14 +283,20 @@ const Page_Them_Phieu_Nhap_Hang = () => {
             headerName: '',
             width: 56,
             sortable: false,
-            renderCell: (params) => (
-                <IconButton
-                    size="small"
-                    onClick={() => setLstDong((prev) => prev.filter((x) => x.id !== params.row.id))}
-                    sx={{ color: '#9ca3af', '&:hover': { backgroundColor: '#fee2e2', color: '#dc2626' } }}>
-                    <DeleteOutlineIcon sx={{ fontSize: 18 }} />
-                </IconButton>
-            )
+            renderCell: (params) =>
+                // sửa phiếu đã hoàn thành có lẫn điện thoại: máy đã bán không xóa được
+                params.row.dienThoai?.daGiaoDich ? (
+                    <Typography sx={{ fontSize: 11, color: '#d97706', fontWeight: 700 }} title="Máy đã giao dịch">
+                        Đã bán
+                    </Typography>
+                ) : (
+                    <IconButton
+                        size="small"
+                        onClick={() => setLstDong((prev) => prev.filter((x) => x.id !== params.row.id))}
+                        sx={{ color: '#9ca3af', '&:hover': { backgroundColor: '#fee2e2', color: '#dc2626' } }}>
+                        <DeleteOutlineIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                )
         }
     ];
 
@@ -326,7 +332,9 @@ const Page_Them_Phieu_Nhap_Hang = () => {
                         <IconButton onClick={() => navigate('/nhap-hangs')}>
                             <ArrowBackIcon />
                         </IconButton>
-                        <Typography sx={{ fontWeight: 800, fontSize: 18 }}>Lập phiếu nhập hàng hóa</Typography>
+                        <Typography sx={{ fontWeight: 800, fontSize: 18 }}>
+                            {p.laSua ? `Sửa phiếu nhập hàng hóa ${p.maPhieu}` : 'Lập phiếu nhập hàng hóa'}
+                        </Typography>
                     </Stack>
                 </Paper>
 

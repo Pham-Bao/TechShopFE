@@ -33,6 +33,8 @@ import DateFilterCustom from '../../components/DatetimePicker/DateFilterCustom';
 import CustomTablePagination from '../../components/Pagination/CustomTablePagination';
 import ConfirmDelete from '../../components/AlertDialog/ConfirmDelete';
 import ModalKiemKe, { IDongKiemKe } from './components/ModalKiemKe';
+import ModalXemPhieuNhap from './components/ModalXemPhieuNhap';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 
 const formatMoney = (value: number) => new Intl.NumberFormat('vi-VN').format(value ?? 0);
 
@@ -88,6 +90,7 @@ const Page_them_phieu_kiem_ke = () => {
         items: []
     });
     const [idChon, setIdChon] = useState<string | null>(null);
+    const [idXemPhieu, setIdXemPhieu] = useState<string | null>(null);
 
     useEffect(() => {
         KhoHangService.GetListPhieuNhap(paramSearch).then((data) =>
@@ -296,6 +299,25 @@ const Page_them_phieu_kiem_ke = () => {
                 ) : (
                     <Typography sx={{ fontSize: 12, color: '#9ca3af' }}>Chưa kiểm</Typography>
                 )
+        },
+        {
+            field: 'actions',
+            headerName: '',
+            width: 60,
+            sortable: false,
+            align: 'center',
+            renderCell: (p) => (
+                <IconButton
+                    size="small"
+                    title="Xem phiếu nhập"
+                    onClick={(e) => {
+                        e.stopPropagation(); // chỉ xem, không đổi phiếu nhập đang chọn để kiểm
+                        setIdXemPhieu(p.row.id);
+                    }}
+                    sx={{ color: '#9e9e9e', '&:hover': { color: '#757575' } }}>
+                    <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+            )
         }
     ];
 
@@ -308,6 +330,7 @@ const Page_them_phieu_kiem_ke = () => {
 
     return (
         <>
+            <ModalXemPhieuNhap idPhieu={idXemPhieu} onClose={() => setIdXemPhieu(null)} />
             <ModalKiemKe
                 open={isShowModal}
                 tieuDe={

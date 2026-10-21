@@ -95,8 +95,18 @@ const ThongTinPhieuNhap = ({ p }: { p: PhieuNhapState }) => {
             />
 
             <Typography sx={{ fontWeight: 800, mb: 2 }}>
-                {p.maPhieu ? `Thông tin phiếu nhập ${p.maPhieu}` : 'Thông tin phiếu nhập'}
+                {p.laSua
+                    ? `Sửa phiếu nhập ${p.maPhieu}`
+                    : p.maPhieu
+                    ? `Thông tin phiếu nhập ${p.maPhieu}`
+                    : 'Thông tin phiếu nhập'}
             </Typography>
+            {p.laSua && (
+                <Alert severity="warning" sx={{ mb: 2, fontSize: 13 }}>
+                    Đang sửa phiếu đã hoàn thành. Máy đã bán không sửa / xóa được; thanh toán thêm hãy lập phiếu chi ở
+                    Sổ quỹ.
+                </Alert>
+            )}
 
             {p.thoiGianLuuTam && (
                 <Alert
@@ -115,7 +125,7 @@ const ThongTinPhieuNhap = ({ p }: { p: PhieuNhapState }) => {
                 <TextField
                     id="phieu-nhap-ncc"
                     fullWidth
-                    placeholder="Tìm nhà cung cấp"
+                    placeholder="Chọn nhà cung cấp *"
                     size="small"
                     value={p.khachHang?.tenKhachHang ?? ''}
                     InputProps={{ readOnly: true }}
@@ -156,44 +166,56 @@ const ThongTinPhieuNhap = ({ p }: { p: PhieuNhapState }) => {
                 </Typography>
             </Stack>
 
-            <Box sx={{ mb: 2 }}>
-                <Typography sx={{ mb: 1, fontWeight: 600 }}>Hình thức thanh toán</Typography>
-                <Select
-                    id="phieu-nhap-hinh-thuc"
-                    fullWidth
-                    size="small"
-                    value={p.hinhThucThanhToan}
-                    onChange={(e) => p.changeHinhThucThanhToan(Number(e.target.value))}>
-                    <MenuItem value={HINH_THUC_THANH_TOAN.TIEN_MAT}>Tiền mặt</MenuItem>
-                    <MenuItem value={HINH_THUC_THANH_TOAN.CHUYEN_KHOAN}>Chuyển khoản</MenuItem>
-                    <MenuItem value={HINH_THUC_NO}>Nợ</MenuItem>
-                </Select>
-            </Box>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-                <Typography sx={{ fontWeight: 500, fontSize: 13 }}>Số tiền thanh toán</Typography>
-                <TextField
-                    id="phieu-nhap-so-tien"
-                    value={formatMoney(p.soTienThanhToan)}
-                    disabled={p.hinhThucThanhToan === HINH_THUC_NO}
-                    onChange={(e) => {
-                        const value = Number(e.target.value.replace(/\./g, '').replace(/,/g, '') || 0);
-                        // không trả quá số cần trả; phần còn lại là nợ nhà cung cấp
-                        p.setSoTienThanhToan(Number.isNaN(value) ? 0 : Math.min(value, p.tongTienHang));
-                    }}
-                    size="small"
-                    sx={{ width: 160, '& input': { textAlign: 'right', fontSize: 13, fontWeight: 500 } }}
-                />
-            </Stack>
-            {p.hinhThucThanhToan === HINH_THUC_THANH_TOAN.CHUYEN_KHOAN && (
-                <Box sx={{ mb: 2 }}>
-                    <AutocompleteAccountBank
-                        handleChoseItem={(item: TaiKhoanNganHangDto | null) =>
-                            p.setIdTaiKhoanNganHang(item?.id || null)
-                        }
-                        idChosed={p.idTaiKhoanNganHang}
-                        listOption={p.allBankAccount}
-                    />
-                </Box>
+            {p.laSua ? (
+                // sửa phiếu đã hoàn thành: chỉ hiển thị số đã trả, không thanh toán ở đây
+                <Stack direction="row" justifyContent="space-between" sx={{ mb: 2 }}>
+                    <Typography sx={{ fontWeight: 500, fontSize: 13 }}>Đã thanh toán</Typography>
+                    <Typography sx={{ fontWeight: 700, fontSize: 13, color: '#16a34a' }}>
+                        {formatMoney(p.daThanhToanCu)}
+                    </Typography>
+                </Stack>
+            ) : (
+                <>
+                    <Box sx={{ mb: 2 }}>
+                        <Typography sx={{ mb: 1, fontWeight: 600 }}>Hình thức thanh toán</Typography>
+                        <Select
+                            id="phieu-nhap-hinh-thuc"
+                            fullWidth
+                            size="small"
+                            value={p.hinhThucThanhToan}
+                            onChange={(e) => p.changeHinhThucThanhToan(Number(e.target.value))}>
+                            <MenuItem value={HINH_THUC_THANH_TOAN.TIEN_MAT}>Tiền mặt</MenuItem>
+                            <MenuItem value={HINH_THUC_THANH_TOAN.CHUYEN_KHOAN}>Chuyển khoản</MenuItem>
+                            <MenuItem value={HINH_THUC_NO}>Nợ</MenuItem>
+                        </Select>
+                    </Box>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                        <Typography sx={{ fontWeight: 500, fontSize: 13 }}>Số tiền thanh toán</Typography>
+                        <TextField
+                            id="phieu-nhap-so-tien"
+                            value={formatMoney(p.soTienThanhToan)}
+                            disabled={p.hinhThucThanhToan === HINH_THUC_NO}
+                            onChange={(e) => {
+                                const value = Number(e.target.value.replace(/\./g, '').replace(/,/g, '') || 0);
+                                // không trả quá số cần trả; phần còn lại là nợ nhà cung cấp
+                                p.setSoTienThanhToan(Number.isNaN(value) ? 0 : Math.min(value, p.tongTienHang));
+                            }}
+                            size="small"
+                            sx={{ width: 160, '& input': { textAlign: 'right', fontSize: 13, fontWeight: 500 } }}
+                        />
+                    </Stack>
+                    {p.hinhThucThanhToan === HINH_THUC_THANH_TOAN.CHUYEN_KHOAN && (
+                        <Box sx={{ mb: 2 }}>
+                            <AutocompleteAccountBank
+                                handleChoseItem={(item: TaiKhoanNganHangDto | null) =>
+                                    p.setIdTaiKhoanNganHang(item?.id || null)
+                                }
+                                idChosed={p.idTaiKhoanNganHang}
+                                listOption={p.allBankAccount}
+                            />
+                        </Box>
+                    )}
+                </>
             )}
             <Stack direction="row" justifyContent="space-between" sx={{ mb: 2 }}>
                 <Typography sx={{ fontWeight: 500, fontSize: 13 }}>Còn nợ nhà cung cấp</Typography>
@@ -228,13 +250,15 @@ const ThongTinPhieuNhap = ({ p }: { p: PhieuNhapState }) => {
                     }}>
                     In nháp
                 </Button>
-                <Button
-                    variant="outlined"
-                    onClick={p.luuTam}
-                    disabled={p.isSaving}
-                    sx={{ flex: '1 1 30%', textTransform: 'none', fontWeight: 700 }}>
-                    Lưu tạm
-                </Button>
+                {!p.laSua && (
+                    <Button
+                        variant="outlined"
+                        onClick={p.luuTam}
+                        disabled={p.isSaving}
+                        sx={{ flex: '1 1 30%', textTransform: 'none', fontWeight: 700 }}>
+                        Lưu tạm
+                    </Button>
+                )}
                 <Button
                     variant="contained"
                     startIcon={<SaveIcon />}
@@ -250,7 +274,7 @@ const ThongTinPhieuNhap = ({ p }: { p: PhieuNhapState }) => {
                         py: 1.2,
                         '&:hover': { backgroundColor: 'var(--color-main-dark)', boxShadow: 'none' }
                     }}>
-                    {p.isSaving ? 'Đang lưu...' : 'Hoàn thành'}
+                    {p.isSaving ? 'Đang lưu...' : p.laSua ? 'Cập nhật' : 'Hoàn thành'}
                 </Button>
             </Box>
         </Paper>

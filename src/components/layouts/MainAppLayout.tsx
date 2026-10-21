@@ -17,6 +17,7 @@ import { PagedRequestDto } from '../../services/dto/pagedRequestDto';
 import { inject, observer } from 'mobx-react';
 import NotificationStore from '../../stores/notificationStore';
 import Stores from '../../stores/storeIdentifier';
+import IphoneDangCam from '../PhoneAgent/IphoneDangCam';
 
 const isAuthenticated = (): boolean => {
     const accessToken = Cookies.get('Abp.AuthToken');
@@ -263,6 +264,8 @@ const MainAppLayout: React.FC<IMainAppLayout> = (props) => {
                     </Box>
                 </Box>
             )}
+            {/* iPhone đang cắm USB (qua PhoneAgent) - góc dưới bên trái */}
+            <IphoneDangCam />
         </Container>
     );
 };

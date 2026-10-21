@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Button, Grid, IconButton, Paper, Stack, Tooltip, Typography } from '@mui/material';
+import { Box, Button, Chip, Grid, IconButton, Paper, Stack, Tooltip, Typography } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AddIcon from '@mui/icons-material/Add';
@@ -49,7 +49,18 @@ const Page_Them_Phieu_Nhap_Dien_Thoai = () => {
     };
     const luuMay = (dt: IDienThoaiNhap) => {
         if (dongSua) {
-            setLstDong((prev) => prev.map((x) => (x.id === dongSua.id ? dienThoaiToDong(dt, dongSua.id) : x)));
+            // giữ mã + đơn vị quy đổi của máy cũ (sửa phiếu đã hoàn thành cập nhật đúng máy đó)
+            setLstDong((prev) =>
+                prev.map((x) =>
+                    x.id === dongSua.id
+                        ? {
+                              ...dienThoaiToDong(dt, dongSua.id),
+                              idDonViQuyDoi: dongSua.idDonViQuyDoi,
+                              maHang: dongSua.maHang
+                          }
+                        : x
+                )
+            );
             return;
         }
         setLstDong((prev) => [...prev, dienThoaiToDong(dt)]);
@@ -141,23 +152,33 @@ const Page_Them_Phieu_Nhap_Dien_Thoai = () => {
             headerName: '',
             width: 90,
             sortable: false,
-            renderCell: (params) => (
-                <Stack direction="row">
-                    <Tooltip title="Sửa">
-                        <IconButton size="small" onClick={() => moSua(params.row)}>
-                            <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                        </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Xóa">
-                        <IconButton
-                            size="small"
-                            onClick={() => setLstDong((prev) => prev.filter((x) => x.id !== params.row.id))}
-                            sx={{ color: '#9ca3af', '&:hover': { backgroundColor: '#fee2e2', color: '#dc2626' } }}>
-                            <DeleteOutlineIcon sx={{ fontSize: 18 }} />
-                        </IconButton>
-                    </Tooltip>
-                </Stack>
-            )
+            renderCell: (params) =>
+                // sửa phiếu đã hoàn thành: máy đã bán / đã giao dịch bị khóa
+                params.row.dienThoai?.daGiaoDich ? (
+                    <Chip
+                        size="small"
+                        color="warning"
+                        variant="outlined"
+                        label="Đã bán"
+                        title="Máy đã giao dịch, không sửa / xóa được"
+                    />
+                ) : (
+                    <Stack direction="row">
+                        <Tooltip title="Sửa">
+                            <IconButton size="small" onClick={() => moSua(params.row)}>
+                                <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Xóa">
+                            <IconButton
+                                size="small"
+                                onClick={() => setLstDong((prev) => prev.filter((x) => x.id !== params.row.id))}
+                                sx={{ color: '#9ca3af', '&:hover': { backgroundColor: '#fee2e2', color: '#dc2626' } }}>
+                                <DeleteOutlineIcon sx={{ fontSize: 18 }} />
+                            </IconButton>
+                        </Tooltip>
+                    </Stack>
+                )
         }
     ];
 
@@ -176,7 +197,9 @@ const Page_Them_Phieu_Nhap_Dien_Thoai = () => {
                         <IconButton onClick={() => navigate('/nhap-hangs')}>
                             <ArrowBackIcon />
                         </IconButton>
-                        <Typography sx={{ fontWeight: 800, fontSize: 18 }}>Lập phiếu nhập điện thoại</Typography>
+                        <Typography sx={{ fontWeight: 800, fontSize: 18 }}>
+                            {p.laSua ? `Sửa phiếu nhập điện thoại ${p.maPhieu}` : 'Lập phiếu nhập điện thoại'}
+                        </Typography>
                     </Stack>
                 </Paper>
 

@@ -147,6 +147,18 @@ const SettingRoutes: RouteProps[] = [
         isLayout: false,
         children: [],
         component: LoadableComponent(() => import('../../../pages/tai_khoan_ngan_hang/index'))
+    },
+    {
+        path: '/settings/lay-may-nhanh',
+        permission: 'Pages.CongTy',
+        title: 'Cài đặt lấy máy nhanh',
+        name: 'caidat',
+        icon: <SettingIcon width="20px" />,
+        iconActive: <SetingActive width="20px" />,
+        showInMenu: false,
+        isLayout: false,
+        children: [],
+        component: LoadableComponent(() => import('../../../pages/admin/settings/lay-may-nhanh/index'))
     }
 ];
 export default SettingRoutes;
