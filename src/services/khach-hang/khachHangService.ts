@@ -15,8 +15,14 @@ import { PagedResultDto } from '../dto/pagedResultDto';
 import { HoatDongKhachHang, ThongTinKhachHangTongHopDto } from './dto/ThongTinKhachHangTongHopDto';
 import { ILichSuDatLich } from './dto/ILichSuDatLich';
 import { LichSuGiaoDich } from './dto/LichSuGiaoDich';
+import { HoaDonCuaKhachHangRequestDto, HoaDonCuaKhachHangResultDto } from './dto/HoaDonCuaKhachHangDto';
 
 class KhachHangService {
+    // hóa đơn bán / hóa đơn sửa đã hoàn thành của 1 khách
+    public async GetHoaDon_ofKhachHang(input: HoaDonCuaKhachHangRequestDto): Promise<HoaDonCuaKhachHangResultDto> {
+        const result = await http.post(`api/services/app/KhachHang/GetHoaDon_ofKhachHang`, input);
+        return result.data.result;
+    }
     public async getAll(input: PagedKhachHangResultRequestDto): Promise<PagedResultDto<KhachHangItemDto>> {
         const result = await http.post(`api/services/app/KhachHang/Search`, input);
         return result.data.result;

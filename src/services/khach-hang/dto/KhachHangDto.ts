@@ -47,6 +47,7 @@ export interface ICustomerDetail_FullInfor extends CreateOrEditKhachHangDto {
     tongChiTieu?: number;
     conNo?: number;
     cuocHenGanNhat?: Date;
+    laNhaCungCap?: boolean; // có phiếu nhập: tongChiTieu = tổng nhập hàng, conNo = còn phải trả NCC
 }
 
 export interface LoaiKhach {

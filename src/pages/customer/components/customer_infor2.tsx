@@ -107,7 +107,8 @@ const CustomerInfor2 = ({ khachHangId, onClose }: IScreenCustomerInfor) => {
             cuocHenGanNhat: data?.cuocHenGanNhat,
             soLanBooking: data?.soLanBooking,
             tongChiTieu: data?.tongChiTieu,
-            conNo: data?.conNo
+            conNo: data?.conNo,
+            laNhaCungCap: data?.laNhaCungCap
         });
     };
 
@@ -459,7 +460,9 @@ const CustomerInfor2 = ({ khachHangId, onClose }: IScreenCustomerInfor) => {
                                             <Typography sx={{ fontSize: '18px', fontWeight: 600 }}>
                                                 {utils.formatNumber(cusEdit?.tongChiTieu ?? 0)}
                                             </Typography>
-                                            <Typography variant="caption">Chi tiêu</Typography>
+                                            <Typography variant="caption">
+                                                {cusEdit?.laNhaCungCap ? 'Nhập hàng' : 'Chi tiêu'}
+                                            </Typography>
                                         </Stack>
                                         <Stack alignItems={'center'}>
                                             <Typography
@@ -471,7 +474,9 @@ const CustomerInfor2 = ({ khachHangId, onClose }: IScreenCustomerInfor) => {
                                                 }}>
                                                 {utils.formatNumber(cusEdit?.conNo ?? 0)}
                                             </Typography>
-                                            <Typography variant="caption">Còn nợ</Typography>
+                                            <Typography variant="caption">
+                                                {cusEdit?.laNhaCungCap ? 'Phải trả NCC' : 'Còn nợ'}
+                                            </Typography>
                                         </Stack>
                                     </Stack>
                                 </Stack>
@@ -514,7 +519,7 @@ const CustomerInfor2 = ({ khachHangId, onClose }: IScreenCustomerInfor) => {
                                             gap: 1
                                         }}>
                                         <Tab
-                                            label="Mua hàng"
+                                            label={cusEdit?.laNhaCungCap ? 'Nhập hàng' : 'Mua hàng'}
                                             value="1"
                                             sx={{
                                                 padding: '4px 8px',

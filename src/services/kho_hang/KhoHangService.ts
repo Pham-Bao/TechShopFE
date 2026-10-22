@@ -38,6 +38,28 @@ export interface PhieuNhapDienThoaiDto {
     loi?: string;
     ghiChu?: string;
     daGiaoDich?: boolean; // xem / sửa phiếu nhập đã hoàn thành: máy đã bán / đã giao dịch -> khóa
+    mayCoSan?: boolean; // gắn máy có sẵn (chưa thuộc phiếu nhập nào) vào phiếu: không tạo máy mới
+}
+
+// điện thoại chưa thuộc phiếu nhập nào (để gắn vào phiếu nhập)
+export interface DienThoaiChuaCoPhieuNhapDto {
+    idDonViQuyDoi: string;
+    idHangHoa: string;
+    maHangHoa: string;
+    tenHangHoa: string;
+    idNhomHangHoa?: string | null;
+    mau?: string;
+    dungLuong?: number | null;
+    pin?: number | null;
+    imel?: string;
+    tinhTrang?: string;
+    matKhau?: string;
+    loi?: string;
+    ghiChu?: string;
+    giaVon: number;
+    giaBan: number;
+    trangThai: number;
+    daGiaoDich: boolean;
 }
 
 // danh sách phiếu nhập
@@ -97,6 +119,8 @@ export interface PhieuKhoDto {
     hinhThucThanhToan?: number;
     soTienThanhToan?: number;
     idTaiKhoanNganHang?: string | null;
+    // sửa phiếu nhập đã hoàn thành: tổng mới thấp hơn số đã trả -> nhà cung cấp hoàn lại (phiếu thu)
+    soTienNhanLai?: number;
     chiTiet: PhieuKhoChiTietDto[];
 }
 
@@ -146,6 +170,12 @@ export interface PhieuKhoViewDto {
 export interface TonKhoItemDto {
     idHangHoa: string;
     soLuongTon: number;
+}
+
+export interface KiemKeGanNhatDto {
+    idHangHoa: string;
+    ngayKiemKe: string;
+    maPhieu: string;
 }
 
 export interface TheKhoItemDto {
@@ -207,6 +237,19 @@ class KhoHangService {
         const result = await http.post('api/services/app/KhoHang/ExportListPhieuNhap', input);
         return result.data.result;
     };
+    // điện thoại chưa thuộc phiếu nhập nào (kể cả đã bán) để gắn vào phiếu nhập
+    GetDienThoaiChuaCoPhieuNhap = async (
+        textSearch: string,
+        idPhieuNhap?: string | null
+    ): Promise<DienThoaiChuaCoPhieuNhapDto[]> => {
+        const query = idPhieuNhap ? `&idPhieuNhap=${idPhieuNhap}` : '';
+        const result = await http.get(
+            `api/services/app/KhoHang/GetDienThoaiChuaCoPhieuNhap?textSearch=${encodeURIComponent(
+                textSearch ?? ''
+            )}${query}`
+        );
+        return result.data.result ?? [];
+    };
     // xuất 1 phiếu ra Excel
     ExportPhieuKho = async (id: string): Promise<IFileDto> => {
         const result = await http.get(`api/services/app/KhoHang/ExportPhieuKho?id=${id}`);
@@ -214,6 +257,14 @@ class KhoHangService {
     };
     GetTonKho = async (idHangHoas: string[], idChiNhanh?: string | null): Promise<TonKhoItemDto[]> => {
         const result = await http.post('api/services/app/KhoHang/GetTonKho', {
+            idHangHoas,
+            idChiNhanh: idChiNhanh || null
+        });
+        return result.data.result ?? [];
+    };
+    // lần kiểm kê gần nhất (đã hoàn thành) của từng hàng hóa
+    GetKiemKeGanNhat = async (idHangHoas: string[], idChiNhanh?: string | null): Promise<KiemKeGanNhatDto[]> => {
+        const result = await http.post('api/services/app/KhoHang/GetKiemKeGanNhat', {
             idHangHoas,
             idChiNhanh: idChiNhanh || null
         });

@@ -2,11 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
     Box,
     Button,
-    Chip,
+    Checkbox,
     Divider,
     Grid,
     IconButton,
     InputAdornment,
+    MenuItem,
     Paper,
     SelectChangeEvent,
     Stack,
@@ -24,35 +25,32 @@ import Cookies from 'js-cookie';
 import { LoaiChungTu } from '../../lib/appconst';
 import AppConsts from '../../lib/appconst';
 import utils from '../../utils/utils';
-import KhoHangService, {
-    PhieuKhoViewChiTietDto,
-    PhieuNhapListItemDto,
-    PhieuNhapListRequestDto
-} from '../../services/kho_hang/KhoHangService';
-import DateFilterCustom from '../../components/DatetimePicker/DateFilterCustom';
+import KhoHangService, { KiemKeGanNhatDto } from '../../services/kho_hang/KhoHangService';
+import ProductService from '../../services/product/ProductService';
+import GroupProductService from '../../services/product/GroupProductService';
+import { ModelHangHoaDto, ModelNhomHangHoa, PagedProductSearchDto } from '../../services/product/dto';
 import CustomTablePagination from '../../components/Pagination/CustomTablePagination';
 import ConfirmDelete from '../../components/AlertDialog/ConfirmDelete';
 import ModalKiemKe, { IDongKiemKe } from './components/ModalKiemKe';
-import ModalXemPhieuNhap from './components/ModalXemPhieuNhap';
-import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 
-const formatMoney = (value: number) => new Intl.NumberFormat('vi-VN').format(value ?? 0);
+// hàng hóa được tick chọn để kiểm (giữ qua các trang / bộ lọc)
+interface IHangChon {
+    id: string; // idDonViQuyDoi
+    idHangHoa: string;
+    maHang: string;
+    tenHang: string;
+}
 
-// SL nhập theo đơn vị quy đổi (chỉ hàng hóa, điện thoại không kiểm kê)
-const tongHopSoLuongNhap = (chiTiet: PhieuKhoViewChiTietDto[]) => {
-    const map = new Map<string, PhieuKhoViewChiTietDto & { tong: number }>();
-    chiTiet
-        .filter((x) => x.idLoaiHangHoa === 1 && !x.dienThoai)
-        .forEach((x) => {
-            const cu = map.get(x.idDonViQuyDoi);
-            map.set(x.idDonViQuyDoi, { ...x, tong: (cu?.tong ?? 0) + x.soLuong });
-        });
-    return Array.from(map.values());
-};
+const toHangChon = (x: ModelHangHoaDto): IHangChon => ({
+    id: x.idDonViQuyDoi ?? '',
+    idHangHoa: x.idHangHoa ?? x.id ?? '',
+    maHang: x.maHangHoa ?? '',
+    tenHang: x.tenHangHoa ?? ''
+});
 
 /**
- * Lập phiếu kiểm kê: danh sách phiếu nhập bên trái, thông tin phiếu bên phải.
- * Chọn 1 phiếu nhập -> "Kiểm kê" -> nhập SL thực tế -> Tạm lưu / Xác nhận (cân bằng tồn kho).
+ * Lập phiếu kiểm kê theo hàng hóa: danh sách hàng hóa bên trái (tick chọn hàng cần kiểm), thông tin phiếu bên phải.
+ * Bấm "Kiểm kê" -> nhập SL thực tế -> đối chiếu tồn hệ thống -> Tạm lưu / Xác nhận (cân bằng tồn kho).
  */
 const Page_them_phieu_kiem_ke = () => {
     const navigate = useNavigate();
@@ -64,38 +62,47 @@ const Page_them_phieu_kiem_ke = () => {
     const [ngayLap, setNgayLap] = useState(format(new Date(), "yyyy-MM-dd'T'HH:mm"));
     const [ghiChu, setGhiChu] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+    // phiếu kiểm kê cũ (lập theo phiếu nhập): giữ nguyên liên kết khi lưu lại
+    const [idHoaDonCu, setIdHoaDonCu] = useState<string | null>(null);
 
-    // phiếu nhập đang được kiểm và các dòng kiểm kê của nó
-    const [phieuNhap, setPhieuNhap] = useState<{ id: string; maHoaDon: string } | null>(null);
     const [lstDong, setLstDong] = useState<IDongKiemKe[]>([]);
     const [isShowModal, setIsShowModal] = useState(false);
     const [isShowConfirm, setIsShowConfirm] = useState(false);
 
-    // danh sách phiếu nhập (chỉ phiếu hoàn thành có hàng hóa)
+    // danh sách hàng hóa (chỉ hàng hóa thường, điện thoại không kiểm kê)
+    const [lstNhom, setLstNhom] = useState<ModelNhomHangHoa[]>([]);
     const [txtSearch, setTxtSearch] = useState('');
-    const [txtThoiGian, setTxtThoiGian] = useState('Toàn thời gian');
-    const [anchorDateEl, setAnchorDateEl] = useState<HTMLDivElement | null>(null);
-    const [paramSearch, setParamSearch] = useState<PhieuNhapListRequestDto>({
+    const [paramSearch, setParamSearch] = useState<PagedProductSearchDto>({
         textSearch: '',
-        loaiHang: 1,
-        trangThais: [3],
+        idNhomHangHoas: [],
+        idLoaiHangHoa: 1,
         idChiNhanhs: idChiNhanh ? [idChiNhanh] : [],
-        fromDate: null,
-        toDate: null,
         currentPage: 1,
         pageSize: AppConsts.pageOption[0].value
     });
-    const [pageData, setPageData] = useState<{ totalCount: number; items: PhieuNhapListItemDto[] }>({
+    const [pageData, setPageData] = useState<{ totalCount: number; items: ModelHangHoaDto[] }>({
         totalCount: 0,
         items: []
     });
-    const [idChon, setIdChon] = useState<string | null>(null);
-    const [idXemPhieu, setIdXemPhieu] = useState<string | null>(null);
+    const [kiemKeGanNhat, setKiemKeGanNhat] = useState<Record<string, KiemKeGanNhatDto>>({});
+    const [lstChon, setLstChon] = useState<IHangChon[]>([]);
 
     useEffect(() => {
-        KhoHangService.GetListPhieuNhap(paramSearch).then((data) =>
-            setPageData({ totalCount: data?.totalCount ?? 0, items: data?.items ?? [] })
+        GroupProductService.GetDM_NhomHangHoa().then((data) =>
+            setLstNhom((data?.items ?? []).filter((x) => x.laNhomHangHoa))
         );
+    }, []);
+
+    useEffect(() => {
+        ProductService.Get_DMHangHoa(paramSearch).then(async (data) => {
+            const items = (data?.items ?? []).filter((x) => x.idDonViQuyDoi);
+            setPageData({ totalCount: data?.totalCount ?? 0, items });
+            const lanKiem = await KhoHangService.GetKiemKeGanNhat(
+                items.map((x) => x.idHangHoa ?? x.id ?? ''),
+                idChiNhanh
+            );
+            setKiemKeGanNhat((prev) => ({ ...prev, ...Object.fromEntries(lanKiem.map((x) => [x.idHangHoa, x])) }));
+        });
     }, [paramSearch]);
 
     useEffect(() => {
@@ -118,23 +125,24 @@ const Page_them_phieu_kiem_ke = () => {
         }
         setMaPhieu(phieu.maHoaDon ?? '');
         setGhiChu(phieu.ghiChuHD ?? '');
+        setIdHoaDonCu(phieu.idHoaDon ?? null);
         if (phieu.ngayLapHoaDon) setNgayLap(format(new Date(phieu.ngayLapHoaDon), "yyyy-MM-dd'T'HH:mm"));
 
-        let slNhap: Map<string, number> | null = null;
-        if (phieu.idHoaDon) {
-            setPhieuNhap({ id: phieu.idHoaDon, maHoaDon: phieu.maHoaDonLienQuan ?? '' });
-            setIdChon(phieu.idHoaDon);
-            const pn = await KhoHangService.GetPhieuKho(phieu.idHoaDon);
-            slNhap = new Map(tongHopSoLuongNhap(pn?.chiTiet ?? []).map((x) => [x.idDonViQuyDoi, x.tong]));
-        }
         const getTon = await layTonKho(phieu.chiTiet.map((x) => x.idHangHoa));
+        setLstChon(
+            phieu.chiTiet.map((x) => ({
+                id: x.idDonViQuyDoi,
+                idHangHoa: x.idHangHoa,
+                maHang: x.maHangHoa,
+                tenHang: x.tenHangHoa
+            }))
+        );
         setLstDong(
             phieu.chiTiet.map((x) => ({
                 id: x.idDonViQuyDoi,
                 idHangHoa: x.idHangHoa,
                 maHang: x.maHangHoa,
                 tenHang: x.tenHangHoa,
-                soLuongNhap: slNhap ? slNhap.get(x.idDonViQuyDoi) ?? 0 : null,
                 soLuongTon: getTon(x.idHangHoa),
                 soLuongThucTe: x.soLuong,
                 ghiChu: x.ghiChu ?? ''
@@ -143,34 +151,40 @@ const Page_them_phieu_kiem_ke = () => {
         setIsShowModal(true);
     };
 
-    // bấm "Kiểm kê": lấy hàng hóa của phiếu nhập đang chọn (giữ số đã đếm nếu vẫn là phiếu đó)
+    const daChon = (id?: string) => lstChon.some((x) => x.id === id);
+    const doiChon = (x: ModelHangHoaDto) => {
+        const id = x.idDonViQuyDoi;
+        setLstChon((prev) =>
+            prev.some((c) => c.id === id) ? prev.filter((c) => c.id !== id) : [...prev, toHangChon(x)]
+        );
+    };
+    const themVaoChon = (lst: ModelHangHoaDto[]) =>
+        setLstChon((prev) => [
+            ...prev,
+            ...lst.filter((x) => !prev.some((c) => c.id === x.idDonViQuyDoi)).map(toHangChon)
+        ]);
+    const chonCaTrang = pageData.items.length > 0 && pageData.items.every((x) => daChon(x.idDonViQuyDoi));
+    const doiChonCaTrang = () =>
+        chonCaTrang
+            ? setLstChon((prev) => prev.filter((c) => !pageData.items.some((x) => x.idDonViQuyDoi === c.id)))
+            : themVaoChon(pageData.items);
+
+    // bấm "Kiểm kê": dựng bảng kiểm từ hàng đã chọn (giữ số đã đếm của hàng đã có trong bảng)
     const moKiemKe = async () => {
-        if (!idChon) return;
-        if (phieuNhap?.id === idChon && lstDong.length > 0) {
-            setIsShowModal(true);
-            return;
-        }
-        const pn = await KhoHangService.GetPhieuKho(idChon);
-        const lstHang = tongHopSoLuongNhap(pn?.chiTiet ?? []);
-        if (lstHang.length === 0) {
-            enqueueSnackbar('Phiếu nhập không có hàng hóa cần kiểm kê', { variant: 'warning' });
-            return;
-        }
-        const getTon = await layTonKho(lstHang.map((x) => x.idHangHoa));
-        setPhieuNhap({ id: pn.id, maHoaDon: pn.maHoaDon });
-        setLstDong(
-            lstHang.map((x) => {
+        if (lstChon.length === 0) return;
+        const getTon = await layTonKho(lstChon.map((x) => x.idHangHoa));
+        setLstDong((prev) =>
+            lstChon.map((x) => {
+                const cu = prev.find((d) => d.id === x.id);
                 const ton = getTon(x.idHangHoa);
-                return {
-                    id: x.idDonViQuyDoi,
-                    idHangHoa: x.idHangHoa,
-                    maHang: x.maHangHoa,
-                    tenHang: x.tenHangHoa,
-                    soLuongNhap: x.tong,
-                    soLuongTon: ton,
-                    soLuongThucTe: ton, // mặc định khớp tồn, chỉ sửa hàng đếm lệch
-                    ghiChu: ''
-                };
+                return cu
+                    ? { ...cu, soLuongTon: ton }
+                    : {
+                          ...x,
+                          soLuongTon: ton,
+                          soLuongThucTe: ton, // mặc định khớp tồn, chỉ sửa hàng đếm lệch
+                          ghiChu: ''
+                      };
             })
         );
         setIsShowModal(true);
@@ -189,7 +203,7 @@ const Page_them_phieu_kiem_ke = () => {
                 id: idPhieu,
                 idLoaiChungTu: LoaiChungTu.PHIEU_KIEM_KE,
                 idChiNhanh: idChiNhanh,
-                idHoaDon: phieuNhap?.id ?? null,
+                idHoaDon: idHoaDonCu,
                 maHoaDon: maPhieu,
                 ngayLapHoaDon: ngayLap ? new Date(ngayLap).toISOString() : new Date().toISOString(),
                 ghiChuHD: ghiChu,
@@ -230,94 +244,80 @@ const Page_them_phieu_kiem_ke = () => {
         [lstDong]
     );
 
-    const onApplyFilterDate = async (from: string, to: string, dateType: string, dateTypeText: string) => {
-        setAnchorDateEl(null);
-        setTxtThoiGian(
-            from && to && !from.startsWith('2000-01-01') // "Toàn thời gian" tính từ 01/01/2000
-                ? `${format(new Date(from), 'dd/MM/yyyy')} - ${format(new Date(to), 'dd/MM/yyyy')}`
-                : dateTypeText || 'Toàn thời gian'
-        );
-        setParamSearch({ ...paramSearch, fromDate: from || null, toDate: to || null, currentPage: 1 });
-    };
+    const timKiem = () => setParamSearch({ ...paramSearch, textSearch: txtSearch, currentPage: 1 });
 
     const columns: GridColDef[] = [
         {
-            field: 'maHoaDon',
-            headerName: 'Mã phiếu nhập',
-            minWidth: 120,
-            flex: 0.8,
+            field: 'chon',
+            width: 56,
+            sortable: false,
+            align: 'center',
+            headerAlign: 'center',
+            renderHeader: () => <Checkbox size="small" checked={chonCaTrang} onChange={doiChonCaTrang} />,
+            renderCell: (p) => (
+                <Checkbox
+                    size="small"
+                    checked={daChon(p.row.idDonViQuyDoi)}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={() => doiChon(p.row)}
+                />
+            )
+        },
+        {
+            field: 'maHangHoa',
+            headerName: 'Mã hàng',
+            minWidth: 110,
+            flex: 0.7,
+            sortable: false,
             renderCell: (p) => <Typography sx={{ fontWeight: 700, fontSize: 14 }}>{p.value}</Typography>
         },
         {
-            field: 'ngayLapHoaDon',
-            headerName: 'Ngày nhập',
-            minWidth: 130,
-            flex: 0.9,
-            align: 'center',
-            headerAlign: 'center',
-            renderCell: (p) => (utils.checkNull(p.value) ? '' : format(new Date(p.value), 'dd/MM/yyyy HH:mm'))
-        },
-        {
-            field: 'tenKhachHang',
-            headerName: 'Nhà cung cấp',
-            minWidth: 140,
-            flex: 1,
+            field: 'tenHangHoa',
+            headerName: 'Tên hàng',
+            minWidth: 180,
+            flex: 1.4,
+            sortable: false,
             renderCell: (p) => (
-                <Box component="span" title={p.row.maKhachHang} sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <Box component="span" title={p.value} sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {p.value}
                 </Box>
             )
         },
         {
-            field: 'soLuong',
-            headerName: 'Số lượng',
-            minWidth: 90,
-            flex: 0.5,
-            align: 'right',
-            headerAlign: 'right',
-            renderCell: (p) => formatMoney(p.value)
-        },
-        {
-            field: 'tongThanhToan',
-            headerName: 'Tổng tiền',
-            minWidth: 110,
-            flex: 0.7,
-            align: 'right',
-            headerAlign: 'right',
-            renderCell: (p) => formatMoney(p.value)
-        },
-        {
-            field: 'soLanKiemKe',
-            headerName: 'Kiểm kê',
+            field: 'tenNhomHang',
+            headerName: 'Nhóm hàng',
             minWidth: 120,
-            flex: 0.7,
-            align: 'center',
-            headerAlign: 'center',
-            renderCell: (p) =>
-                p.value > 0 ? (
-                    <Chip size="small" color="success" variant="outlined" label={`Đã kiểm ${p.value} lần`} />
-                ) : (
-                    <Typography sx={{ fontSize: 12, color: '#9ca3af' }}>Chưa kiểm</Typography>
-                )
+            flex: 0.8,
+            sortable: false
         },
         {
-            field: 'actions',
-            headerName: '',
-            width: 60,
+            field: 'soLuongTon',
+            headerName: 'Tồn hệ thống',
+            minWidth: 110,
+            flex: 0.6,
+            sortable: false,
+            align: 'right',
+            headerAlign: 'right',
+            renderCell: (p) => <Typography sx={{ fontWeight: 700 }}>{p.value ?? 0}</Typography>
+        },
+        {
+            field: 'kiemKeGanNhat',
+            headerName: 'Kiểm kê gần nhất',
+            minWidth: 140,
+            flex: 0.8,
             sortable: false,
             align: 'center',
-            renderCell: (p) => (
-                <IconButton
-                    size="small"
-                    title="Xem phiếu nhập"
-                    onClick={(e) => {
-                        e.stopPropagation(); // chỉ xem, không đổi phiếu nhập đang chọn để kiểm
-                        setIdXemPhieu(p.row.id);
-                    }}
-                    sx={{ color: '#9e9e9e', '&:hover': { color: '#757575' } }}>
-                    <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
-                </IconButton>
-            )
+            headerAlign: 'center',
+            renderCell: (p) => {
+                const lan = kiemKeGanNhat[p.row.idHangHoa ?? p.row.id];
+                return lan ? (
+                    <Typography sx={{ fontSize: 13 }} title={lan.maPhieu}>
+                        {format(new Date(lan.ngayKiemKe), 'dd/MM/yyyy HH:mm')}
+                    </Typography>
+                ) : (
+                    <Typography sx={{ fontSize: 12, color: '#9ca3af' }}>Chưa kiểm</Typography>
+                );
+            }
         }
     ];
 
@@ -330,14 +330,9 @@ const Page_them_phieu_kiem_ke = () => {
 
     return (
         <>
-            <ModalXemPhieuNhap idPhieu={idXemPhieu} onClose={() => setIdXemPhieu(null)} />
             <ModalKiemKe
                 open={isShowModal}
-                tieuDe={
-                    phieuNhap
-                        ? `Kiểm kê phiếu nhập ${phieuNhap.maHoaDon}`
-                        : `Kiểm kê ${maPhieu ? `phiếu ${maPhieu}` : ''}`
-                }
+                tieuDe={`Kiểm kê ${maPhieu ? `phiếu ${maPhieu}` : 'hàng hóa'}`}
                 lstDong={lstDong}
                 setLstDong={setLstDong}
                 isSaving={isSaving}
@@ -401,12 +396,7 @@ const Page_them_phieu_kiem_ke = () => {
                                 <Typography sx={{ fontWeight: 800, mb: 2, textTransform: 'uppercase' }}>
                                     Thông tin kiểm kê
                                 </Typography>
-                                <Stack direction="row" justifyContent="space-between" sx={{ mb: 1.5 }}>
-                                    <Typography sx={{ fontSize: 14 }}>Phiếu nhập kiểm kê</Typography>
-                                    <Typography sx={{ fontWeight: 800, color: 'var(--color-main)' }}>
-                                        {phieuNhap?.maHoaDon || '-'}
-                                    </Typography>
-                                </Stack>
+                                {dongThongKe('Hàng hóa đã chọn', lstChon.length, 'var(--color-main)')}
                                 <Divider sx={{ mb: 1.5 }} />
                                 {dongThongKe('Tổng SL thực tế', thongKe.tongThucTe, 'var(--color-main)')}
                                 {dongThongKe('SL hàng kiểm kê', lstDong.length)}
@@ -427,7 +417,7 @@ const Page_them_phieu_kiem_ke = () => {
                         </Paper>
                     </Grid>
 
-                    {/* TRÁI: danh sách phiếu nhập */}
+                    {/* TRÁI: danh sách hàng hóa */}
                     <Grid item xs={12} md={8} lg={8.5} sx={{ order: 1 }}>
                         <Paper elevation={0} sx={{ borderRadius: 2, overflow: 'hidden' }}>
                             <Stack
@@ -442,53 +432,47 @@ const Page_them_phieu_kiem_ke = () => {
                                 <TextField
                                     fullWidth
                                     size="small"
-                                    placeholder="Tìm phiếu nhập theo mã phiếu, mã / tên nhà cung cấp"
+                                    placeholder="Tìm hàng hóa theo mã / tên"
                                     value={txtSearch}
                                     onChange={(e) => setTxtSearch(e.target.value)}
                                     onKeyDown={(e) => {
-                                        if (e.key === 'Enter')
-                                            setParamSearch({ ...paramSearch, textSearch: txtSearch, currentPage: 1 });
+                                        if (e.key === 'Enter') timKiem();
                                     }}
                                     InputProps={{
                                         startAdornment: (
                                             <InputAdornment position="start">
-                                                <IconButton
-                                                    size="small"
-                                                    onClick={() =>
-                                                        setParamSearch({
-                                                            ...paramSearch,
-                                                            textSearch: txtSearch,
-                                                            currentPage: 1
-                                                        })
-                                                    }>
+                                                <IconButton size="small" onClick={timKiem}>
                                                     <SearchIcon />
                                                 </IconButton>
                                             </InputAdornment>
                                         )
                                     }}
-                                    sx={{ minWidth: 240, '& .MuiInputBase-root': { height: 42 } }}
+                                    sx={{ minWidth: 220, '& .MuiInputBase-root': { height: 42 } }}
                                 />
-                                <Box>
-                                    <TextField
-                                        label="Thời gian"
-                                        size="small"
-                                        value={txtThoiGian}
-                                        InputProps={{ readOnly: true }}
-                                        onClick={(e) => setAnchorDateEl(e.currentTarget)}
-                                        sx={{ width: 220, '& .MuiInputBase-root': { height: 42 } }}
-                                    />
-                                    <DateFilterCustom
-                                        id="popover-date-filter-kiem-ke"
-                                        open={Boolean(anchorDateEl)}
-                                        anchorEl={anchorDateEl}
-                                        onClose={() => setAnchorDateEl(null)}
-                                        onApplyDate={onApplyFilterDate}
-                                    />
-                                </Box>
+                                <TextField
+                                    select
+                                    size="small"
+                                    label="Nhóm hàng"
+                                    value={paramSearch.idNhomHangHoas?.[0] ?? ''}
+                                    onChange={(e) =>
+                                        setParamSearch({
+                                            ...paramSearch,
+                                            idNhomHangHoas: e.target.value ? [e.target.value] : [],
+                                            currentPage: 1
+                                        })
+                                    }
+                                    sx={{ minWidth: 180, '& .MuiInputBase-root': { height: 42 } }}>
+                                    <MenuItem value="">Tất cả nhóm</MenuItem>
+                                    {lstNhom.map((x) => (
+                                        <MenuItem key={x.id} value={x.id ?? ''}>
+                                            {x.tenNhomHang}
+                                        </MenuItem>
+                                    ))}
+                                </TextField>
                                 <Button
                                     variant="contained"
                                     startIcon={<FactCheckOutlinedIcon />}
-                                    disabled={!idChon}
+                                    disabled={lstChon.length === 0}
                                     onClick={moKiemKe}
                                     sx={{
                                         height: 42,
@@ -498,18 +482,20 @@ const Page_them_phieu_kiem_ke = () => {
                                         fontWeight: 800,
                                         boxShadow: 'none'
                                     }}>
-                                    Kiểm kê
+                                    Kiểm kê ({lstChon.length})
                                 </Button>
                             </Stack>
                             <DataGrid
                                 autoHeight
                                 rows={pageData.items}
+                                getRowId={(r) => r.idDonViQuyDoi}
                                 columns={columns}
                                 hideFooter
+                                disableColumnMenu
                                 rowHeight={48}
-                                onRowClick={(p) => setIdChon(p.id as string)}
-                                getRowClassName={(p) => (p.id === idChon ? 'row-chon' : '')}
-                                localeText={{ noRowsLabel: 'Không có phiếu nhập hàng hóa nào' }}
+                                onRowClick={(p) => doiChon(p.row)}
+                                getRowClassName={(p) => (daChon(p.row.idDonViQuyDoi) ? 'row-chon' : '')}
+                                localeText={{ noRowsLabel: 'Không có hàng hóa nào' }}
                                 sx={{
                                     border: 0,
                                     '& .MuiDataGrid-columnHeaders': { background: '#f8fafc' },
@@ -518,7 +504,7 @@ const Page_them_phieu_kiem_ke = () => {
                                         fontSize: 13,
                                         color: '#4b5563'
                                     },
-                                    '& .MuiDataGrid-cell': { outline: 'none !important' },
+                                    '& .MuiDataGrid-cell, & .MuiDataGrid-columnHeader': { outline: 'none !important' },
                                     '& .MuiDataGrid-row': { cursor: 'pointer' },
                                     '& .row-chon, & .row-chon:hover': {
                                         backgroundColor: 'var(--color-bg, #e8f0fe)',
@@ -528,10 +514,10 @@ const Page_them_phieu_kiem_ke = () => {
                             />
                             <Box sx={{ p: 1 }}>
                                 <CustomTablePagination
-                                    currentPage={paramSearch.currentPage}
-                                    rowPerPage={paramSearch.pageSize}
+                                    currentPage={paramSearch.currentPage ?? 1}
+                                    rowPerPage={paramSearch.pageSize ?? 10}
                                     totalRecord={pageData.totalCount}
-                                    totalPage={utils.getTotalPage(pageData.totalCount, paramSearch.pageSize)}
+                                    totalPage={utils.getTotalPage(pageData.totalCount, paramSearch.pageSize ?? 10)}
                                     handlePerPageChange={(e: SelectChangeEvent<number>) =>
                                         setParamSearch({
                                             ...paramSearch,

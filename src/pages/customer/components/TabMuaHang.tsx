@@ -48,13 +48,34 @@ const TabMuaHang = ({ khachHangId }: any) => {
         },
         {
             field: 'ngayLapHoaDon',
-            headerName: 'Ngày bán',
+            headerName: 'Ngày',
             headerAlign: 'center',
             align: 'center',
             flex: 1.2,
             renderHeader: (params) => <Box>{params.colDef.headerName}</Box>,
             renderCell: (params) => (
                 <Box title={params.value}>{formatDate(new Date(params.value), 'dd/MM/yyyy HH:mm')}</Box>
+            )
+        },
+        {
+            field: 'loaiChungTu',
+            headerName: 'Loại',
+            flex: 1,
+            minWidth: 100,
+            renderHeader: (params) => <Box>{params.colDef.headerName}</Box>,
+            renderCell: (params) => <Box title={params.value}>{params.value}</Box>
+        },
+        {
+            // mua gì: điện thoại (tên - màu - IMEI), hàng hóa x SL, hóa đơn sửa: máy sửa + dịch vụ
+            field: 'noiDung',
+            headerName: 'Nội dung',
+            flex: 3,
+            minWidth: 220,
+            renderHeader: (params) => <Box>{params.colDef.headerName}</Box>,
+            renderCell: (params) => (
+                <Box title={params.value} sx={{ whiteSpace: 'normal', lineHeight: 1.4, py: 0.5 }}>
+                    {params.value}
+                </Box>
             )
         },
         {
@@ -71,7 +92,7 @@ const TabMuaHang = ({ khachHangId }: any) => {
 
         {
             field: 'khachDaTra',
-            headerName: 'Khách đã trả',
+            headerName: 'Đã thanh toán',
             headerAlign: 'right',
             align: 'right',
             flex: 1,
@@ -125,7 +146,8 @@ const TabMuaHang = ({ khachHangId }: any) => {
                     className="data-grid-row-full"
                     columns={columns}
                     rows={khachHangStore.lichSuGiaoDich === undefined ? [] : khachHangStore.lichSuGiaoDich.items}
-                    getRowId={(row) => row.maHoaDon}
+                    getRowId={(row) => row.id ?? row.maHoaDon}
+                    getRowHeight={() => 'auto'}
                     initialState={{
                         pagination: {
                             paginationModel: { page: 0, pageSize: 10 }

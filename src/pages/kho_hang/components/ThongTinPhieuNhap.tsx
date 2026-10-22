@@ -35,6 +35,8 @@ const formatMoney = (value: number) => Number(value || 0).toLocaleString('vi-VN'
  * In nháp / Lưu tạm (trình duyệt) / Hoàn thành
  */
 const ThongTinPhieuNhap = ({ p }: { p: PhieuNhapState }) => {
+    // sửa phiếu: tổng mới - số đã trả (> 0: trả thêm, < 0: NCC hoàn lại)
+    const chenhLech = p.tongTienHang - p.daThanhToanCu;
     const [anchorNCC, setAnchorNCC] = useState<HTMLElement | null>(null);
     const [isShowModalAddNCC, setIsShowModalAddNCC] = useState(false);
     const [newNCC, setNewNCC] = useState<CreateOrEditKhachHangDto>({} as CreateOrEditKhachHangDto);
@@ -103,8 +105,8 @@ const ThongTinPhieuNhap = ({ p }: { p: PhieuNhapState }) => {
             </Typography>
             {p.laSua && (
                 <Alert severity="warning" sx={{ mb: 2, fontSize: 13 }}>
-                    Đang sửa phiếu đã hoàn thành. Máy đã bán không sửa / xóa được; thanh toán thêm hãy lập phiếu chi ở
-                    Sổ quỹ.
+                    Đang sửa phiếu đã hoàn thành. Máy đã bán không sửa / xóa được. Tổng tiền thay đổi thì trả thêm hoặc
+                    nhận lại tiền nhà cung cấp ngay bên dưới.
                 </Alert>
             )}
 
@@ -166,18 +168,25 @@ const ThongTinPhieuNhap = ({ p }: { p: PhieuNhapState }) => {
                 </Typography>
             </Stack>
 
-            {p.laSua ? (
-                // sửa phiếu đã hoàn thành: chỉ hiển thị số đã trả, không thanh toán ở đây
+            {p.laSua && (
                 <Stack direction="row" justifyContent="space-between" sx={{ mb: 2 }}>
                     <Typography sx={{ fontWeight: 500, fontSize: 13 }}>Đã thanh toán</Typography>
                     <Typography sx={{ fontWeight: 700, fontSize: 13, color: '#16a34a' }}>
                         {formatMoney(p.daThanhToanCu)}
                     </Typography>
                 </Stack>
-            ) : (
+            )}
+            {/* sửa phiếu: chỉ thanh toán khi tổng thay đổi so với số đã trả (tăng: trả thêm, giảm: NCC hoàn lại) */}
+            {(!p.laSua || Math.abs(chenhLech) > 0.000001) && (
                 <>
                     <Box sx={{ mb: 2 }}>
-                        <Typography sx={{ mb: 1, fontWeight: 600 }}>Hình thức thanh toán</Typography>
+                        <Typography sx={{ mb: 1, fontWeight: 600 }}>
+                            {!p.laSua
+                                ? 'Hình thức thanh toán'
+                                : chenhLech > 0
+                                ? `Trả thêm NCC (tăng ${formatMoney(chenhLech)})`
+                                : `NCC hoàn lại (trả dư ${formatMoney(-chenhLech)})`}
+                        </Typography>
                         <Select
                             id="phieu-nhap-hinh-thuc"
                             fullWidth
@@ -190,15 +199,24 @@ const ThongTinPhieuNhap = ({ p }: { p: PhieuNhapState }) => {
                         </Select>
                     </Box>
                     <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-                        <Typography sx={{ fontWeight: 500, fontSize: 13 }}>Số tiền thanh toán</Typography>
+                        <Typography sx={{ fontWeight: 500, fontSize: 13 }}>
+                            {p.laSua && chenhLech < 0 ? 'Số tiền nhận lại' : 'Số tiền thanh toán'}
+                        </Typography>
                         <TextField
                             id="phieu-nhap-so-tien"
-                            value={formatMoney(p.soTienThanhToan)}
+                            value={formatMoney(p.laSua && chenhLech < 0 ? p.soTienNhanLai : p.soTienThanhToan)}
                             disabled={p.hinhThucThanhToan === HINH_THUC_NO}
                             onChange={(e) => {
                                 const value = Number(e.target.value.replace(/\./g, '').replace(/,/g, '') || 0);
-                                // không trả quá số cần trả; phần còn lại là nợ nhà cung cấp
-                                p.setSoTienThanhToan(Number.isNaN(value) ? 0 : Math.min(value, p.tongTienHang));
+                                const soTien = Number.isNaN(value) ? 0 : value;
+                                if (!p.laSua) {
+                                    // không trả quá số cần trả; phần còn lại là nợ nhà cung cấp
+                                    p.setSoTienThanhToan(Math.min(soTien, p.tongTienHang));
+                                } else if (chenhLech > 0) {
+                                    p.setSoTienThanhToan(Math.min(soTien, chenhLech));
+                                } else {
+                                    p.setSoTienNhanLai(Math.min(soTien, -chenhLech));
+                                }
                             }}
                             size="small"
                             sx={{ width: 160, '& input': { textAlign: 'right', fontSize: 13, fontWeight: 500 } }}
@@ -216,6 +234,14 @@ const ThongTinPhieuNhap = ({ p }: { p: PhieuNhapState }) => {
                         </Box>
                     )}
                 </>
+            )}
+            {p.laSua && chenhLech < 0 && chenhLech + p.soTienNhanLai < -0.000001 && (
+                <Stack direction="row" justifyContent="space-between" sx={{ mb: 2 }}>
+                    <Typography sx={{ fontWeight: 500, fontSize: 13 }}>NCC còn nợ cửa hàng</Typography>
+                    <Typography sx={{ fontWeight: 700, fontSize: 13, color: '#d97706' }}>
+                        {formatMoney(-chenhLech - p.soTienNhanLai)}
+                    </Typography>
+                </Stack>
             )}
             <Stack direction="row" justifyContent="space-between" sx={{ mb: 2 }}>
                 <Typography sx={{ fontWeight: 500, fontSize: 13 }}>Còn nợ nhà cung cấp</Typography>
@@ -263,7 +289,7 @@ const ThongTinPhieuNhap = ({ p }: { p: PhieuNhapState }) => {
                     variant="contained"
                     startIcon={<SaveIcon />}
                     onClick={p.hoanThanh}
-                    disabled={p.isSaving}
+                    disabled={p.isSaving || !p.coThayDoi}
                     sx={{
                         flex: '1 1 100%',
                         backgroundColor: 'var(--color-main)',

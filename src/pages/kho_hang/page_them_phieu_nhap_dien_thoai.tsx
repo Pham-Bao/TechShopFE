@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
-import { Box, Button, Chip, Grid, IconButton, Paper, Stack, Tooltip, Typography } from '@mui/material';
+import { Box, Button, Chip, Grid, IconButton, Paper, Stack, TextField, Tooltip, Typography } from '@mui/material';
+import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
+import { enqueueSnackbar } from 'notistack';
+import ModalChonMayCoSan from './components/ModalChonMayCoSan';
+import { DienThoaiChuaCoPhieuNhapDto } from '../../services/kho_hang/KhoHangService';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AddIcon from '@mui/icons-material/Add';
@@ -67,6 +71,63 @@ const Page_Them_Phieu_Nhap_Dien_Thoai = () => {
     };
     const imeiDaCo = lstDong.filter((x) => x.dienThoai && x.id !== dongSua?.id).map((x) => x.dienThoai?.imel ?? '');
 
+    // gắn máy có sẵn (chưa thuộc phiếu nhập nào, kể cả đã bán) vào phiếu; giá nhập mặc định = giá vốn hiện tại
+    const [isShowChonMay, setIsShowChonMay] = useState(false);
+    // giaNhap: giá nhập vừa nhập trong dialog "Thêm điện thoại" (IMEI trùng máy có sẵn); không có: lấy giá vốn hiện tại
+    const chonMayCoSan = (may: DienThoaiChuaCoPhieuNhapDto, giaNhap?: number) => {
+        if (may.imel && lstDong.some((x) => x.dienThoai?.imel?.trim() === may.imel?.trim())) {
+            enqueueSnackbar(`IMEI ${may.imel} đã có trên phiếu`, { variant: 'warning' });
+            return;
+        }
+        const gia = giaNhap ?? may.giaVon;
+        setLstDong((prev) => [
+            ...prev,
+            {
+                id: `cs_${may.idDonViQuyDoi}`,
+                idDonViQuyDoi: may.idDonViQuyDoi,
+                maHang: may.maHangHoa,
+                tenHang: may.tenHangHoa,
+                soLuong: 1,
+                donGia: gia,
+                giamGia: 0,
+                ghiChu: may.ghiChu ?? '',
+                dienThoai: {
+                    tenHangHoa: may.tenHangHoa,
+                    idNhomHangHoa: may.idNhomHangHoa,
+                    imel: may.imel ?? '',
+                    mau: may.mau,
+                    dungLuong: may.dungLuong,
+                    pin: may.pin,
+                    tinhTrang: may.tinhTrang,
+                    matKhau: may.matKhau,
+                    loi: may.loi,
+                    ghiChu: may.ghiChu,
+                    giaNhap: gia,
+                    giaBan: may.giaBan,
+                    daGiaoDich: may.daGiaoDich,
+                    mayCoSan: true
+                }
+            }
+        ]);
+        if (giaNhap === undefined) {
+            enqueueSnackbar(`Đã thêm ${may.tenHangHoa} vào phiếu`, { variant: 'success' });
+        }
+    };
+    const suaGiaNhapMayCoSan = (id: string, text: string) => {
+        const gia = Number(text.replace(/\./g, '').replace(/,/g, '') || 0);
+        setLstDong((prev) =>
+            prev.map((x) =>
+                x.id === id && x.dienThoai
+                    ? {
+                          ...x,
+                          donGia: Number.isNaN(gia) ? 0 : gia,
+                          dienThoai: { ...x.dienThoai, giaNhap: Number.isNaN(gia) ? 0 : gia }
+                      }
+                    : x
+            )
+        );
+    };
+
     const columns: GridColDef[] = [
         {
             field: 'tenHang',
@@ -123,9 +184,19 @@ const Page_Them_Phieu_Nhap_Dien_Thoai = () => {
             sortable: false,
             align: 'right',
             headerAlign: 'right',
-            renderCell: (params) => (
-                <Typography sx={{ fontSize: 14, fontWeight: 800 }}>{formatMoney(params.row.donGia)}</Typography>
-            )
+            renderCell: (params) =>
+                // máy có sẵn vừa gắn: sửa giá nhập ngay trên dòng
+                params.row.dienThoai?.mayCoSan ? (
+                    <TextField
+                        size="small"
+                        value={formatMoney(params.row.donGia)}
+                        onChange={(e) => suaGiaNhapMayCoSan(params.row.id, e.target.value)}
+                        onKeyDown={(e) => e.stopPropagation()}
+                        sx={{ width: 115, '& input': { textAlign: 'right', fontWeight: 700, fontSize: 13 } }}
+                    />
+                ) : (
+                    <Typography sx={{ fontSize: 14, fontWeight: 800 }}>{formatMoney(params.row.donGia)}</Typography>
+                )
         },
         {
             field: 'ngayNhap',
@@ -150,10 +221,28 @@ const Page_Them_Phieu_Nhap_Dien_Thoai = () => {
         {
             field: 'action',
             headerName: '',
-            width: 90,
+            width: 150,
             sortable: false,
             renderCell: (params) =>
-                // sửa phiếu đã hoàn thành: máy đã bán / đã giao dịch bị khóa
+                // máy có sẵn vừa gắn (chưa lưu): chỉ bỏ ra khỏi phiếu được
+                params.row.dienThoai?.mayCoSan ? (
+                    <Stack direction="row" alignItems="center" spacing={0.5}>
+                        <Chip
+                            size="small"
+                            color={params.row.dienThoai?.daGiaoDich ? 'warning' : 'info'}
+                            variant="outlined"
+                            label={params.row.dienThoai?.daGiaoDich ? 'Có sẵn · đã bán' : 'Máy có sẵn'}
+                        />
+                        <Tooltip title="Bỏ khỏi phiếu">
+                            <IconButton
+                                size="small"
+                                onClick={() => setLstDong((prev) => prev.filter((x) => x.id !== params.row.id))}
+                                sx={{ color: '#9ca3af', '&:hover': { backgroundColor: '#fee2e2', color: '#dc2626' } }}>
+                                <DeleteOutlineIcon sx={{ fontSize: 18 }} />
+                            </IconButton>
+                        </Tooltip>
+                    </Stack>
+                ) : // sửa phiếu đã hoàn thành: máy đã bán / đã giao dịch bị khóa
                 params.row.dienThoai?.daGiaoDich ? (
                     <Chip
                         size="small"
@@ -188,8 +277,17 @@ const Page_Them_Phieu_Nhap_Dien_Thoai = () => {
                 open={isShowModal}
                 onClose={() => setIsShowModal(false)}
                 onAdd={luuMay}
+                onGanMayCoSan={chonMayCoSan}
+                idPhieuNhap={p.idPhieu}
                 imeiDaCo={imeiDaCo}
                 duLieu={dongSua?.dienThoai ?? null}
+            />
+            <ModalChonMayCoSan
+                open={isShowChonMay}
+                onClose={() => setIsShowChonMay(false)}
+                onChon={chonMayCoSan}
+                idPhieuNhap={p.idPhieu}
+                idDaChon={lstDong.map((x) => x.idDonViQuyDoi ?? '').filter(Boolean)}
             />
             <Box sx={{ background: '#f5f6fa', minHeight: '100vh', p: 2 }}>
                 <Paper elevation={0} sx={{ p: 1, borderRadius: 2, mb: 2 }}>
@@ -216,13 +314,22 @@ const Page_Them_Phieu_Nhap_Dien_Thoai = () => {
                                 alignItems="center"
                                 sx={{ p: 1.5, borderBottom: '1px solid #edf0f5' }}>
                                 <Typography sx={{ fontWeight: 800 }}>Danh sách máy ({lstDong.length})</Typography>
-                                <Button
-                                    variant="contained"
-                                    startIcon={<AddIcon />}
-                                    onClick={moThem}
-                                    sx={{ height: 40, textTransform: 'none', fontWeight: 800, boxShadow: 'none' }}>
-                                    Thêm điện thoại
-                                </Button>
+                                <Stack direction="row" spacing={1}>
+                                    <Button
+                                        variant="outlined"
+                                        startIcon={<PlaylistAddIcon />}
+                                        onClick={() => setIsShowChonMay(true)}
+                                        sx={{ height: 40, textTransform: 'none', fontWeight: 700 }}>
+                                        Thêm máy có sẵn
+                                    </Button>
+                                    <Button
+                                        variant="contained"
+                                        startIcon={<AddIcon />}
+                                        onClick={moThem}
+                                        sx={{ height: 40, textTransform: 'none', fontWeight: 800, boxShadow: 'none' }}>
+                                        Thêm điện thoại
+                                    </Button>
+                                </Stack>
                             </Stack>
                             <DataGrid
                                 autoHeight

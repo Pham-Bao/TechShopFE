@@ -8,4 +8,8 @@ export interface LichSuGiaoDich {
     conNo: number;
     txtTrangThai: string;
     trangThai: number;
+    id?: string;
+    idLoaiChungTu?: number;
+    loaiChungTu?: string; // Hóa đơn bán / Hóa đơn sửa / Trả hàng / Nhập hàng...
+    noiDung?: string; // mua gì: tên máy - màu - IMEI, hàng x SL, máy sửa + dịch vụ
 }

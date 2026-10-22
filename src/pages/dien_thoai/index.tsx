@@ -109,7 +109,8 @@ const PageProduct = () => {
         columnSort: '',
         typeSort: '',
         idLoaiHangHoa: 4,
-        trangThais: listTrangThai.map((x) => x.value)
+        // mặc định chỉ hiện máy chưa bán (đổi trong bộ lọc để xem trạng thái khác)
+        trangThais: listTrangThai.filter((x) => x.value === 1).map((x) => x.value)
     });
     const [soLuongTheoTrangThai, setSoLuongTheoTrangThai] = useState<SoLuongTheoTrangThaiBanHangDto[]>([]);
 
@@ -915,6 +916,23 @@ window.onload=function(){
                 renderCell: (params) => (params.value ? format(new Date(params.value), 'dd/MM/yyyy') : '')
             },
             {
+                // mỗi điện thoại phải thuộc 1 phiếu nhập; máy cũ chưa gắn thì gắn qua "Thêm máy có sẵn" ở phiếu nhập
+                field: 'maPhieuNhap',
+                headerName: 'Phiếu nhập',
+                minWidth: 130,
+                flex: 1,
+                renderCell: (params) =>
+                    isKhach ? null : params.value ? (
+                        <Box component="span" sx={{ fontWeight: 600, color: 'var(--color-main)' }}>
+                            {params.value}
+                        </Box>
+                    ) : (
+                        <Box component="span" sx={{ fontSize: 12, color: '#d97706' }}>
+                            Chưa có phiếu nhập
+                        </Box>
+                    )
+            },
+            {
                 field: 'loi',
                 headerName: 'Lỗi',
                 minWidth: 180,
@@ -1164,7 +1182,12 @@ window.onload=function(){
                                 minWidth: 95,
                                 bgcolor: '#fff',
                                 color: '#666466',
-                                display: abpCustom.isGrandPermission('Pages.DM_HangHoa.Import') ? '' : 'none'
+                                // điện thoại (loại 4) chỉ nhập qua phiếu nhập: ẩn nhập Excel
+                                display:
+                                    abpCustom.isGrandPermission('Pages.DM_HangHoa.Import') &&
+                                    selectedLoaiDienThoai !== 4
+                                        ? ''
+                                        : 'none'
                             }}>
                             Nhập
                         </Button>
@@ -1198,7 +1221,12 @@ window.onload=function(){
                                 minWidth: 160,
                                 fontSize: 14,
                                 whiteSpace: 'nowrap',
-                                display: abpCustom.isGrandPermission('Pages.DM_HangHoa.Create') ? '' : 'none'
+                                // điện thoại (loại 4) chỉ tạo qua phiếu nhập: ẩn thêm máy
+                                display:
+                                    abpCustom.isGrandPermission('Pages.DM_HangHoa.Create') &&
+                                    selectedLoaiDienThoai !== 4
+                                        ? ''
+                                        : 'none'
                             }}>
                             Thêm điện thoại
                         </Button>

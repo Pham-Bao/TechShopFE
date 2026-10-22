@@ -22,6 +22,7 @@ export class ModelHangHoaDto {
     tenLoaiHangHoa?: string = 'Dịch vụ';
     txtTrangThaiHang?: string = 'Đang kinh doanh';
     imel?: string = '';
+    maPhieuNhap?: string; // điện thoại: mã phiếu nhập của máy (rỗng: chưa có phiếu nhập)
     mau?: string = '';
     dungLuong?: number;
     soLuongTon?: number = 0;
@@ -101,6 +102,7 @@ export class ModelHangHoaDienThoaiDto {
     idHangHoa?: string;
     laHangHoa?: boolean;
     image? = '';
+    maPhieuNhap?: string; // điện thoại: mã phiếu nhập của máy (rỗng: chưa có phiếu nhập)
     ngayNhap?: string | null;
 
     khachHang?: {

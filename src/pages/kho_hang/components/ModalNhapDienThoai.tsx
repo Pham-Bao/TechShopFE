@@ -19,6 +19,9 @@ import {
 import PhoneIphoneIcon from '@mui/icons-material/PhoneIphone';
 import DialogButtonClose from '../../../components/Dialog/ButtonClose';
 import ProductService from '../../../services/product/ProductService';
+import { PagedProductSearchDto } from '../../../services/product/dto';
+import KhoHangService, { DienThoaiChuaCoPhieuNhapDto } from '../../../services/kho_hang/KhoHangService';
+import { enqueueSnackbar } from 'notistack';
 import utils from '../../../utils/utils';
 import { COLOR_SUGGEST } from '../../../lib/mauSacSuggest';
 import { STORAGE_SUGGEST } from '../../../lib/dungLuongSugget';
@@ -40,6 +43,7 @@ export interface IDienThoaiNhap {
     giaNhap: number;
     giaBan: number;
     daGiaoDich?: boolean; // sửa phiếu nhập đã hoàn thành: máy đã bán / đã giao dịch -> không sửa / xóa được
+    mayCoSan?: boolean; // máy có sẵn (chưa thuộc phiếu nhập nào) vừa gắn vào phiếu: chỉ sửa giá nhập
 }
 
 type PropsModalNhapDienThoai = {
@@ -48,6 +52,10 @@ type PropsModalNhapDienThoai = {
     onAdd: (item: IDienThoaiNhap) => void;
     imeiDaCo: string[]; // IMEI đã có trên phiếu (trừ máy đang sửa), không cho nhập trùng
     duLieu?: IDienThoaiNhap | null; // có: sửa máy đã thêm vào phiếu
+    // IMEI trùng máy đã có trong hệ thống nhưng chưa thuộc phiếu nhập nào (vd. đã bán trước khi kịp nhập phiếu):
+    // gắn máy đó vào phiếu (giữ thông tin máy trong hệ thống, chỉ lấy giá nhập vừa nhập)
+    onGanMayCoSan?: (may: DienThoaiChuaCoPhieuNhapDto, giaNhap: number) => void;
+    idPhieuNhap?: string | null;
 };
 
 const emptyForm: IDienThoaiNhap = {
@@ -68,9 +76,27 @@ const emptyForm: IDienThoaiNhap = {
 // giống dialog điện thoại bên trang Hàng hóa / Điện thoại
 const TINH_TRANG = ['Kính phẩy', 'Zin', 'Keng', 'Áp', 'A', 'A-', 'B+', 'B', 'B-', 'C', 'D'];
 
-const ModalNhapDienThoai = ({ open, onClose, onAdd, imeiDaCo, duLieu }: PropsModalNhapDienThoai) => {
+// lỗi từng ô bắt buộc: tên, IMEI, màu, dung lượng, pin, tình trạng
+type LoiNhapMay = {
+    tenHangHoa?: string;
+    imel?: string;
+    mau?: string;
+    dungLuong?: string;
+    pin?: string;
+    tinhTrang?: string;
+};
+
+const ModalNhapDienThoai = ({
+    open,
+    onClose,
+    onAdd,
+    imeiDaCo,
+    duLieu,
+    onGanMayCoSan,
+    idPhieuNhap
+}: PropsModalNhapDienThoai) => {
     const [form, setForm] = useState<IDienThoaiNhap>(emptyForm);
-    const [errors, setErrors] = useState<{ tenHangHoa?: string; imel?: string }>({});
+    const [errors, setErrors] = useState<LoiNhapMay>({});
     const [loading, setLoading] = useState(false);
     const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'empty' | 'error'>('idle');
     const refImei = useRef<HTMLInputElement>(null);
@@ -113,6 +139,7 @@ const ModalNhapDienThoai = ({ open, onClose, onAdd, imeiDaCo, duLieu }: PropsMod
     };
 
     const handleChangeTinhTrang = (value: string) => {
+        setErrors((prev) => ({ ...prev, tinhTrang: undefined }));
         setForm((prev) => {
             const list = prev.tinhTrang ? prev.tinhTrang.split(',').filter(Boolean) : [];
             const newList = list.includes(value) ? list.filter((x) => x !== value) : [...list, value];
@@ -120,8 +147,9 @@ const ModalNhapDienThoai = ({ open, onClose, onAdd, imeiDaCo, duLieu }: PropsMod
         });
     };
 
+    // bắt buộc nhập đủ: tên, IMEI, màu sắc, dung lượng, pin, tình trạng
     const validate = () => {
-        const err: { tenHangHoa?: string; imel?: string } = {};
+        const err: LoiNhapMay = {};
         if (!form.tenHangHoa.trim()) {
             err.tenHangHoa = 'Vui lòng nhập tên điện thoại';
         }
@@ -131,18 +159,83 @@ const ModalNhapDienThoai = ({ open, onClose, onAdd, imeiDaCo, duLieu }: PropsMod
         } else if (imeiDaCo.includes(imei)) {
             err.imel = 'IMEI này đã có trên phiếu';
         }
+        if (!form.mau?.trim()) {
+            err.mau = 'Vui lòng nhập màu sắc';
+        }
+        if (!form.dungLuong) {
+            err.dungLuong = 'Vui lòng chọn dung lượng';
+        }
+        if (form.pin == null) {
+            err.pin = 'Nhập % pin';
+        }
+        if (!form.tinhTrang?.trim()) {
+            err.tinhTrang = 'Vui lòng chọn ít nhất 1 tình trạng';
+        }
         setErrors(err);
         return Object.keys(err).length === 0;
     };
 
-    const add = (nhapTiep: boolean) => {
+    // IMEI đã có trong hệ thống: chưa thuộc phiếu nhập nào -> trả về máy đó để gắn; đã thuộc phiếu nhập khác -> báo lỗi
+    const [dangKiemTraImei, setDangKiemTraImei] = useState(false);
+    const timMayTheoImei = async (imei: string): Promise<DienThoaiChuaCoPhieuNhapDto | 'da-co-phieu' | null> => {
+        const chuaCoPhieu = await KhoHangService.GetDienThoaiChuaCoPhieuNhap(imei, idPhieuNhap);
+        const may = chuaCoPhieu.find((x) => x.imel?.trim() === imei);
+        if (may) {
+            return may;
+        }
+        const ds = await ProductService.Get_DMHangHoaDienThoai({
+            textSearch: imei,
+            idLoaiHangHoa: 4,
+            currentPage: 1,
+            pageSize: 10,
+            trangThais: [1, 2, 3, 4, 5]
+        } as PagedProductSearchDto);
+        const trung = (ds?.items ?? []).find((x) => x.imel?.trim() === imei && x.maPhieuNhap);
+        if (trung) {
+            setErrors((prev) => ({ ...prev, imel: `IMEI này đã thuộc phiếu nhập ${trung.maPhieuNhap}` }));
+            return 'da-co-phieu';
+        }
+        return null;
+    };
+
+    const add = async (nhapTiep: boolean) => {
+        const imei = form.imel.trim();
+        if (!laSua && onGanMayCoSan && imei && !imeiDaCo.includes(imei)) {
+            setDangKiemTraImei(true);
+            try {
+                const ketQua = await timMayTheoImei(imei);
+                if (ketQua === 'da-co-phieu') {
+                    return;
+                }
+                if (ketQua) {
+                    // máy đã có trong hệ thống (thường là đã bán trước khi kịp nhập phiếu): gắn vào phiếu, không bắt nhập thêm
+                    onGanMayCoSan(ketQua, form.giaNhap || ketQua.giaVon);
+                    enqueueSnackbar(
+                        `IMEI ${imei} là máy đã có trong hệ thống${
+                            ketQua.daGiaoDich ? ' (đã bán)' : ''
+                        } – đã gắn vào phiếu nhập`,
+                        { variant: 'info' }
+                    );
+                    if (nhapTiep) {
+                        setForm(emptyForm);
+                        setErrors({});
+                        setStatus('idle');
+                    } else {
+                        onClose();
+                    }
+                    return;
+                }
+            } finally {
+                setDangKiemTraImei(false);
+            }
+        }
         if (!validate()) {
             return;
         }
         onAdd({ ...form, tenHangHoa: form.tenHangHoa.trim(), imel: form.imel.trim() });
         if (nhapTiep) {
-            // giữ thông tin dòng máy, chỉ xóa thông tin riêng của từng máy
-            setForm({ ...form, imel: '', pin: null, tinhTrang: '', matKhau: '', loi: '', ghiChu: '' });
+            // nhập máy tiếp: xóa trắng toàn bộ thông tin để nhập máy mới
+            setForm(emptyForm);
             setErrors({});
             setStatus('idle');
             setTimeout(() => refImei.current?.focus(), 0);
@@ -259,11 +352,19 @@ const ModalNhapDienThoai = ({ open, onClose, onAdd, imeiDaCo, duLieu }: PropsMod
                                     }
                                     getOptionLabel={(option) => option.label}
                                     isOptionEqualToValue={(option, value) => option.value === value.value}
-                                    onChange={(event, newValue) =>
-                                        setForm((prev) => ({ ...prev, dungLuong: newValue?.value ?? null }))
-                                    }
+                                    onChange={(event, newValue) => {
+                                        setForm((prev) => ({ ...prev, dungLuong: newValue?.value ?? null }));
+                                        setErrors((prev) => ({ ...prev, dungLuong: undefined }));
+                                    }}
                                     renderInput={(params) => (
-                                        <TextField {...params} variant="outlined" size="small" label="Dung lượng *" />
+                                        <TextField
+                                            {...params}
+                                            variant="outlined"
+                                            size="small"
+                                            label="Dung lượng *"
+                                            error={!!errors.dungLuong}
+                                            helperText={errors.dungLuong}
+                                        />
                                     )}
                                 />
                                 <Autocomplete
@@ -280,9 +381,19 @@ const ModalNhapDienThoai = ({ open, onClose, onAdd, imeiDaCo, duLieu }: PropsMod
                                         );
                                     }}
                                     inputValue={form.mau || ''}
-                                    onInputChange={(event, newValue) => setForm((prev) => ({ ...prev, mau: newValue }))}
+                                    onInputChange={(event, newValue) => {
+                                        setForm((prev) => ({ ...prev, mau: newValue }));
+                                        if (newValue?.trim()) setErrors((prev) => ({ ...prev, mau: undefined }));
+                                    }}
                                     renderInput={(params) => (
-                                        <TextField {...params} variant="outlined" size="small" label="Màu sắc *" />
+                                        <TextField
+                                            {...params}
+                                            variant="outlined"
+                                            size="small"
+                                            label="Màu sắc *"
+                                            error={!!errors.mau}
+                                            helperText={errors.mau}
+                                        />
                                     )}
                                 />
                             </Stack>
@@ -294,12 +405,15 @@ const ModalNhapDienThoai = ({ open, onClose, onAdd, imeiDaCo, duLieu }: PropsMod
                                     sx={{ flex: 0.7 }}
                                     label="Pin *"
                                     value={form.pin ?? ''}
+                                    error={!!errors.pin}
+                                    helperText={errors.pin}
                                     onChange={(e) => {
                                         const so = parseInt(e.target.value, 10);
                                         setForm((prev) => ({
                                             ...prev,
                                             pin: Number.isNaN(so) ? null : Math.min(Math.max(so, 0), 100)
                                         }));
+                                        if (!Number.isNaN(so)) setErrors((prev) => ({ ...prev, pin: undefined }));
                                     }}
                                 />
                                 <TextField
@@ -363,8 +477,10 @@ const ModalNhapDienThoai = ({ open, onClose, onAdd, imeiDaCo, duLieu }: PropsMod
                             </Stack>
 
                             {/* TÌNH TRẠNG */}
-                            <Typography variant="body2" sx={{ mb: -1.5, color: '#6b7280' }}>
-                                Tình trạng *
+                            <Typography
+                                variant="body2"
+                                sx={{ mb: -1.5, color: errors.tinhTrang ? '#d32f2f' : '#6b7280' }}>
+                                Tình trạng *{errors.tinhTrang ? ` — ${errors.tinhTrang}` : ''}
                             </Typography>
                             <Stack direction="row" spacing={4}>
                                 {[0, 4, 8].map((start) => (
@@ -419,11 +535,19 @@ const ModalNhapDienThoai = ({ open, onClose, onAdd, imeiDaCo, duLieu }: PropsMod
                     Hủy
                 </Button>
                 {!laSua && (
-                    <Button variant="outlined" onClick={() => add(true)} sx={{ textTransform: 'none' }}>
+                    <Button
+                        variant="outlined"
+                        disabled={dangKiemTraImei}
+                        onClick={() => add(true)}
+                        sx={{ textTransform: 'none' }}>
                         Thêm &amp; nhập máy tiếp
                     </Button>
                 )}
-                <Button variant="contained" sx={{ bgcolor: 'var(--color-main)' }} onClick={() => add(false)}>
+                <Button
+                    variant="contained"
+                    disabled={dangKiemTraImei}
+                    sx={{ bgcolor: 'var(--color-main)' }}
+                    onClick={() => add(false)}>
                     {laSua ? 'Lưu' : 'Thêm'}
                 </Button>
             </DialogActions>

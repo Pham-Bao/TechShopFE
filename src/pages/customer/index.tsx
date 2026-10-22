@@ -60,7 +60,8 @@ import { format } from 'date-fns';
 import { Guid } from 'guid-typescript';
 import CustomerFilterDrawer from './components/CustomerFilterDrawer';
 import CustomerInfor2 from './components/customer_infor2';
-import ActionRow2Button from '../../components/DataGrid/ActionRow2Button';
+import ModalHoaDonKhachHang from './components/ModalHoaDonKhachHang';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import { TypeAction } from '../../lib/appconst';
 import ZaloService from '../../services/zalo/ZaloService';
 import ModalGuiTinNhanZalo from '../zalo/modal_gui_tin_zalo';
@@ -106,6 +107,8 @@ interface CustomerScreenState {
     lstErrImport: BangBaoLoiFileimportDto[];
     anchorElFilter: any;
     isShowModalGuiTinZalo?: boolean;
+    // khách đang xem danh sách hóa đơn (null: đóng dialog)
+    khachXemHoaDon?: { id: string; tenKhachHang: string } | null;
 }
 class CustomerScreen extends React.Component<any, CustomerScreenState> {
     constructor(props: any) {
@@ -764,6 +767,36 @@ class CustomerScreen extends React.Component<any, CustomerScreenState> {
                 )
             },
             {
+                field: 'soHoaDon',
+                headerName: 'Số hóa đơn',
+                minWidth: 150,
+                flex: 1,
+                sortable: false,
+                renderHeader: (params) => <Box sx={{ fontWeight: '700' }}>{params.colDef.headerName}</Box>,
+                renderCell: (params) => (
+                    // hóa đơn bán / hóa đơn sửa đã hoàn thành; bấm để xem danh sách hóa đơn của khách
+                    <Box
+                        title="Xem hóa đơn của khách"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            this.setState({
+                                khachXemHoaDon: {
+                                    id: params.row.id?.toString(),
+                                    tenKhachHang: params.row.tenKhachHang
+                                }
+                            });
+                        }}
+                        sx={{
+                            cursor: 'pointer',
+                            color: 'var(--color-main)',
+                            fontSize: 'var(--font-size-main)',
+                            '&:hover': { textDecoration: 'underline' }
+                        }}>
+                        Bán: {params.row.soHoaDonBan ?? 0} · Sửa: {params.row.soHoaDonSua ?? 0}
+                    </Box>
+                )
+            },
+            {
                 field: 'creationTime',
                 headerName: 'Ngày Tạo',
                 minWidth: 120,
@@ -779,13 +812,23 @@ class CustomerScreen extends React.Component<any, CustomerScreenState> {
                 field: 'action',
                 headerName: '#',
                 flex: 0.5,
-                minWidth: 110,
+                minWidth: 70,
                 align: 'center',
                 headerAlign: 'center',
                 disableColumnMenu: true,
                 sortable: false,
                 renderCell: (params) => (
-                    <ActionRow2Button handleClickAction={(type: number) => this.handleClickAction(type, params)} />
+                    // xem chi tiết khách (sửa / xóa thực hiện trong màn chi tiết hoặc chọn nhiều dòng)
+                    <VisibilityOutlinedIcon
+                        titleAccess="Xem khách hàng"
+                        onClick={() => this.setState({ information: true, idkhachHang: params.id.toString() })}
+                        sx={{
+                            fontSize: 20,
+                            color: '#7e7979',
+                            cursor: 'pointer',
+                            '&:hover': { color: 'var(--color-main)' }
+                        }}
+                    />
                 ),
                 renderHeader: (params) => <Box>{params.colDef.headerName}</Box>
             }
@@ -794,6 +837,10 @@ class CustomerScreen extends React.Component<any, CustomerScreenState> {
 
         return (
             <>
+                <ModalHoaDonKhachHang
+                    khachHang={this.state.khachXemHoaDon ?? null}
+                    onClose={() => this.setState({ khachXemHoaDon: null })}
+                />
                 {this.state.information === false ? (
                     <Grid className="customer-page" container paddingTop={2}>
                         <ModalGuiTinNhanZalo
@@ -939,9 +986,9 @@ class CustomerScreen extends React.Component<any, CustomerScreenState> {
                         <Grid container spacing={2} marginTop={3} columns={13}>
                             <Grid
                                 item
-                                lg={3}
-                                md={3}
-                                sm={3}
+                                lg={2}
+                                md={2}
+                                sm={2}
                                 xs={13}
                                 display={window.screen.width < 768 ? 'none' : 'block'}>
                                 <Box className="page-box-left">
@@ -1002,7 +1049,7 @@ class CustomerScreen extends React.Component<any, CustomerScreenState> {
                                     </Box>
                                 </Box>
                             </Grid>
-                            <Grid item lg={10} md={10} sm={10} xs={13}>
+                            <Grid item lg={11} md={11} sm={11} xs={13}>
                                 {this.state.listItemSelectedModel.length > 0 && (
                                     <ActionRowSelect
                                         lstOption={

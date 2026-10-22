@@ -18,4 +18,6 @@ export interface KhachHangItemDto {
     soLanCheckIn?: number;
     trangThaiCheckIn?: number;
     zoaUserId?: string;
+    soHoaDonBan?: number; // hóa đơn bán đã hoàn thành
+    soHoaDonSua?: number; // hóa đơn sửa đã hoàn thành
 }

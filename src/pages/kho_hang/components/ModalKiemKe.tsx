@@ -18,13 +18,12 @@ import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import DialogButtonClose from '../../../components/Dialog/ButtonClose';
 
-// 1 hàng hóa cần kiểm (theo đơn vị quy đổi của phiếu nhập)
+// 1 hàng hóa cần kiểm (theo đơn vị quy đổi)
 export interface IDongKiemKe {
     id: string; // idDonViQuyDoi
     idHangHoa: string;
     maHang: string;
     tenHang: string;
-    soLuongNhap: number | null; // SL trên phiếu nhập (null: phiếu kiểm kê cũ không gắn phiếu nhập)
     soLuongTon: number; // tồn phần mềm hiện tại
     soLuongThucTe: number; // cửa hàng đếm được
     ghiChu?: string;
@@ -42,7 +41,7 @@ type PropsModalKiemKe = {
 };
 
 /**
- * Dialog kiểm kê (gần toàn màn hình): nhập số lượng thực tế đếm được cho từng hàng của phiếu nhập
+ * Dialog kiểm kê (gần toàn màn hình): nhập số lượng thực tế đếm được cho từng hàng hóa đã chọn
  */
 const ModalKiemKe = ({
     open,
@@ -95,15 +94,6 @@ const ModalKiemKe = ({
                     {p.row.tenHang}
                 </Typography>
             )
-        },
-        {
-            field: 'soLuongNhap',
-            headerName: 'SL nhập',
-            width: 100,
-            sortable: false,
-            align: 'center',
-            headerAlign: 'center',
-            valueGetter: (p) => p.row.soLuongNhap ?? '-'
         },
         {
             field: 'soLuongTon',

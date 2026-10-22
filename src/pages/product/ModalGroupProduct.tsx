@@ -202,9 +202,11 @@ const ModalNhomHangHoa = ({ handleSave, trigger }: any) => {
         if (trigger.isNew) {
             GroupProductService.InsertNhomHangHoa(groupProduct).then((data) => {
                 objNew.id = data.id;
+                // chỉ đưa vào danh sách nhóm khi đã có id thật (trước đây thêm ngay lúc id còn Guid rỗng
+                // -> chọn nhóm đó lưu hàng hóa bị lỗi khóa ngoại)
+                nhomHangHoaStore.changeListNhomHang(objNew, TypeAction.INSEART);
                 handleSave(objNew);
             });
-            nhomHangHoaStore.changeListNhomHang(objNew, TypeAction.INSEART);
         } else {
             GroupProductService.UpdateNhomHangHoa(groupProduct).then(() => {
                 handleSave(objNew);

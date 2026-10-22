@@ -44,7 +44,6 @@ import KhoHangService, { PhieuNhapListItemDto, PhieuNhapListRequestDto } from '.
 import { inPhieuNhap } from './components/inPhieuNhap';
 import ModalXemPhieuNhap from './components/ModalXemPhieuNhap';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 
 const formatMoney = (value: number) => new Intl.NumberFormat('vi-VN').format(value ?? 0);
 
@@ -159,7 +158,7 @@ const NhapHang: React.FC = () => {
         setAnchorLapPhieu(null);
         navigate(`/nhap-hang/${loai}`);
     };
-    // phiếu tạm lưu cũ trên server: mở đúng màn theo loại hàng
+    // mở phiếu (tạm lưu / hoàn thành) ở màn lập phiếu đúng loại hàng để sửa
     const moPhieuTamLuu = (row: PhieuNhapListItemDto) => {
         const loai = row.loaiHang === 'Điện thoại' ? 'dien-thoai' : 'hang-hoa';
         navigate(`/nhap-hang/${loai}?id=${row.id}`);
@@ -190,30 +189,6 @@ const NhapHang: React.FC = () => {
                 for (const id of lstIdChon()) {
                     const file = await KhoHangService.ExportPhieuKho(id);
                     fileDowloadService.downloadExportFile(file);
-                }
-                break;
-            case 4:
-                {
-                    // sửa phiếu nhập đã hoàn thành: mở đúng màn lập phiếu theo loại hàng
-                    const lstId = lstIdChon();
-                    if (lstId.length !== 1) {
-                        setObjAlert({ show: true, type: 2, mes: 'Chọn 1 phiếu nhập để sửa' });
-                        break;
-                    }
-                    const row = pageData.items.find((x) => x.id === lstId[0]);
-                    if (row?.trangThai !== 3) {
-                        setObjAlert({
-                            show: true,
-                            type: 2,
-                            mes:
-                                row?.trangThai === 1
-                                    ? 'Phiếu tạm lưu: bấm vào mã phiếu để sửa tiếp'
-                                    : 'Chỉ sửa được phiếu đã hoàn thành'
-                        });
-                        break;
-                    }
-                    const loai = row.loaiHang === 'Điện thoại' ? 'dien-thoai' : 'hang-hoa';
-                    navigate(`/nhap-hang/${loai}?id=${row.id}`);
                 }
                 break;
         }
@@ -338,10 +313,15 @@ const NhapHang: React.FC = () => {
                 params.row.id === Guid.EMPTY ? null : (
                     <IconButton
                         size="small"
-                        title="Xem phiếu nhập"
+                        title={params.row.trangThai === 0 ? 'Xem phiếu nhập' : 'Xem / sửa phiếu nhập'}
                         onClick={(e) => {
                             e.stopPropagation();
-                            setIdXemPhieu(params.row.id);
+                            // phiếu đã hủy: chỉ xem; tạm lưu / hoàn thành: mở màn sửa phiếu theo loại hàng
+                            if (params.row.trangThai === 0) {
+                                setIdXemPhieu(params.row.id);
+                            } else {
+                                moPhieuTamLuu(params.row);
+                            }
                         }}
                         sx={{ color: '#9e9e9e', '&:hover': { color: '#757575' } }}>
                         <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
@@ -515,12 +495,6 @@ const NhapHang: React.FC = () => {
                                         text: 'Xuất Excel phiếu',
                                         isShow: abpCustom.isGrandPermission('Pages.HoaDon.Export'),
                                         icon: <FileDownloadOutlinedIcon sx={{ width: '1rem', height: '1rem' }} />
-                                    },
-                                    {
-                                        id: '4',
-                                        text: 'Sửa phiếu',
-                                        isShow: lstIdChon().length === 1,
-                                        icon: <EditOutlinedIcon sx={{ width: '1rem', height: '1rem' }} />
                                     }
                                 ] as IList[]
                             }

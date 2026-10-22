@@ -136,10 +136,16 @@ export const usePhieuNhap = (loai: LoaiPhieuNhap) => {
     const [laSua, setLaSua] = useState(false);
     const [daThanhToanCu, setDaThanhToanCu] = useState(0);
     const [idChiNhanhPhieu, setIdChiNhanhPhieu] = useState<string | null>(null);
+    // sửa phiếu: tổng mới thấp hơn số đã trả -> nhà cung cấp hoàn lại (phiếu thu); tổng cao hơn -> trả thêm (soTienThanhToan)
+    const [soTienNhanLai, setSoTienNhanLai] = useState(0);
+    // sửa phiếu: trạng thái lúc mở phiếu, so sánh để bật nút "Cập nhật" khi có thay đổi
+    const trangThaiGoc = useRef<string | null>(null);
 
     const tongTienHangChuaCK = useMemo(() => lstDong.reduce((s, x) => s + x.soLuong * x.donGia, 0), [lstDong]);
     const tongTienHang = useMemo(() => lstDong.reduce((s, x) => s + x.soLuong * x.donGia - x.giamGia, 0), [lstDong]);
-    const conNo = Math.max(tongTienHang - (laSua ? daThanhToanCu : soTienThanhToan), 0);
+    const conNo = laSua
+        ? Math.max(tongTienHang - daThanhToanCu - soTienThanhToan + soTienNhanLai, 0)
+        : Math.max(tongTienHang - soTienThanhToan, 0);
 
     // số tiền trả lấy từ phiếu lưu tạm: áp dụng 1 lần sau khi tổng tiền tính lại từ danh sách dòng
     const soTienKhoiPhuc = useRef<number | null>(null);
@@ -149,9 +155,33 @@ export const usePhieuNhap = (loai: LoaiPhieuNhap) => {
             soTienKhoiPhuc.current = null;
             return;
         }
+        if (laSua) {
+            // sửa phiếu: mặc định trả thêm đủ phần tăng / nhận lại đủ phần đã trả dư
+            const chenhLech = tongTienHang - daThanhToanCu;
+            setSoTienThanhToan(hinhThucThanhToan === HINH_THUC_NO ? 0 : Math.max(chenhLech, 0));
+            setSoTienNhanLai(hinhThucThanhToan === HINH_THUC_NO ? 0 : Math.max(-chenhLech, 0));
+            return;
+        }
         // mặc định trả đủ; chọn "Nợ" thì không trả
         setSoTienThanhToan(hinhThucThanhToan === HINH_THUC_NO ? 0 : tongTienHang);
-    }, [tongTienHang]);
+    }, [tongTienHang, laSua, daThanhToanCu]);
+
+    // so sánh nội dung phiếu (bỏ id dòng sinh ngẫu nhiên)
+    const chupPhieu = (kh: CreateOrEditKhachHangDto, gc: string, dong: IDongPhieuNhap[]) =>
+        JSON.stringify({
+            kh: kh?.id ?? null,
+            gc: gc ?? '',
+            dong: dong.map((x) => ({
+                q: x.idDonViQuyDoi ?? null,
+                sl: x.soLuong,
+                dg: x.donGia,
+                gg: x.giamGia,
+                gc: x.ghiChu ?? '',
+                dt: x.dienThoai ?? null
+            }))
+        });
+    const coThayDoi =
+        !laSua || trangThaiGoc.current === null || trangThaiGoc.current !== chupPhieu(khachHang, ghiChu, lstDong);
 
     useEffect(() => {
         TaiKhoanNganHangServices.GetAllBankAccount(idChiNhanh ?? Guid.EMPTY).then((data) =>
@@ -194,18 +224,19 @@ export const usePhieuNhap = (loai: LoaiPhieuNhap) => {
         setIdChiNhanhPhieu(phieu.idChiNhanh ?? idChiNhanh);
         setIdPhieu(phieu.id);
         setMaPhieu(phieu.maHoaDon);
+        const kh = phieu.idKhachHang
+            ? ({
+                  id: phieu.idKhachHang,
+                  maKhachHang: phieu.maKhachHang ?? '',
+                  tenKhachHang: phieu.tenKhachHang ?? '',
+                  soDienThoai: phieu.soDienThoai ?? ''
+              } as CreateOrEditKhachHangDto)
+            : ({} as CreateOrEditKhachHangDto);
+        const dong = phieu.chiTiet.map((ct) => chiTietToDong(ct));
         setGhiChu(phieu.ghiChuHD ?? '');
-        setKhachHang(
-            phieu.idKhachHang
-                ? ({
-                      id: phieu.idKhachHang,
-                      maKhachHang: phieu.maKhachHang ?? '',
-                      tenKhachHang: phieu.tenKhachHang ?? '',
-                      soDienThoai: phieu.soDienThoai ?? ''
-                  } as CreateOrEditKhachHangDto)
-                : ({} as CreateOrEditKhachHangDto)
-        );
-        setLstDong(phieu.chiTiet.map((ct) => chiTietToDong(ct)));
+        setKhachHang(kh);
+        setLstDong(dong);
+        trangThaiGoc.current = phieu.trangThai === 3 ? chupPhieu(kh, phieu.ghiChuHD ?? '', dong) : null;
     };
 
     const lamMoi = () => {
@@ -223,7 +254,12 @@ export const usePhieuNhap = (loai: LoaiPhieuNhap) => {
 
     const changeHinhThucThanhToan = (value: number) => {
         setHinhThucThanhToan(value);
-        if (value === HINH_THUC_NO) {
+        if (laSua) {
+            // sửa phiếu: "Nợ" = không trả thêm / không nhận lại; khác: mặc định đủ phần chênh lệch
+            const chenhLech = tongTienHang - daThanhToanCu;
+            setSoTienThanhToan(value === HINH_THUC_NO ? 0 : Math.max(chenhLech, 0));
+            setSoTienNhanLai(value === HINH_THUC_NO ? 0 : Math.max(-chenhLech, 0));
+        } else if (value === HINH_THUC_NO) {
             setSoTienThanhToan(0);
         } else if (soTienThanhToan === 0) {
             setSoTienThanhToan(tongTienHang);
@@ -279,7 +315,7 @@ export const usePhieuNhap = (loai: LoaiPhieuNhap) => {
             return false;
         }
         const mayThieu = lstDong
-            .filter((x) => x.dienThoai && !x.dienThoai.daGiaoDich)
+            .filter((x) => x.dienThoai && !x.dienThoai.daGiaoDich && !x.dienThoai.mayCoSan)
             .map((x) => {
                 const dt = x.dienThoai as IDienThoaiNhap;
                 const thieu = [
@@ -310,14 +346,23 @@ export const usePhieuNhap = (loai: LoaiPhieuNhap) => {
             return null;
         }
         if (laSua) {
-            // sửa phiếu đã hoàn thành: không được thấp hơn số đã trả nhà cung cấp (Backend kiểm tra lại)
-            if (tongTienHang + 0.000001 < daThanhToanCu) {
+            if (!coThayDoi) {
+                return null;
+            }
+            // sửa phiếu đã hoàn thành: trả thêm tối đa phần tăng / nhận lại tối đa phần đã trả dư (Backend kiểm tra lại)
+            const chenhLech = tongTienHang - daThanhToanCu;
+            const soTien = chenhLech >= 0 ? soTienThanhToan : soTienNhanLai;
+            if (soTien < 0 || soTien > Math.abs(chenhLech) + 0.000001) {
                 enqueueSnackbar(
-                    `Tổng tiền phiếu nhập không được thấp hơn số đã trả nhà cung cấp (${daThanhToanCu.toLocaleString(
-                        'vi-VN'
-                    )})`,
+                    chenhLech >= 0
+                        ? 'Số tiền trả thêm phải từ 0 đến phần tiền tăng thêm'
+                        : 'Số tiền nhà cung cấp hoàn lại phải từ 0 đến phần đã trả dư',
                     { variant: 'warning' }
                 );
+                return null;
+            }
+            if (hinhThucThanhToan === HINH_THUC_THANH_TOAN.CHUYEN_KHOAN && soTien > 0 && !idTaiKhoanNganHang) {
+                enqueueSnackbar('Vui lòng chọn tài khoản ngân hàng', { variant: 'warning' });
                 return null;
             }
             return await guiLenServer(3);
@@ -351,17 +396,21 @@ export const usePhieuNhap = (loai: LoaiPhieuNhap) => {
                 tongChietKhauHangHoa: tongTienHangChuaCK - tongTienHang,
                 tongTienHang: tongTienHang,
                 tongThanhToan: tongTienHang,
-                hinhThucThanhToan: !laSua && soTienThanhToan > 0 ? hinhThucThanhToan : HINH_THUC_NO,
-                soTienThanhToan: laSua ? 0 : soTienThanhToan,
-                idTaiKhoanNganHang: laSua ? null : idTaiKhoanNganHang,
+                // sửa phiếu: soTienThanhToan = trả thêm (phiếu chi), soTienNhanLai = NCC hoàn lại (phiếu thu)
+                hinhThucThanhToan:
+                    soTienThanhToan > 0 || (laSua && soTienNhanLai > 0) ? hinhThucThanhToan : HINH_THUC_NO,
+                soTienThanhToan: laSua && tongTienHang < daThanhToanCu ? 0 : soTienThanhToan,
+                soTienNhanLai: laSua && tongTienHang < daThanhToanCu ? soTienNhanLai : 0,
+                idTaiKhoanNganHang: idTaiKhoanNganHang,
                 chiTiet: lstDong.map((item) => {
                     const giamGia1Sp = item.soLuong > 0 ? item.giamGia / item.soLuong : 0;
                     const dt = item.dienThoai;
                     return {
                         // điện thoại: máy mới gửi Guid rỗng (Backend tạo máy); sửa phiếu đã hoàn thành: máy cũ gửi
                         // đơn vị quy đổi của máy để cập nhật đúng máy đó
+                        // (máy có sẵn gắn vào phiếu: luôn gửi đơn vị quy đổi của máy đó)
                         idDonViQuyDoi: dt
-                            ? laSua
+                            ? laSua || dt.mayCoSan
                                 ? item.idDonViQuyDoi ?? Guid.EMPTY
                                 : Guid.EMPTY
                             : item.idDonViQuyDoi ?? '',
@@ -378,7 +427,8 @@ export const usePhieuNhap = (loai: LoaiPhieuNhap) => {
                                   matKhau: dt.matKhau,
                                   loi: dt.loi,
                                   ghiChu: dt.ghiChu,
-                                  giaBan: dt.giaBan
+                                  giaBan: dt.giaBan,
+                                  mayCoSan: dt.mayCoSan ?? false
                               }
                             : undefined,
                         soLuong: item.soLuong,
@@ -488,7 +538,11 @@ export const usePhieuNhap = (loai: LoaiPhieuNhap) => {
         hoanThanh,
         inNhap,
         laSua,
-        daThanhToanCu
+        daThanhToanCu,
+        soTienNhanLai,
+        setSoTienNhanLai,
+        coThayDoi,
+        idPhieu
     };
 };
 
