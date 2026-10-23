@@ -44,12 +44,17 @@ import KhoHangService, { PhieuNhapListItemDto, PhieuNhapListRequestDto } from '.
 import { inPhieuNhap } from './components/inPhieuNhap';
 import ModalXemPhieuNhap from './components/ModalXemPhieuNhap';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
+import { docPhieuTam, LoaiPhieuNhap } from './components/usePhieuNhap';
 
 const formatMoney = (value: number) => new Intl.NumberFormat('vi-VN').format(value ?? 0);
+
+// phiếu đang lập, mới lưu tạm trên trình duyệt (localStorage), chưa có trên server
+const TRANG_THAI_CHUA_HOAN_THANH = -2;
 
 // trạng thái lọc: '' = tất cả trừ đã hủy
 const LOC_TRANG_THAI = [
     { value: '', text: 'Tất cả trạng thái' },
+    { value: String(TRANG_THAI_CHUA_HOAN_THANH), text: 'Chưa hoàn thành' },
     { value: '3', text: 'Hoàn thành' },
     { value: '1', text: 'Tạm lưu' },
     { value: '0', text: 'Đã hủy' }
@@ -85,10 +90,57 @@ const NhapHang: React.FC = () => {
     const [rowSelectionModel, setRowSelectionModel] = React.useState<GridRowSelectionModel>([]);
     const [idXemPhieu, setIdXemPhieu] = useState<string | null>(null);
 
+    // phiếu tạm trên trình duyệt (mỗi loại tối đa 1 phiếu): hiện đầu trang 1, theo lọc loại hàng / ô tìm,
+    // không lọc theo thời gian để khỏi bị quên phiếu; không tính vào tổng và phân trang
+    const getPhieuTam = (): any[] => {
+        const locTrangThai = trangThai === '' || trangThai === String(TRANG_THAI_CHUA_HOAN_THANH);
+        if (!locTrangThai || (paramSearch.currentPage ?? 1) !== 1) return [];
+        const txt = (paramSearch.textSearch ?? '').trim().toLowerCase();
+        const lstLoai: LoaiPhieuNhap[] = ['hang-hoa', 'dien-thoai'];
+        return lstLoai.flatMap((loai) => {
+            if (
+                (paramSearch.loaiHang === 1 && loai !== 'hang-hoa') ||
+                (paramSearch.loaiHang === 4 && loai !== 'dien-thoai')
+            ) {
+                return [];
+            }
+            const tam = docPhieuTam(loai);
+            if (!tam || !(tam.lstDong?.length > 0)) return [];
+            const kh: any = tam.khachHang ?? {};
+            const khopTim = [kh.maKhachHang, kh.tenKhachHang, 'phiếu tạm'].some((x) =>
+                (x ?? '').toLowerCase().includes(txt)
+            );
+            if (txt && !khopTim) return [];
+            return [
+                {
+                    id: `tam_${loai}`,
+                    laPhieuTam: true,
+                    loaiPhieu: loai,
+                    maHoaDon: 'Phiếu tạm',
+                    ngayLapHoaDon: tam.thoiGian,
+                    maKhachHang: kh.maKhachHang ?? '',
+                    tenKhachHang: kh.tenKhachHang ?? '',
+                    loaiHang: loai === 'dien-thoai' ? 'Điện thoại' : 'Hàng hóa',
+                    ghiChuHD: tam.ghiChu ?? '',
+                    soLuong: tam.lstDong.reduce((s, x) => s + (x.soLuong ?? 0), 0),
+                    tongThanhToan: tam.lstDong.reduce((s, x) => s + x.soLuong * x.donGia - x.giamGia, 0),
+                    daThanhToan: 0,
+                    trangThai: TRANG_THAI_CHUA_HOAN_THANH,
+                    txtTrangThai: 'Chưa hoàn thành'
+                }
+            ];
+        });
+    };
+
     const getListPhieuNhap = async () => {
-        const data = await KhoHangService.GetListPhieuNhap(paramSearch);
-        const items: any[] = data?.items ?? [];
-        if (items.length > 0) {
+        const lstPhieuTam = getPhieuTam();
+        // lọc "Chưa hoàn thành": chỉ có phiếu tạm trên trình duyệt, không cần gọi server
+        const data =
+            trangThai === String(TRANG_THAI_CHUA_HOAN_THANH)
+                ? null
+                : await KhoHangService.GetListPhieuNhap(paramSearch);
+        const items: any[] = [...(data?.items ?? [])];
+        if (items.length > 0 && data) {
             // dòng tổng cuối bảng (id rỗng, không chọn được)
             items.push({
                 id: Guid.EMPTY,
@@ -107,7 +159,7 @@ const NhapHang: React.FC = () => {
         setPageData({
             totalCount: data?.totalCount ?? 0,
             totalPage: utils.getTotalPage(data?.totalCount ?? 0, paramSearch.pageSize),
-            items
+            items: [...lstPhieuTam, ...items]
         });
     };
 
@@ -144,7 +196,9 @@ const NhapHang: React.FC = () => {
 
     const changeTrangThai = (value: string) => {
         setTrangThai(value);
-        setParamSearch({ ...paramSearch, trangThais: value === '' ? [] : [Number(value)], currentPage: 1 });
+        // "Chưa hoàn thành" không phải trạng thái trên server
+        const trangThais = value === '' || value === String(TRANG_THAI_CHUA_HOAN_THANH) ? [] : [Number(value)];
+        setParamSearch({ ...paramSearch, trangThais, currentPage: 1 });
     };
 
     const exportToExcel = async () => {
@@ -163,8 +217,11 @@ const NhapHang: React.FC = () => {
         const loai = row.loaiHang === 'Điện thoại' ? 'dien-thoai' : 'hang-hoa';
         navigate(`/nhap-hang/${loai}?id=${row.id}`);
     };
+    // phiếu tạm trên trình duyệt: mở màn lập phiếu, màn này tự nạp lại phiếu tạm
+    const moPhieuTamTrinhDuyet = (row: any) => navigate(`/nhap-hang/${row.loaiPhieu}`);
 
-    const lstIdChon = () => rowSelectionModel.map((x) => x.toString()).filter((x) => x !== Guid.EMPTY);
+    const lstIdChon = () =>
+        rowSelectionModel.map((x) => x.toString()).filter((x) => x !== Guid.EMPTY && !x.startsWith('tam_'));
 
     const DataGrid_handleAction = async (item: any) => {
         switch (parseInt(item.id)) {
@@ -216,7 +273,18 @@ const NhapHang: React.FC = () => {
             minWidth: 120,
             flex: 0.8,
             renderCell: (params: any) =>
-                params.row.trangThai === 1 ? (
+                params.row.laPhieuTam ? (
+                    <Box
+                        component="span"
+                        title="Phiếu đang lập, lưu tạm trên trình duyệt này - bấm để lập tiếp"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            moPhieuTamTrinhDuyet(params.row);
+                        }}
+                        sx={{ color: '#d97706', textDecoration: 'underline', cursor: 'pointer', fontStyle: 'italic' }}>
+                        {params.value}
+                    </Box>
+                ) : params.row.trangThai === 1 ? (
                     // phiếu tạm lưu cũ trên server: bấm để sửa tiếp
                     <Box
                         component="span"
@@ -291,9 +359,10 @@ const NhapHang: React.FC = () => {
             minWidth: 118,
             flex: 0.8,
             renderCell: (params: any) =>
-                params.row.trangThai < 0 ? null : (
+                params.row.trangThai === -1 ? null : (
                     <Box
                         title={params.value}
+                        sx={params.row.laPhieuTam ? { color: '#d97706', fontWeight: 600 } : undefined}
                         className={
                             params.row.trangThai === 3
                                 ? 'data-grid-cell-trangthai-active'
@@ -317,7 +386,9 @@ const NhapHang: React.FC = () => {
                         onClick={(e) => {
                             e.stopPropagation();
                             // phiếu đã hủy: chỉ xem; tạm lưu / hoàn thành: mở màn sửa phiếu theo loại hàng
-                            if (params.row.trangThai === 0) {
+                            if (params.row.laPhieuTam) {
+                                moPhieuTamTrinhDuyet(params.row);
+                            } else if (params.row.trangThai === 0) {
                                 setIdXemPhieu(params.row.id);
                             } else {
                                 moPhieuTamLuu(params.row);
@@ -516,7 +587,7 @@ const NhapHang: React.FC = () => {
                         rows={pageData.items}
                         hideFooter
                         checkboxSelection
-                        isRowSelectable={(params) => params.id !== Guid.EMPTY}
+                        isRowSelectable={(params) => params.id !== Guid.EMPTY && !params.row.laPhieuTam}
                         localeText={TextTranslate}
                         onRowSelectionModelChange={(newRowSelectionModel) => setRowSelectionModel(newRowSelectionModel)}
                         rowSelectionModel={rowSelectionModel}

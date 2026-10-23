@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
     Autocomplete,
     Box,
@@ -53,25 +53,30 @@ const Page_Them_Phieu_Nhap_Hang = () => {
     // tìm hàng hóa để thêm vào phiếu
     const [loading, setLoading] = useState(false);
     const [listSearch, setListSearch] = useState<ModelHangHoaDto[]>([]);
+    const [txtSearch, setTxtSearch] = useState('');
+    // chỉ nhận kết quả của lần tìm mới nhất (gõ nhanh, kết quả về không theo thứ tự)
+    const lanTimMoiNhat = useRef(0);
+    // ô trống: lấy danh sách hàng hóa (20 hàng đầu); có chữ: lọc theo mã / tên
     const getListHangHoa = async (value: string) => {
-        if (!value?.trim()) {
-            setListSearch([]);
-            return;
-        }
+        const lanTim = ++lanTimMoiNhat.current;
         setLoading(true);
         try {
             const input = {
                 idNhomHangHoas: [],
-                textSearch: value,
+                textSearch: value?.trim() ?? '',
                 idLoaiHangHoa: 1,
                 idChiNhanhs: idChiNhanh ? [idChiNhanh] : [],
                 currentPage: 0,
                 pageSize: 20
             } as PagedProductSearchDto;
             const data = await ProductService.Get_DMHangHoa(input);
-            setListSearch(data?.items ?? data ?? []);
+            if (lanTim === lanTimMoiNhat.current) {
+                setListSearch(data?.items ?? data ?? []);
+            }
         } finally {
-            setLoading(false);
+            if (lanTim === lanTimMoiNhat.current) {
+                setLoading(false);
+            }
         }
     };
 
@@ -360,8 +365,23 @@ const Page_Them_Phieu_Nhap_Hang = () => {
                                         getOptionLabel={(option) =>
                                             `${option.maHangHoa ?? ''} - ${option.tenHangHoa ?? ''}`
                                         }
-                                        onInputChange={(_, value) => getListHangHoa(value)}
-                                        onChange={(_, value) => value && addHangHoa(value)}
+                                        // luôn để trống sau khi chọn: chọn tiếp hàng khác, chọn lại cùng hàng thì cộng số lượng
+                                        value={null}
+                                        inputValue={txtSearch}
+                                        onOpen={() => getListHangHoa(txtSearch)}
+                                        onInputChange={(_, value, reason) => {
+                                            // chỉ tìm khi người dùng gõ (bỏ qua lúc chọn xong MUI tự điền tên hàng)
+                                            if (reason !== 'input') return;
+                                            setTxtSearch(value);
+                                            getListHangHoa(value);
+                                        }}
+                                        onChange={(_, value) => {
+                                            if (!value) return;
+                                            addHangHoa(value);
+                                            setTxtSearch('');
+                                            getListHangHoa('');
+                                        }}
+                                        noOptionsText={loading ? 'Đang tải...' : 'Không tìm thấy hàng hóa'}
                                         sx={{ minWidth: 240 }}
                                         renderOption={(props, option) => (
                                             <li {...props}>

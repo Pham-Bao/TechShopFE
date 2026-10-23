@@ -147,7 +147,7 @@ const ModalNhapDienThoai = ({
         });
     };
 
-    // bắt buộc nhập đủ: tên, IMEI, màu sắc, dung lượng, pin, tình trạng
+    // chỉ bắt buộc tên và IMEI; màu sắc, dung lượng, pin, tình trạng nhập sau cũng được
     const validate = () => {
         const err: LoiNhapMay = {};
         if (!form.tenHangHoa.trim()) {
@@ -158,18 +158,6 @@ const ModalNhapDienThoai = ({
             err.imel = 'Vui lòng nhập IMEI';
         } else if (imeiDaCo.includes(imei)) {
             err.imel = 'IMEI này đã có trên phiếu';
-        }
-        if (!form.mau?.trim()) {
-            err.mau = 'Vui lòng nhập màu sắc';
-        }
-        if (!form.dungLuong) {
-            err.dungLuong = 'Vui lòng chọn dung lượng';
-        }
-        if (form.pin == null) {
-            err.pin = 'Nhập % pin';
-        }
-        if (!form.tinhTrang?.trim()) {
-            err.tinhTrang = 'Vui lòng chọn ít nhất 1 tình trạng';
         }
         setErrors(err);
         return Object.keys(err).length === 0;
@@ -361,7 +349,7 @@ const ModalNhapDienThoai = ({
                                             {...params}
                                             variant="outlined"
                                             size="small"
-                                            label="Dung lượng *"
+                                            label="Dung lượng"
                                             error={!!errors.dungLuong}
                                             helperText={errors.dungLuong}
                                         />
@@ -390,7 +378,7 @@ const ModalNhapDienThoai = ({
                                             {...params}
                                             variant="outlined"
                                             size="small"
-                                            label="Màu sắc *"
+                                            label="Màu sắc"
                                             error={!!errors.mau}
                                             helperText={errors.mau}
                                         />
@@ -403,7 +391,7 @@ const ModalNhapDienThoai = ({
                                 <TextField
                                     size="small"
                                     sx={{ flex: 0.7 }}
-                                    label="Pin *"
+                                    label="Pin"
                                     value={form.pin ?? ''}
                                     error={!!errors.pin}
                                     helperText={errors.pin}
@@ -480,7 +468,7 @@ const ModalNhapDienThoai = ({
                             <Typography
                                 variant="body2"
                                 sx={{ mb: -1.5, color: errors.tinhTrang ? '#d32f2f' : '#6b7280' }}>
-                                Tình trạng *{errors.tinhTrang ? ` — ${errors.tinhTrang}` : ''}
+                                Tình trạng{errors.tinhTrang ? ` — ${errors.tinhTrang}` : ''}
                             </Typography>
                             <Stack direction="row" spacing={4}>
                                 {[0, 4, 8].map((start) => (

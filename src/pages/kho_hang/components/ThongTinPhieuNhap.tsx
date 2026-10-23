@@ -3,6 +3,10 @@ import {
     Alert,
     Box,
     Button,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
     Divider,
     IconButton,
     MenuItem,
@@ -81,6 +85,38 @@ const ThongTinPhieuNhap = ({ p }: { p: PhieuNhapState }) => {
 
     return (
         <Paper elevation={0} sx={{ borderRadius: 2, p: 2, position: 'sticky', top: 16 }}>
+            {/* rời màn lập phiếu khi còn thay đổi chưa lưu */}
+            <Dialog open={p.dangHoiRoiTrang} onClose={p.oLaiTrang} maxWidth="xs" fullWidth>
+                <DialogTitle sx={{ fontWeight: 800 }}>Phiếu nhập chưa được lưu</DialogTitle>
+                <DialogContent>
+                    <Typography sx={{ fontSize: 14 }}>
+                        {p.laSua
+                            ? 'Các thay đổi trên phiếu nhập chưa được cập nhật. Bạn có muốn rời trang không?'
+                            : 'Bạn đang lập phiếu nhập. Bạn có muốn lưu tạm phiếu này trước khi rời trang không?'}
+                    </Typography>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2, flexWrap: 'wrap', gap: 1 }}>
+                    <Button onClick={p.oLaiTrang} sx={{ textTransform: 'none' }}>
+                        Ở lại
+                    </Button>
+                    <Button
+                        color="error"
+                        variant="outlined"
+                        onClick={() => p.roiTrang(false)}
+                        sx={{ textTransform: 'none' }}>
+                        {p.laSua ? 'Rời trang' : 'Không lưu'}
+                    </Button>
+                    {!p.laSua && (
+                        <Button
+                            variant="contained"
+                            onClick={() => p.roiTrang(true)}
+                            disabled={p.isSaving}
+                            sx={{ textTransform: 'none', boxShadow: 'none', backgroundColor: 'var(--color-main)' }}>
+                            Lưu tạm và rời trang
+                        </Button>
+                    )}
+                </DialogActions>
+            </Dialog>
             <CreateOrEditCustomerDialog
                 visible={isShowModalAddNCC}
                 onCancel={() => setIsShowModalAddNCC(false)}

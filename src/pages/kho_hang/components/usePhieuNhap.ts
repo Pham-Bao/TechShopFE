@@ -1,5 +1,5 @@
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { UNSAFE_NavigationContext, useNavigate, useSearchParams } from 'react-router-dom';
 import { enqueueSnackbar } from 'notistack';
 import { Guid } from 'guid-typescript';
 import Cookies from 'js-cookie';
@@ -33,7 +33,7 @@ export interface IDongPhieuNhap {
 }
 
 // dữ liệu lưu tạm trên trình duyệt (localStorage)
-interface IPhieuNhapTam {
+export interface IPhieuNhapTam {
     thoiGian: string;
     khachHang: CreateOrEditKhachHangDto;
     ghiChu: string;
@@ -45,7 +45,8 @@ interface IPhieuNhapTam {
 
 const draftKey = (loai: LoaiPhieuNhap) =>
     `TechShop_PhieuNhapTam_${loai}_${Cookies.get('Abp.TenantId') ?? '1'}_${Cookies.get('IdChiNhanh') ?? ''}`;
-const docPhieuTam = (loai: LoaiPhieuNhap): IPhieuNhapTam | null => {
+// danh sách phiếu nhập cũng đọc để hiện phiếu tạm (trạng thái "Chưa hoàn thành")
+export const docPhieuTam = (loai: LoaiPhieuNhap): IPhieuNhapTam | null => {
     try {
         const raw = localStorage.getItem(draftKey(loai));
         return raw ? (JSON.parse(raw) as IPhieuNhapTam) : null;
@@ -183,6 +184,15 @@ export const usePhieuNhap = (loai: LoaiPhieuNhap) => {
     const coThayDoi =
         !laSua || trangThaiGoc.current === null || trangThaiGoc.current !== chupPhieu(khachHang, ghiChu, lstDong);
 
+    // nội dung lần lưu gần nhất (lưu tạm / mở phiếu): khác nội dung đang nhập = còn thay đổi chưa lưu
+    const mocDaLuu = useRef<string | null>(null);
+    const chuaLuu =
+        lstDong.length > 0 && (laSua ? coThayDoi : chupPhieu(khachHang, ghiChu, lstDong) !== mocDaLuu.current);
+    const chuaLuuRef = useRef(false);
+    chuaLuuRef.current = chuaLuu;
+    // lưu xong / bỏ phiếu: cho rời trang không hỏi
+    const boQuaHoiRoi = useRef(false);
+
     useEffect(() => {
         TaiKhoanNganHangServices.GetAllBankAccount(idChiNhanh ?? Guid.EMPTY).then((data) =>
             setAllBankAccount(data ?? [])
@@ -206,6 +216,11 @@ export const usePhieuNhap = (loai: LoaiPhieuNhap) => {
         setIdTaiKhoanNganHang(tam.idTaiKhoanNganHang ?? null);
         soTienKhoiPhuc.current = tam.soTienThanhToan ?? 0;
         setThoiGianLuuTam(tam.thoiGian);
+        mocDaLuu.current = chupPhieu(
+            tam.khachHang ?? ({} as CreateOrEditKhachHangDto),
+            tam.ghiChu ?? '',
+            tam.lstDong ?? []
+        );
     };
 
     // mở phiếu trên server: phiếu tạm lưu cũ (sửa tiếp) hoặc phiếu đã hoàn thành (sửa phiếu nhập)
@@ -237,6 +252,7 @@ export const usePhieuNhap = (loai: LoaiPhieuNhap) => {
         setKhachHang(kh);
         setLstDong(dong);
         trangThaiGoc.current = phieu.trangThai === 3 ? chupPhieu(kh, phieu.ghiChuHD ?? '', dong) : null;
+        mocDaLuu.current = chupPhieu(kh, phieu.ghiChuHD ?? '', dong);
     };
 
     const lamMoi = () => {
@@ -272,15 +288,15 @@ export const usePhieuNhap = (loai: LoaiPhieuNhap) => {
     };
 
     // lưu tạm: ghi toàn bộ phiếu đang lập vào bộ nhớ trình duyệt (chưa nhập kho, chưa chi tiền)
-    const luuTam = async () => {
+    // trả về true nếu lưu được
+    const luuTam = async (): Promise<boolean> => {
         if (lstDong.length === 0) {
             enqueueSnackbar('Phiếu nhập chưa có hàng hóa', { variant: 'warning' });
-            return;
+            return false;
         }
         if (idPhieu) {
             // phiếu tạm lưu cũ trên server: cập nhật lại chính phiếu đó
-            await guiLenServer(1);
-            return;
+            return (await guiLenServer(1)) != null;
         }
         const thoiGian = new Date().toISOString();
         const ok = ghiPhieuTam(loai, {
@@ -294,10 +310,12 @@ export const usePhieuNhap = (loai: LoaiPhieuNhap) => {
         });
         if (ok) {
             setThoiGianLuuTam(thoiGian);
+            mocDaLuu.current = chupPhieu(khachHang, ghiChu, lstDong);
             enqueueSnackbar('Đã lưu tạm phiếu nhập trên trình duyệt này', { variant: 'success' });
         } else {
             enqueueSnackbar('Trình duyệt không cho lưu tạm (bộ nhớ bị chặn hoặc đầy)', { variant: 'error' });
         }
+        return ok;
     };
 
     // bỏ phiếu đang lưu tạm trên trình duyệt và làm trống màn hình
@@ -307,31 +325,11 @@ export const usePhieuNhap = (loai: LoaiPhieuNhap) => {
         enqueueSnackbar('Đã bỏ phiếu tạm', { variant: 'info' });
     };
 
-    // Hoàn thành / Cập nhật: bắt buộc nhà cung cấp; mỗi máy phải đủ màu, dung lượng, pin, tình trạng
-    // (máy đã bán trong phiếu đang sửa bị khóa nên bỏ qua). Lưu tạm chưa bắt buộc.
+    // Hoàn thành / Cập nhật: bắt buộc nhà cung cấp. Điện thoại chỉ bắt buộc tên và IMEI (đã kiểm tra lúc thêm máy),
+    // màu, dung lượng, pin, tình trạng không bắt buộc.
     const kiemTraDuThongTin = () => {
         if (!khachHang?.id || khachHang.id === Guid.EMPTY) {
             enqueueSnackbar('Vui lòng chọn nhà cung cấp', { variant: 'warning' });
-            return false;
-        }
-        const mayThieu = lstDong
-            .filter((x) => x.dienThoai && !x.dienThoai.daGiaoDich && !x.dienThoai.mayCoSan)
-            .map((x) => {
-                const dt = x.dienThoai as IDienThoaiNhap;
-                const thieu = [
-                    !dt.mau?.trim() ? 'màu sắc' : '',
-                    !dt.dungLuong ? 'dung lượng' : '',
-                    dt.pin == null ? 'pin' : '',
-                    !dt.tinhTrang?.trim() ? 'tình trạng' : ''
-                ].filter(Boolean);
-                return thieu.length > 0 ? `${dt.tenHangHoa} (${dt.imel}): thiếu ${thieu.join(', ')}` : '';
-            })
-            .filter(Boolean);
-        if (mayThieu.length > 0) {
-            enqueueSnackbar(`Điện thoại chưa nhập đủ thông tin - ${mayThieu.join('; ')}`, {
-                variant: 'warning',
-                autoHideDuration: 8000
-            });
             return false;
         }
         return true;
@@ -445,11 +443,13 @@ export const usePhieuNhap = (loai: LoaiPhieuNhap) => {
                 return null;
             }
             if (trangThai === 1) {
+                mocDaLuu.current = chupPhieu(khachHang, ghiChu, lstDong);
                 enqueueSnackbar(`Đã lưu tạm phiếu nhập ${result.maHoaDon ?? ''}`, { variant: 'success' });
                 return result;
             }
             if (laSua) {
                 enqueueSnackbar(`Đã cập nhật phiếu nhập ${result.maHoaDon ?? ''}`, { variant: 'success' });
+                boQuaHoiRoi.current = true;
                 navigate('/nhap-hangs');
                 return result;
             }
@@ -514,7 +514,88 @@ export const usePhieuNhap = (loai: LoaiPhieuNhap) => {
         );
     };
 
+    // ===== Rời màn lập phiếu khi còn thay đổi chưa lưu =====
+    // App dùng BrowserRouter (không có useBlocker) nên chặn chuyển trang bằng cách bọc navigator.push/replace:
+    // menu, nút quay lại... đều đi qua đây -> giữ lại lần chuyển trang và hỏi người dùng.
+    const [dieuHuongCho, setDieuHuongCho] = useState<(() => void) | null>(null);
+    const { navigator } = useContext(UNSAFE_NavigationContext) as any;
+    useEffect(() => {
+        const push = navigator.push;
+        const replace = navigator.replace;
+        const chan =
+            (fn: (...args: any[]) => void) =>
+            (...args: any[]) => {
+                const to = args[0];
+                const path = typeof to === 'string' ? to.split(/[?#]/)[0] : to?.pathname;
+                // vẫn ở màn này (chỉ đổi ?id=...) thì không hỏi
+                if (!boQuaHoiRoi.current && chuaLuuRef.current && path && path !== window.location.pathname) {
+                    setDieuHuongCho(() => () => fn(...args));
+                    return;
+                }
+                fn(...args);
+            };
+        navigator.push = chan(push);
+        navigator.replace = chan(replace);
+        return () => {
+            navigator.push = push;
+            navigator.replace = replace;
+        };
+    }, [navigator]);
+
+    // phiếu mới lập (chưa có trên server): ghi ngay vào trình duyệt, dùng khi trình duyệt tự rời trang
+    const ghiTamNgay = () =>
+        !laSua &&
+        !idPhieu &&
+        ghiPhieuTam(loai, {
+            thoiGian: new Date().toISOString(),
+            khachHang,
+            ghiChu,
+            lstDong,
+            hinhThucThanhToan,
+            soTienThanhToan,
+            idTaiKhoanNganHang
+        });
+    const ghiTamNgayRef = useRef(ghiTamNgay);
+    ghiTamNgayRef.current = ghiTamNgay;
+    useEffect(() => {
+        // đóng / tải lại tab: trình duyệt chỉ cho hiện hộp xác nhận mặc định của nó (không đặt nút riêng được)
+        const truocKhiDong = (e: BeforeUnloadEvent) => {
+            if (boQuaHoiRoi.current || !chuaLuuRef.current) return;
+            e.preventDefault();
+            e.returnValue = '';
+        };
+        // nút Back của trình duyệt: không chặn được, tự lưu tạm để không mất phiếu
+        const khiQuayLai = () => {
+            if (boQuaHoiRoi.current || !chuaLuuRef.current) return;
+            if (ghiTamNgayRef.current()) {
+                enqueueSnackbar('Phiếu nhập đang lập đã được lưu tạm, xem lại ở danh sách phiếu nhập', {
+                    variant: 'info'
+                });
+            }
+        };
+        window.addEventListener('beforeunload', truocKhiDong);
+        window.addEventListener('popstate', khiQuayLai);
+        return () => {
+            window.removeEventListener('beforeunload', truocKhiDong);
+            window.removeEventListener('popstate', khiQuayLai);
+        };
+    }, []);
+
+    // người dùng chọn trên hộp thoại rời trang
+    const roiTrang = async (luuTruocKhiRoi: boolean) => {
+        const diTiep = dieuHuongCho;
+        if (!diTiep) return;
+        if (luuTruocKhiRoi && !(await luuTam())) return;
+        setDieuHuongCho(null);
+        boQuaHoiRoi.current = true;
+        diTiep();
+    };
+    const oLaiTrang = () => setDieuHuongCho(null);
+
     return {
+        dangHoiRoiTrang: dieuHuongCho != null,
+        roiTrang,
+        oLaiTrang,
         lstDong,
         setLstDong,
         khachHang,
