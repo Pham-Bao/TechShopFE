@@ -22,6 +22,7 @@ import khachHangService from '../../../services/khach-hang/khachHangService';
 import { HoaDonCuaKhachHangResultDto } from '../../../services/khach-hang/dto/HoaDonCuaKhachHangDto';
 import { LoaiChungTu } from '../../../lib/appconst';
 import utils from '../../../utils/utils';
+import MaChungTuLink from '../../../components/MaChungTu/MaChungTuLink';
 
 type Props = {
     khachHang: { id: string; tenKhachHang: string } | null; // khác null: mở dialog
@@ -75,11 +76,7 @@ const ModalHoaDonKhachHang = ({ khachHang, onClose }: Props) => {
             headerName: 'Mã hóa đơn',
             minWidth: 120,
             flex: 0.9,
-            renderCell: (p) => (
-                <Box component="span" sx={{ color: 'var(--color-main)', fontWeight: 700, cursor: 'pointer' }}>
-                    {p.value}
-                </Box>
-            )
+            renderCell: (p) => <MaChungTuLink ma={p.value} id={p.row.id} sx={{ fontWeight: 700 }} />
         },
         {
             field: 'ngayLapHoaDon',

@@ -13,6 +13,7 @@ import { LoaiChungTu, TrangThaiActive } from '../../../lib/appconst';
 import SoQuyServices from '../../../services/so_quy/SoQuyServices';
 import { ParamSearchSoQuyDto } from '../../../services/so_quy/Dto/ParamSearchSoQuyDto';
 import khachHangService from '../../../services/khach-hang/khachHangService';
+import { DanhSachMaChungTu } from '../../../components/MaChungTu/MaChungTuLink';
 
 const TabThanhToan = ({ khachHangId }: any) => {
     const [curentPage, setCurrentPage] = useState<number>(1);
@@ -126,7 +127,11 @@ const TabThanhToan = ({ khachHangId }: any) => {
             headerName: 'Hóa đơn liên quan',
             minWidth: 220,
             flex: 1.5,
-            renderCell: (params) => <Box title={params.value}>{params.value}</Box>
+            renderCell: (params) => (
+                <Box title={params.value}>
+                    <DanhSachMaChungTu ma={params.value} />
+                </Box>
+            )
         },
         {
             field: 'tenNguoiNop',

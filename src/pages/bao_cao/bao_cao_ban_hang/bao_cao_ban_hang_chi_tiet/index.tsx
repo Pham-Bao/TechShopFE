@@ -18,6 +18,7 @@ import { LoaiBaoCao } from '../../../../lib/appconst';
 import { IHeaderTable, MyHeaderTable } from '../../../../components/Table/MyHeaderTable';
 import { BaoCaoBanHangChiTietDto } from '../../../../services/bao_cao/bao_cao_ban_hang/dto/BaoCaoBanHangChiTiet';
 import { format } from 'date-fns';
+import MaChungTuLink from '../../../../components/MaChungTu/MaChungTuLink';
 
 export default function BaoCaoBanHangChiTiet({ onChangePage, onChangePageSize }: any) {
     const dataFilterContext = useContext(BaoCaoBanHangDatataFilterContext);
@@ -159,7 +160,9 @@ export default function BaoCaoBanHangChiTiet({ onChangePage, onChangePageSize }:
                                     )}
                                     {pageDataBaoCaoBanHangChiTiet?.items?.map((row, index) => (
                                         <TableRow key={index}>
-                                            <TableCell sx={{ maxWidth: 150 }}>{row?.maHoaDon}</TableCell>
+                                            <TableCell sx={{ maxWidth: 150 }}>
+                                                <MaChungTuLink ma={row?.maHoaDon} />
+                                            </TableCell>
                                             <TableCell sx={{ maxWidth: 150 }}>
                                                 {format(new Date(row?.ngayLapHoaDon ?? ''), 'dd/MM/yyyy HH:mm')}
                                             </TableCell>

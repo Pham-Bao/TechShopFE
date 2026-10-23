@@ -11,7 +11,10 @@ export interface KhachHangItemDto {
     tenNhomKhach?: string;
     gioiTinh?: string;
     tongChiTieu?: number;
-    conNo?: number;
+    conNo?: number; // khách: khách còn nợ cửa hàng; NCC: cửa hàng còn nợ NCC
+    laNhaCungCap?: boolean;
+    noCuaHang?: number; // khách / NCC đang nợ cửa hàng
+    cuaHangNo?: number; // cửa hàng đang nợ khách / NCC
     theGiaTri?: number;
     cuocHenGanNhat: Date;
     tongTichDiem: number;

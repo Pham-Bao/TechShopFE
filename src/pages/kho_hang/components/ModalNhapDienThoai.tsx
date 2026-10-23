@@ -42,7 +42,7 @@ export interface IDienThoaiNhap {
     ghiChu?: string;
     giaNhap: number;
     giaBan: number;
-    daGiaoDich?: boolean; // sửa phiếu nhập đã hoàn thành: máy đã bán / đã giao dịch -> không sửa / xóa được
+    daGiaoDich?: boolean; // sửa phiếu nhập đã hoàn thành: máy đã bán / đã giao dịch -> sửa được, không xóa khỏi phiếu
     mayCoSan?: boolean; // máy có sẵn (chưa thuộc phiếu nhập nào) vừa gắn vào phiếu: chỉ sửa giá nhập
 }
 

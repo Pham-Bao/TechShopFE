@@ -19,6 +19,7 @@ import BaoCaoTaiChinhService from '../../../services/bao_cao/bao_cao_tai_chinh/B
 import CustomTablePagination from '../../../components/Pagination/CustomTablePagination';
 import { format } from 'date-fns';
 import utils from '../../../utils/utils';
+import MaChungTuLink from '../../../components/MaChungTu/MaChungTuLink';
 
 export default function BaoCaoChiTietCongNo({ onChangePage, onChangePageSize }: any) {
     const dataFilterContext = useContext(BaoCaoTaiChinhDatataFilterContext);
@@ -179,7 +180,9 @@ export default function BaoCaoChiTietCongNo({ onChangePage, onChangePageSize }: 
                                                 title={row?.tenKhachHang}>
                                                 {row?.tenKhachHang}
                                             </TableCell>
-                                            <TableCell>{row?.maHoaDon}</TableCell>
+                                            <TableCell>
+                                                <MaChungTuLink ma={row?.maHoaDon} />
+                                            </TableCell>
                                             <TableCell>{format(new Date(row?.ngayLapHoaDon), 'dd/MM/yyyy')}</TableCell>
                                             <TableCell
                                                 sx={{ minWidth: 100, maxWidth: 200 }}

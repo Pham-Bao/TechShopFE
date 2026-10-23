@@ -57,6 +57,7 @@ import PopoverFilterSoQuy from './components/PopoverFilterSoQuy';
 import suggestStore from '../../../stores/suggestStore';
 import CreateOrEditSoQuyDialog from './components/CreateOrEditSoQuyDialog';
 import ButtonOnlyIcon from '../../../components/Button/ButtonOnlyIcon';
+import { DanhSachMaChungTu } from '../../../components/MaChungTu/MaChungTuLink';
 
 const PageSoQuy = () => {
     const today = new Date();
@@ -985,7 +986,9 @@ const PageSoQuy = () => {
                                                         {row?.tenNguoiNop}
                                                     </TableCell>
                                                     <TableCell sx={{ minWidth: 80 }}>
-                                                        {utils.Remove_LastComma(row?.maHoaDonLienQuans)}
+                                                        <DanhSachMaChungTu
+                                                            ma={utils.Remove_LastComma(row?.maHoaDonLienQuans)}
+                                                        />
                                                     </TableCell>
                                                     <TableCell align="right">
                                                         {new Intl.NumberFormat('vi-VN').format(row?.tienMat ?? 0)}

@@ -44,7 +44,10 @@ import KhoHangService, { PhieuNhapListItemDto, PhieuNhapListRequestDto } from '.
 import { inPhieuNhap } from './components/inPhieuNhap';
 import ModalXemPhieuNhap from './components/ModalXemPhieuNhap';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
+import PaymentsOutlinedIcon from '@mui/icons-material/PaymentsOutlined';
 import { docPhieuTam, LoaiPhieuNhap } from './components/usePhieuNhap';
+import ModalThanhToanPhieuNhap, { IPhieuCanThanhToan } from './components/ModalThanhToanPhieuNhap';
+import MaChungTuLink from '../../components/MaChungTu/MaChungTuLink';
 
 const formatMoney = (value: number) => new Intl.NumberFormat('vi-VN').format(value ?? 0);
 
@@ -89,6 +92,8 @@ const NhapHang: React.FC = () => {
     });
     const [rowSelectionModel, setRowSelectionModel] = React.useState<GridRowSelectionModel>([]);
     const [idXemPhieu, setIdXemPhieu] = useState<string | null>(null);
+    // thanh toán thêm cho nhà cung cấp (phiếu hoàn thành còn nợ)
+    const [phieuThanhToan, setPhieuThanhToan] = useState<IPhieuCanThanhToan | null>(null);
 
     // phiếu tạm trên trình duyệt (mỗi loại tối đa 1 phiếu): hiện đầu trang 1, theo lọc loại hàng / ô tìm,
     // không lọc theo thời gian để khỏi bị quên phiếu; không tính vào tổng và phân trang
@@ -296,8 +301,11 @@ const NhapHang: React.FC = () => {
                         sx={{ color: 'var(--color-main)', textDecoration: 'underline', cursor: 'pointer' }}>
                         {params.value}
                     </Box>
-                ) : (
+                ) : params.row.id === Guid.EMPTY ? (
                     renderText(params)
+                ) : (
+                    // phiếu hoàn thành / đã hủy: ấn giữ mã để mở phiếu
+                    <MaChungTuLink ma={params.value} id={params.row.id} idLoaiChungTu={4} />
                 )
         },
         {
@@ -375,28 +383,47 @@ const NhapHang: React.FC = () => {
         {
             field: 'actions',
             headerName: '',
-            width: 60,
+            width: 84,
             sortable: false,
             align: 'center',
             renderCell: (params: any) =>
                 params.row.id === Guid.EMPTY ? null : (
-                    <IconButton
-                        size="small"
-                        title={params.row.trangThai === 0 ? 'Xem phiếu nhập' : 'Xem / sửa phiếu nhập'}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            // phiếu đã hủy: chỉ xem; tạm lưu / hoàn thành: mở màn sửa phiếu theo loại hàng
-                            if (params.row.laPhieuTam) {
-                                moPhieuTamTrinhDuyet(params.row);
-                            } else if (params.row.trangThai === 0) {
-                                setIdXemPhieu(params.row.id);
-                            } else {
-                                moPhieuTamLuu(params.row);
-                            }
-                        }}
-                        sx={{ color: '#9e9e9e', '&:hover': { color: '#757575' } }}>
-                        <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
-                    </IconButton>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        {!params.row.laPhieuTam && params.row.trangThai === 3 && (params.row.conNo ?? 0) > 0.000001 && (
+                            <IconButton
+                                size="small"
+                                title="Thanh toán nhà cung cấp"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setPhieuThanhToan({
+                                        id: params.row.id,
+                                        maHoaDon: params.row.maHoaDon,
+                                        tenNhaCungCap: params.row.tenKhachHang,
+                                        conNo: params.row.conNo
+                                    });
+                                }}
+                                sx={{ color: '#d32f2f', '&:hover': { backgroundColor: '#fee2e2' } }}>
+                                <PaymentsOutlinedIcon sx={{ fontSize: 18 }} />
+                            </IconButton>
+                        )}
+                        <IconButton
+                            size="small"
+                            title={params.row.trangThai === 0 ? 'Xem phiếu nhập' : 'Xem / sửa phiếu nhập'}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                // phiếu đã hủy: chỉ xem; tạm lưu / hoàn thành: mở màn sửa phiếu theo loại hàng
+                                if (params.row.laPhieuTam) {
+                                    moPhieuTamTrinhDuyet(params.row);
+                                } else if (params.row.trangThai === 0) {
+                                    setIdXemPhieu(params.row.id);
+                                } else {
+                                    moPhieuTamLuu(params.row);
+                                }
+                            }}
+                            sx={{ color: '#9e9e9e', '&:hover': { color: '#757575' } }}>
+                            <VisibilityOutlinedIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                    </Box>
                 )
         }
     ];
@@ -404,6 +431,14 @@ const NhapHang: React.FC = () => {
     return (
         <>
             <ModalXemPhieuNhap idPhieu={idXemPhieu} onClose={() => setIdXemPhieu(null)} />
+            <ModalThanhToanPhieuNhap
+                phieu={phieuThanhToan}
+                onClose={() => setPhieuThanhToan(null)}
+                onDaThanhToan={() => {
+                    setPhieuThanhToan(null);
+                    getListPhieuNhap();
+                }}
+            />
             <SnackbarAlert
                 showAlert={objAlert.show}
                 type={objAlert.type}

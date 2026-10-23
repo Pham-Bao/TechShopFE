@@ -7,6 +7,7 @@ import { observer } from 'mobx-react';
 import CustomTablePagination from '../../../components/Pagination/CustomTablePagination';
 import { format as formatDate } from 'date-fns';
 import AppConsts from '../../../lib/appconst';
+import MaChungTuLink from '../../../components/MaChungTu/MaChungTuLink';
 
 const TabMuaHang = ({ khachHangId }: any) => {
     //  const { khachHangId } = useParams();
@@ -44,7 +45,9 @@ const TabMuaHang = ({ khachHangId }: any) => {
             minWidth: 70,
             flex: 1.2,
             renderHeader: (params) => <Box>{params.colDef.headerName}</Box>,
-            renderCell: (params) => <Box title={params.value}>{params.value}</Box>
+            renderCell: (params) => (
+                <MaChungTuLink ma={params.value} id={params.row.id} idLoaiChungTu={params.row.idLoaiChungTu} />
+            )
         },
         {
             field: 'ngayLapHoaDon',

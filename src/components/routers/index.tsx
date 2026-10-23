@@ -374,6 +374,19 @@ export const appRouters: AppRouteProps = {
                             component: LoadableComponent(() => import('../../pages/dien_thoai/index'))
                         },
                         {
+                            // chi tiết 1 máy: thông tin máy + nhật ký (mở từ icon con mắt ở trang Điện thoại)
+                            path: '/dien-thoai-chi-tiet/:idDonViQuyDoi',
+                            permission: 'Pages.DM_HangHoa',
+                            title: 'Điện thoại',
+                            icon: <BsDot style={{ fontSize: 20 }} />,
+                            iconActive: null,
+                            name: 'dichvu_dt',
+                            showInMenu: false,
+                            isLayout: false,
+                            children: [],
+                            component: LoadableComponent(() => import('../../pages/dien_thoai/chi_tiet_dien_thoai'))
+                        },
+                        {
                             path: '/cai-dat-dich-vu-nhan-vien',
                             permission: 'Pages.NhanVienDichVu',
                             title: 'Dịch vụ - Nhân viên',

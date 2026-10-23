@@ -58,7 +58,11 @@ const Page_Them_Phieu_Nhap_Dien_Thoai = () => {
                 prev.map((x) =>
                     x.id === dongSua.id
                         ? {
-                              ...dienThoaiToDong(dt, dongSua.id),
+                              // máy đã bán sửa xong vẫn giữ đánh dấu đã bán (không xóa khỏi phiếu được)
+                              ...dienThoaiToDong(
+                                  { ...dt, daGiaoDich: dongSua.dienThoai?.daGiaoDich ?? dt.daGiaoDich },
+                                  dongSua.id
+                              ),
                               idDonViQuyDoi: dongSua.idDonViQuyDoi,
                               maHang: dongSua.maHang
                           }
@@ -113,7 +117,7 @@ const Page_Them_Phieu_Nhap_Dien_Thoai = () => {
             enqueueSnackbar(`Đã thêm ${may.tenHangHoa} vào phiếu`, { variant: 'success' });
         }
     };
-    const suaGiaNhapMayCoSan = (id: string, text: string) => {
+    const suaGiaNhap = (id: string, text: string) => {
         const gia = Number(text.replace(/\./g, '').replace(/,/g, '') || 0);
         setLstDong((prev) =>
             prev.map((x) =>
@@ -184,19 +188,16 @@ const Page_Them_Phieu_Nhap_Dien_Thoai = () => {
             sortable: false,
             align: 'right',
             headerAlign: 'right',
-            renderCell: (params) =>
-                // máy có sẵn vừa gắn: sửa giá nhập ngay trên dòng
-                params.row.dienThoai?.mayCoSan ? (
-                    <TextField
-                        size="small"
-                        value={formatMoney(params.row.donGia)}
-                        onChange={(e) => suaGiaNhapMayCoSan(params.row.id, e.target.value)}
-                        onKeyDown={(e) => e.stopPropagation()}
-                        sx={{ width: 115, '& input': { textAlign: 'right', fontWeight: 700, fontSize: 13 } }}
-                    />
-                ) : (
-                    <Typography sx={{ fontSize: 14, fontWeight: 800 }}>{formatMoney(params.row.donGia)}</Typography>
-                )
+            // sửa giá nhập ngay trên dòng (mọi máy, kể cả máy đã bán)
+            renderCell: (params) => (
+                <TextField
+                    size="small"
+                    value={formatMoney(params.row.donGia)}
+                    onChange={(e) => suaGiaNhap(params.row.id, e.target.value)}
+                    onKeyDown={(e) => e.stopPropagation()}
+                    sx={{ width: 115, '& input': { textAlign: 'right', fontWeight: 700, fontSize: 13 } }}
+                />
+            )
         },
         {
             field: 'ngayNhap',
@@ -242,15 +243,22 @@ const Page_Them_Phieu_Nhap_Dien_Thoai = () => {
                             </IconButton>
                         </Tooltip>
                     </Stack>
-                ) : // sửa phiếu đã hoàn thành: máy đã bán / đã giao dịch bị khóa
+                ) : // sửa phiếu đã hoàn thành: máy đã bán / đã giao dịch sửa được, không xóa khỏi phiếu
                 params.row.dienThoai?.daGiaoDich ? (
-                    <Chip
-                        size="small"
-                        color="warning"
-                        variant="outlined"
-                        label="Đã bán"
-                        title="Máy đã giao dịch, không sửa / xóa được"
-                    />
+                    <Stack direction="row" alignItems="center" spacing={0.5}>
+                        <Chip
+                            size="small"
+                            color="warning"
+                            variant="outlined"
+                            label="Đã bán"
+                            title="Máy đã giao dịch: sửa được, không xóa khỏi phiếu"
+                        />
+                        <Tooltip title="Sửa">
+                            <IconButton size="small" onClick={() => moSua(params.row)}>
+                                <EditOutlinedIcon sx={{ fontSize: 18 }} />
+                            </IconButton>
+                        </Tooltip>
+                    </Stack>
                 ) : (
                     <Stack direction="row">
                         <Tooltip title="Sửa">

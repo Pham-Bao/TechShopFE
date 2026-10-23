@@ -83,6 +83,7 @@ interface CustomerScreenState {
     timeFrom?: Date;
     timeTo?: Date;
     tongChiTieuTu?: number;
+    chiKhachConNo: boolean; // lọc chỉ khách còn nợ cửa hàng
     tongChiTieuDen?: number;
     gioiTinh?: boolean;
     creationTime?: Date;
@@ -121,7 +122,8 @@ class CustomerScreen extends React.Component<any, CustomerScreenState> {
                 soDienThoai: true,
                 tenNhomKhach: true,
                 tongChiTieu: true,
-                conNo: true,
+                noCuaHang: true,
+                cuaHangNo: true,
                 creationTime: false
             },
             originalData: [],
@@ -138,6 +140,7 @@ class CustomerScreen extends React.Component<any, CustomerScreenState> {
             timeTo: undefined,
             tongChiTieuDen: undefined,
             tongChiTieuTu: undefined,
+            chiKhachConNo: false,
             gioiTinh: undefined,
             creationTime: undefined,
             importShow: false,
@@ -215,6 +218,7 @@ class CustomerScreen extends React.Component<any, CustomerScreenState> {
             gioiTinh: this.state.gioiTinh,
             tongChiTieuDen: this.state.tongChiTieuDen,
             tongChiTieuTu: this.state.tongChiTieuTu,
+            chiKhachConNo: this.state.chiKhachConNo || undefined,
             idChiNhanh: Cookies.get('IdChiNhanh') ?? undefined,
             idNhomKhach: this.state.idNhomKhach == '' ? undefined : this.state.idNhomKhach
         });
@@ -753,16 +757,36 @@ class CustomerScreen extends React.Component<any, CustomerScreenState> {
                 )
             },
             {
-                field: 'conNo',
-                headerName: 'Còn nợ',
+                // khách / NCC đang nợ cửa hàng (khách còn nợ; NCC nợ lại khi cửa hàng trả dư)
+                field: 'noCuaHang',
+                headerName: 'Nợ cửa hàng',
                 headerAlign: 'right',
-                minWidth: 150,
+                minWidth: 130,
                 align: 'right',
                 flex: 1,
                 renderHeader: (params) => <Box sx={{ fontWeight: '700' }}>{params.colDef.headerName}</Box>,
                 renderCell: (params) => (
-                    <Box title={params.value} color={params.value > 0 ? 'red' : ''}>
-                        {new Intl.NumberFormat('vi-VN').format(params.value)}
+                    <Box
+                        title={params.value}
+                        color={params.value > 0 ? 'red' : ''}
+                        fontWeight={params.value > 0 ? 700 : 400}>
+                        {new Intl.NumberFormat('vi-VN').format(params.value ?? 0)}
+                    </Box>
+                )
+            },
+            {
+                // cửa hàng đang nợ khách / NCC (còn phải trả NCC; khách trả dư)
+                field: 'cuaHangNo',
+                headerName: 'Cửa hàng còn nợ',
+                headerAlign: 'right',
+                minWidth: 130,
+                align: 'right',
+                flex: 1,
+                sortable: false,
+                renderHeader: (params) => <Box sx={{ fontWeight: '700' }}>{params.colDef.headerName}</Box>,
+                renderCell: (params) => (
+                    <Box title={params.value} color={params.value > 0 ? '#d97706' : ''}>
+                        {new Intl.NumberFormat('vi-VN').format(params.value ?? 0)}
                     </Box>
                 )
             },
@@ -877,7 +901,26 @@ class CustomerScreen extends React.Component<any, CustomerScreenState> {
                                     <Grid item xs={6} sm={6} lg={4}>
                                         <span className="page-title">Danh sách khách hàng</span>
                                     </Grid>
-                                    <Grid item xs={6} sm={6} lg={6}>
+                                    <Grid item xs={12} sm={12} lg={2} order={{ xs: 3, lg: 3 }}>
+                                        <FormControlLabel
+                                            sx={{ ml: { xs: 0, lg: 1 }, whiteSpace: 'nowrap' }}
+                                            control={
+                                                <Checkbox
+                                                    size="small"
+                                                    checked={this.state.chiKhachConNo}
+                                                    onChange={async (e) => {
+                                                        await this.setState({
+                                                            chiKhachConNo: e.target.checked,
+                                                            currentPage: 1
+                                                        });
+                                                        this.getData();
+                                                    }}
+                                                />
+                                            }
+                                            label="Chỉ đang nợ cửa hàng"
+                                        />
+                                    </Grid>
+                                    <Grid item xs={6} sm={6} lg={6} order={{ xs: 2, lg: 2 }}>
                                         <TextField
                                             fullWidth
                                             size="small"

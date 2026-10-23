@@ -1,56 +1,51 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+    Autocomplete,
     Box,
     Button,
-    Checkbox,
     Divider,
     Grid,
     IconButton,
-    InputAdornment,
-    MenuItem,
     Paper,
-    SelectChangeEvent,
     Stack,
     TextField,
+    Tooltip,
     Typography
 } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import SearchIcon from '@mui/icons-material/Search';
-import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { enqueueSnackbar } from 'notistack';
 import { format } from 'date-fns';
 import Cookies from 'js-cookie';
 import { LoaiChungTu } from '../../lib/appconst';
-import AppConsts from '../../lib/appconst';
-import utils from '../../utils/utils';
-import KhoHangService, { KiemKeGanNhatDto } from '../../services/kho_hang/KhoHangService';
+import KhoHangService from '../../services/kho_hang/KhoHangService';
 import ProductService from '../../services/product/ProductService';
-import GroupProductService from '../../services/product/GroupProductService';
-import { ModelHangHoaDto, ModelNhomHangHoa, PagedProductSearchDto } from '../../services/product/dto';
-import CustomTablePagination from '../../components/Pagination/CustomTablePagination';
+import { ModelHangHoaDto, PagedProductSearchDto } from '../../services/product/dto';
 import ConfirmDelete from '../../components/AlertDialog/ConfirmDelete';
-import ModalKiemKe, { IDongKiemKe } from './components/ModalKiemKe';
+import { DanhSachMaChungTu } from '../../components/MaChungTu/MaChungTuLink';
 
-// hàng hóa được tick chọn để kiểm (giữ qua các trang / bộ lọc)
-interface IHangChon {
+// 1 hàng hóa đang kiểm (theo đơn vị quy đổi)
+interface IDongKiemKe {
     id: string; // idDonViQuyDoi
     idHangHoa: string;
     maHang: string;
     tenHang: string;
+    maPhieuNhaps: string[]; // phiếu nhập đã hoàn thành có hàng này
+    soLuongTon: number; // tồn phần mềm hiện tại
+    soLuongThucTe: number; // cửa hàng đếm được
+    ghiChu: string;
 }
 
-const toHangChon = (x: ModelHangHoaDto): IHangChon => ({
-    id: x.idDonViQuyDoi ?? '',
-    idHangHoa: x.idHangHoa ?? x.id ?? '',
-    maHang: x.maHangHoa ?? '',
-    tenHang: x.tenHangHoa ?? ''
-});
+const parseSo = (text: string) => {
+    const value = Number(text.replace(/\./g, '').replace(/,/g, '.') || 0);
+    return Number.isNaN(value) || value < 0 ? 0 : value;
+};
 
 /**
- * Lập phiếu kiểm kê theo hàng hóa: danh sách hàng hóa bên trái (tick chọn hàng cần kiểm), thông tin phiếu bên phải.
- * Bấm "Kiểm kê" -> nhập SL thực tế -> đối chiếu tồn hệ thống -> Tạm lưu / Xác nhận (cân bằng tồn kho).
+ * Lập phiếu kiểm kê: tìm và chọn hàng hóa -> hàng vào ngay bảng kiểm kê (tồn phần mềm, SL thực tế, lệch, ghi chú)
+ * -> Tạm lưu (chưa ảnh hưởng tồn kho) / Xác nhận (cân bằng tồn kho theo SL thực tế) / Hủy.
  */
 const Page_them_phieu_kiem_ke = () => {
     const navigate = useNavigate();
@@ -66,52 +61,51 @@ const Page_them_phieu_kiem_ke = () => {
     const [idHoaDonCu, setIdHoaDonCu] = useState<string | null>(null);
 
     const [lstDong, setLstDong] = useState<IDongKiemKe[]>([]);
-    const [isShowModal, setIsShowModal] = useState(false);
     const [isShowConfirm, setIsShowConfirm] = useState(false);
+    const [isShowHuy, setIsShowHuy] = useState(false);
 
-    // danh sách hàng hóa (chỉ hàng hóa thường, điện thoại không kiểm kê)
-    const [lstNhom, setLstNhom] = useState<ModelNhomHangHoa[]>([]);
+    // tìm hàng hóa (chỉ hàng hóa thường, điện thoại không kiểm kê)
+    const [listSearch, setListSearch] = useState<ModelHangHoaDto[]>([]);
     const [txtSearch, setTxtSearch] = useState('');
-    const [paramSearch, setParamSearch] = useState<PagedProductSearchDto>({
-        textSearch: '',
-        idNhomHangHoas: [],
-        idLoaiHangHoa: 1,
-        idChiNhanhs: idChiNhanh ? [idChiNhanh] : [],
-        currentPage: 1,
-        pageSize: AppConsts.pageOption[0].value
-    });
-    const [pageData, setPageData] = useState<{ totalCount: number; items: ModelHangHoaDto[] }>({
-        totalCount: 0,
-        items: []
-    });
-    const [kiemKeGanNhat, setKiemKeGanNhat] = useState<Record<string, KiemKeGanNhatDto>>({});
-    const [lstChon, setLstChon] = useState<IHangChon[]>([]);
-
-    useEffect(() => {
-        GroupProductService.GetDM_NhomHangHoa().then((data) =>
-            setLstNhom((data?.items ?? []).filter((x) => x.laNhomHangHoa))
-        );
-    }, []);
-
-    useEffect(() => {
-        ProductService.Get_DMHangHoa(paramSearch).then(async (data) => {
-            const items = (data?.items ?? []).filter((x) => x.idDonViQuyDoi);
-            setPageData({ totalCount: data?.totalCount ?? 0, items });
-            const lanKiem = await KhoHangService.GetKiemKeGanNhat(
-                items.map((x) => x.idHangHoa ?? x.id ?? ''),
-                idChiNhanh
-            );
-            setKiemKeGanNhat((prev) => ({ ...prev, ...Object.fromEntries(lanKiem.map((x) => [x.idHangHoa, x])) }));
-        });
-    }, [paramSearch]);
+    const [loading, setLoading] = useState(false);
+    // chỉ nhận kết quả của lần tìm mới nhất
+    const lanTimMoiNhat = useRef(0);
+    const getListHangHoa = async (value: string) => {
+        const lanTim = ++lanTimMoiNhat.current;
+        setLoading(true);
+        try {
+            const data = await ProductService.Get_DMHangHoa({
+                idNhomHangHoas: [],
+                textSearch: value?.trim() ?? '',
+                idLoaiHangHoa: 1,
+                idChiNhanhs: idChiNhanh ? [idChiNhanh] : [],
+                currentPage: 0,
+                pageSize: 20
+            } as PagedProductSearchDto);
+            if (lanTim === lanTimMoiNhat.current) {
+                setListSearch((data?.items ?? []).filter((x) => x.idDonViQuyDoi));
+            }
+        } finally {
+            if (lanTim === lanTimMoiNhat.current) {
+                setLoading(false);
+            }
+        }
+    };
 
     useEffect(() => {
         if (idPhieu) moPhieuTamLuu(idPhieu);
     }, [idPhieu]);
 
-    const layTonKho = async (idHangHoas: string[]) => {
-        const ton = await KhoHangService.GetTonKho(idHangHoas, idChiNhanh);
-        return (idHangHoa: string) => ton.find((t) => t.idHangHoa === idHangHoa)?.soLuongTon ?? 0;
+    // tồn phần mềm + phiếu nhập của các hàng
+    const layThongTinHang = async (idHangHoas: string[]) => {
+        const [ton, phieuNhap] = await Promise.all([
+            KhoHangService.GetTonKho(idHangHoas, idChiNhanh),
+            KhoHangService.GetPhieuNhap_ofHangHoa(idHangHoas, idChiNhanh)
+        ]);
+        return {
+            getTon: (idHangHoa: string) => ton.find((t) => t.idHangHoa === idHangHoa)?.soLuongTon ?? 0,
+            getPhieuNhap: (idHangHoa: string) => phieuNhap.find((t) => t.idHangHoa === idHangHoa)?.maPhieuNhaps ?? []
+        };
     };
 
     // phiếu kiểm kê tạm lưu: lấy lại SL thực tế đã nhập, tồn phần mềm tính theo hiện tại
@@ -128,67 +122,52 @@ const Page_them_phieu_kiem_ke = () => {
         setIdHoaDonCu(phieu.idHoaDon ?? null);
         if (phieu.ngayLapHoaDon) setNgayLap(format(new Date(phieu.ngayLapHoaDon), "yyyy-MM-dd'T'HH:mm"));
 
-        const getTon = await layTonKho(phieu.chiTiet.map((x) => x.idHangHoa));
-        setLstChon(
-            phieu.chiTiet.map((x) => ({
-                id: x.idDonViQuyDoi,
-                idHangHoa: x.idHangHoa,
-                maHang: x.maHangHoa,
-                tenHang: x.tenHangHoa
-            }))
-        );
+        const info = await layThongTinHang(phieu.chiTiet.map((x) => x.idHangHoa));
         setLstDong(
             phieu.chiTiet.map((x) => ({
                 id: x.idDonViQuyDoi,
                 idHangHoa: x.idHangHoa,
                 maHang: x.maHangHoa,
                 tenHang: x.tenHangHoa,
-                soLuongTon: getTon(x.idHangHoa),
+                maPhieuNhaps: info.getPhieuNhap(x.idHangHoa),
+                soLuongTon: info.getTon(x.idHangHoa),
                 soLuongThucTe: x.soLuong,
                 ghiChu: x.ghiChu ?? ''
             }))
         );
-        setIsShowModal(true);
     };
 
-    const daChon = (id?: string) => lstChon.some((x) => x.id === id);
-    const doiChon = (x: ModelHangHoaDto) => {
-        const id = x.idDonViQuyDoi;
-        setLstChon((prev) =>
-            prev.some((c) => c.id === id) ? prev.filter((c) => c.id !== id) : [...prev, toHangChon(x)]
-        );
-    };
-    const themVaoChon = (lst: ModelHangHoaDto[]) =>
-        setLstChon((prev) => [
-            ...prev,
-            ...lst.filter((x) => !prev.some((c) => c.id === x.idDonViQuyDoi)).map(toHangChon)
-        ]);
-    const chonCaTrang = pageData.items.length > 0 && pageData.items.every((x) => daChon(x.idDonViQuyDoi));
-    const doiChonCaTrang = () =>
-        chonCaTrang
-            ? setLstChon((prev) => prev.filter((c) => !pageData.items.some((x) => x.idDonViQuyDoi === c.id)))
-            : themVaoChon(pageData.items);
-
-    // bấm "Kiểm kê": dựng bảng kiểm từ hàng đã chọn (giữ số đã đếm của hàng đã có trong bảng)
-    const moKiemKe = async () => {
-        if (lstChon.length === 0) return;
-        const getTon = await layTonKho(lstChon.map((x) => x.idHangHoa));
+    // chọn hàng: thêm vào bảng kiểm kê, SL thực tế mặc định = tồn (chỉ sửa hàng đếm lệch)
+    const themHang = async (item: ModelHangHoaDto) => {
+        const id = item.idDonViQuyDoi ?? '';
+        if (lstDong.some((x) => x.id === id)) {
+            enqueueSnackbar(`${item.tenHangHoa} đã có trong phiếu kiểm kê`, { variant: 'info' });
+            return;
+        }
+        const idHangHoa = item.idHangHoa ?? item.id ?? '';
+        const info = await layThongTinHang([idHangHoa]);
+        const ton = info.getTon(idHangHoa);
         setLstDong((prev) =>
-            lstChon.map((x) => {
-                const cu = prev.find((d) => d.id === x.id);
-                const ton = getTon(x.idHangHoa);
-                return cu
-                    ? { ...cu, soLuongTon: ton }
-                    : {
-                          ...x,
+            prev.some((x) => x.id === id)
+                ? prev
+                : [
+                      ...prev,
+                      {
+                          id,
+                          idHangHoa,
+                          maHang: item.maHangHoa ?? '',
+                          tenHang: item.tenHangHoa ?? '',
+                          maPhieuNhaps: info.getPhieuNhap(idHangHoa),
                           soLuongTon: ton,
-                          soLuongThucTe: ton, // mặc định khớp tồn, chỉ sửa hàng đếm lệch
+                          soLuongThucTe: ton,
                           ghiChu: ''
-                      };
-            })
+                      }
+                  ]
         );
-        setIsShowModal(true);
     };
+
+    const updateDong = (id: string, change: Partial<IDongKiemKe>) =>
+        setLstDong((prev) => prev.map((x) => (x.id === id ? { ...x, ...change } : x)));
 
     // trangThai: 1.Tạm lưu (chưa ảnh hưởng tồn kho), 3.Hoàn thành (cân bằng tồn kho theo SL thực tế)
     const savePhieuKiem = async (trangThai: number) => {
@@ -234,6 +213,21 @@ const Page_them_phieu_kiem_ke = () => {
         }
     };
 
+    // Hủy: bỏ phiếu đang lập; phiếu tạm lưu đang mở thì hủy luôn phiếu đó
+    const huyPhieu = async () => {
+        setIsShowHuy(false);
+        if (idPhieu) {
+            try {
+                await KhoHangService.HuyPhieuKho([idPhieu]);
+                enqueueSnackbar(`Đã hủy phiếu kiểm kê ${maPhieu}`, { variant: 'success' });
+            } catch {
+                // lỗi từ Backend đã được httpService hiển thị
+                return;
+            }
+        }
+        navigate('/phieu-kiem-kes');
+    };
+
     const thongKe = useMemo(
         () => ({
             tongThucTe: lstDong.reduce((s, x) => s + x.soLuongThucTe, 0),
@@ -244,80 +238,118 @@ const Page_them_phieu_kiem_ke = () => {
         [lstDong]
     );
 
-    const timKiem = () => setParamSearch({ ...paramSearch, textSearch: txtSearch, currentPage: 1 });
-
     const columns: GridColDef[] = [
         {
-            field: 'chon',
-            width: 56,
+            field: 'maHang',
+            headerName: 'Mã hàng',
+            width: 120,
+            sortable: false,
+            renderCell: (p) => (
+                <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'var(--color-main)' }}>{p.value}</Typography>
+            )
+        },
+        {
+            field: 'tenHang',
+            headerName: 'Tên hàng',
+            flex: 1,
+            minWidth: 180,
+            sortable: false,
+            renderCell: (p) => (
+                <Typography noWrap sx={{ fontSize: 14, fontWeight: 700 }} title={p.value}>
+                    {p.value}
+                </Typography>
+            )
+        },
+        {
+            field: 'maPhieuNhaps',
+            headerName: 'Phiếu nhập',
+            width: 160,
+            sortable: false,
+            renderCell: (p) =>
+                p.row.maPhieuNhaps.length > 0 ? (
+                    <Typography noWrap sx={{ fontSize: 13 }} title={p.row.maPhieuNhaps.join(', ')}>
+                        <DanhSachMaChungTu ma={p.row.maPhieuNhaps.join(', ')} />
+                    </Typography>
+                ) : (
+                    <Typography sx={{ fontSize: 12, color: '#9ca3af' }}>Chưa có phiếu nhập</Typography>
+                )
+        },
+        {
+            field: 'soLuongTon',
+            headerName: 'SL tồn phần mềm',
+            width: 130,
             sortable: false,
             align: 'center',
             headerAlign: 'center',
-            renderHeader: () => <Checkbox size="small" checked={chonCaTrang} onChange={doiChonCaTrang} />,
+            renderCell: (p) => <Typography sx={{ fontWeight: 700 }}>{p.value}</Typography>
+        },
+        {
+            field: 'soLuongThucTe',
+            headerName: 'SL thực tế',
+            width: 120,
+            sortable: false,
+            align: 'center',
+            headerAlign: 'center',
             renderCell: (p) => (
-                <Checkbox
+                <TextField
                     size="small"
-                    checked={daChon(p.row.idDonViQuyDoi)}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={() => doiChon(p.row)}
+                    value={p.row.soLuongThucTe}
+                    onChange={(e) => updateDong(p.row.id, { soLuongThucTe: parseSo(e.target.value) })}
+                    onKeyDown={(e) => e.stopPropagation()}
+                    onFocus={(e) => e.target.select()}
+                    sx={{ width: 90, '& input': { textAlign: 'center', fontWeight: 700 } }}
                 />
             )
         },
         {
-            field: 'maHangHoa',
-            headerName: 'Mã hàng',
-            minWidth: 110,
-            flex: 0.7,
-            sortable: false,
-            renderCell: (p) => <Typography sx={{ fontWeight: 700, fontSize: 14 }}>{p.value}</Typography>
-        },
-        {
-            field: 'tenHangHoa',
-            headerName: 'Tên hàng',
-            minWidth: 180,
-            flex: 1.4,
-            sortable: false,
-            renderCell: (p) => (
-                <Box component="span" title={p.value} sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {p.value}
-                </Box>
-            )
-        },
-        {
-            field: 'tenNhomHang',
-            headerName: 'Nhóm hàng',
-            minWidth: 120,
-            flex: 0.8,
-            sortable: false
-        },
-        {
-            field: 'soLuongTon',
-            headerName: 'Tồn hệ thống',
-            minWidth: 110,
-            flex: 0.6,
-            sortable: false,
-            align: 'right',
-            headerAlign: 'right',
-            renderCell: (p) => <Typography sx={{ fontWeight: 700 }}>{p.value ?? 0}</Typography>
-        },
-        {
-            field: 'kiemKeGanNhat',
-            headerName: 'Kiểm kê gần nhất',
-            minWidth: 140,
-            flex: 0.8,
+            field: 'soLuongLech',
+            headerName: 'SL lệch',
+            width: 100,
             sortable: false,
             align: 'center',
             headerAlign: 'center',
             renderCell: (p) => {
-                const lan = kiemKeGanNhat[p.row.idHangHoa ?? p.row.id];
-                return lan ? (
-                    <Typography sx={{ fontSize: 13 }} title={lan.maPhieu}>
-                        {format(new Date(lan.ngayKiemKe), 'dd/MM/yyyy HH:mm')}
+                const lech = p.row.soLuongThucTe - p.row.soLuongTon;
+                return (
+                    <Typography
+                        sx={{ fontWeight: 800, color: lech < 0 ? '#dc2626' : lech > 0 ? '#16a34a' : '#6b7280' }}>
+                        {lech > 0 ? `+${lech}` : lech}
                     </Typography>
-                ) : (
-                    <Typography sx={{ fontSize: 12, color: '#9ca3af' }}>Chưa kiểm</Typography>
                 );
             }
+        },
+        {
+            field: 'ghiChu',
+            headerName: 'Ghi chú',
+            width: 200,
+            sortable: false,
+            renderCell: (p) => (
+                <TextField
+                    size="small"
+                    fullWidth
+                    placeholder="Ghi chú"
+                    value={p.row.ghiChu}
+                    onChange={(e) => updateDong(p.row.id, { ghiChu: e.target.value })}
+                    onKeyDown={(e) => e.stopPropagation()}
+                />
+            )
+        },
+        {
+            field: 'action',
+            headerName: '',
+            width: 56,
+            sortable: false,
+            align: 'center',
+            renderCell: (p) => (
+                <Tooltip title="Bỏ khỏi phiếu">
+                    <IconButton
+                        size="small"
+                        onClick={() => setLstDong((prev) => prev.filter((x) => x.id !== p.row.id))}
+                        sx={{ color: '#9ca3af', '&:hover': { backgroundColor: '#fee2e2', color: '#dc2626' } }}>
+                        <DeleteOutlineIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                </Tooltip>
+            )
         }
     ];
 
@@ -330,16 +362,6 @@ const Page_them_phieu_kiem_ke = () => {
 
     return (
         <>
-            <ModalKiemKe
-                open={isShowModal}
-                tieuDe={`Kiểm kê ${maPhieu ? `phiếu ${maPhieu}` : 'hàng hóa'}`}
-                lstDong={lstDong}
-                setLstDong={setLstDong}
-                isSaving={isSaving}
-                onClose={() => setIsShowModal(false)}
-                onTamLuu={() => savePhieuKiem(1)}
-                onXacNhan={() => setIsShowConfirm(true)}
-            />
             <ConfirmDelete
                 isShow={isShowConfirm}
                 title="Xác nhận kiểm kê"
@@ -347,13 +369,26 @@ const Page_them_phieu_kiem_ke = () => {
                 onOk={() => savePhieuKiem(3)}
                 onCancel={() => setIsShowConfirm(false)}
             />
+            <ConfirmDelete
+                isShow={isShowHuy}
+                title="Hủy phiếu kiểm kê"
+                mes={
+                    idPhieu
+                        ? `Phiếu kiểm kê tạm lưu ${maPhieu} sẽ bị hủy. Bạn có chắc chắn?`
+                        : 'Bỏ phiếu kiểm kê đang lập (chưa lưu)?'
+                }
+                onOk={huyPhieu}
+                onCancel={() => setIsShowHuy(false)}
+            />
             <Box sx={{ background: '#f5f6fa', minHeight: '100vh', p: 2 }}>
                 <Paper elevation={0} sx={{ p: 1, borderRadius: 2, mb: 2 }}>
                     <Stack direction="row" alignItems="center" spacing={1}>
                         <IconButton onClick={() => navigate('/phieu-kiem-kes')}>
                             <ArrowBackIcon />
                         </IconButton>
-                        <Typography sx={{ fontWeight: 800, fontSize: 18 }}>Lập phiếu kiểm kê</Typography>
+                        <Typography sx={{ fontWeight: 800, fontSize: 18 }}>
+                            {maPhieu ? `Kiểm kê ${maPhieu}` : 'Lập phiếu kiểm kê'}
+                        </Typography>
                     </Stack>
                 </Paper>
 
@@ -396,106 +431,116 @@ const Page_them_phieu_kiem_ke = () => {
                                 <Typography sx={{ fontWeight: 800, mb: 2, textTransform: 'uppercase' }}>
                                     Thông tin kiểm kê
                                 </Typography>
-                                {dongThongKe('Hàng hóa đã chọn', lstChon.length, 'var(--color-main)')}
+                                {dongThongKe('SL hàng kiểm kê', lstDong.length, 'var(--color-main)')}
+                                {dongThongKe('Tổng SL thực tế', thongKe.tongThucTe)}
                                 <Divider sx={{ mb: 1.5 }} />
-                                {dongThongKe('Tổng SL thực tế', thongKe.tongThucTe, 'var(--color-main)')}
-                                {dongThongKe('SL hàng kiểm kê', lstDong.length)}
                                 {dongThongKe('SL hàng chênh lệch', thongKe.lech)}
                                 {dongThongKe('SL hàng thiếu', thongKe.thieu, '#dc2626')}
                                 {dongThongKe('SL hàng thừa', thongKe.thua, '#16a34a')}
                             </Box>
 
-                            {lstDong.length > 0 && (
+                            <Box sx={{ display: 'flex', gap: 1, mt: 2, flexWrap: 'wrap' }}>
                                 <Button
-                                    fullWidth
                                     variant="outlined"
-                                    onClick={() => setIsShowModal(true)}
-                                    sx={{ mt: 2, textTransform: 'none', fontWeight: 700 }}>
-                                    Mở lại bảng kiểm kê
+                                    color="error"
+                                    onClick={() => setIsShowHuy(true)}
+                                    disabled={isSaving}
+                                    sx={{ flex: '1 1 30%', textTransform: 'none', fontWeight: 700 }}>
+                                    Hủy
                                 </Button>
-                            )}
+                                <Button
+                                    variant="outlined"
+                                    onClick={() => savePhieuKiem(1)}
+                                    disabled={isSaving || lstDong.length === 0}
+                                    sx={{ flex: '1 1 30%', textTransform: 'none', fontWeight: 700 }}>
+                                    Tạm lưu
+                                </Button>
+                                <Button
+                                    variant="contained"
+                                    onClick={() => setIsShowConfirm(true)}
+                                    disabled={isSaving || lstDong.length === 0}
+                                    sx={{
+                                        flex: '1 1 100%',
+                                        backgroundColor: 'var(--color-main)',
+                                        textTransform: 'none',
+                                        fontWeight: 800,
+                                        boxShadow: 'none',
+                                        py: 1.2
+                                    }}>
+                                    {isSaving ? 'Đang lưu...' : 'Xác nhận'}
+                                </Button>
+                            </Box>
                         </Paper>
                     </Grid>
 
-                    {/* TRÁI: danh sách hàng hóa */}
+                    {/* TRÁI: tìm hàng + bảng kiểm kê */}
                     <Grid item xs={12} md={8} lg={8.5} sx={{ order: 1 }}>
                         <Paper elevation={0} sx={{ borderRadius: 2, overflow: 'hidden' }}>
-                            <Stack
-                                direction="row"
-                                spacing={1}
-                                sx={{
-                                    p: 1,
-                                    borderBottom: '1px solid #edf0f5',
-                                    flexWrap: { xs: 'wrap', lg: 'nowrap' },
-                                    rowGap: 1
-                                }}>
-                                <TextField
+                            <Box sx={{ p: 1, borderBottom: '1px solid #edf0f5' }}>
+                                <Autocomplete
                                     fullWidth
-                                    size="small"
-                                    placeholder="Tìm hàng hóa theo mã / tên"
-                                    value={txtSearch}
-                                    onChange={(e) => setTxtSearch(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') timKiem();
-                                    }}
-                                    InputProps={{
-                                        startAdornment: (
-                                            <InputAdornment position="start">
-                                                <IconButton size="small" onClick={timKiem}>
-                                                    <SearchIcon />
-                                                </IconButton>
-                                            </InputAdornment>
-                                        )
-                                    }}
-                                    sx={{ minWidth: 220, '& .MuiInputBase-root': { height: 42 } }}
-                                />
-                                <TextField
-                                    select
-                                    size="small"
-                                    label="Nhóm hàng"
-                                    value={paramSearch.idNhomHangHoas?.[0] ?? ''}
-                                    onChange={(e) =>
-                                        setParamSearch({
-                                            ...paramSearch,
-                                            idNhomHangHoas: e.target.value ? [e.target.value] : [],
-                                            currentPage: 1
-                                        })
+                                    options={listSearch}
+                                    loading={loading}
+                                    filterOptions={(x) => x}
+                                    getOptionLabel={(option) =>
+                                        `${option.maHangHoa ?? ''} - ${option.tenHangHoa ?? ''}`
                                     }
-                                    sx={{ minWidth: 180, '& .MuiInputBase-root': { height: 42 } }}>
-                                    <MenuItem value="">Tất cả nhóm</MenuItem>
-                                    {lstNhom.map((x) => (
-                                        <MenuItem key={x.id} value={x.id ?? ''}>
-                                            {x.tenNhomHang}
-                                        </MenuItem>
-                                    ))}
-                                </TextField>
-                                <Button
-                                    variant="contained"
-                                    startIcon={<FactCheckOutlinedIcon />}
-                                    disabled={lstChon.length === 0}
-                                    onClick={moKiemKe}
-                                    sx={{
-                                        height: 42,
-                                        px: 2.5,
-                                        whiteSpace: 'nowrap',
-                                        textTransform: 'none',
-                                        fontWeight: 800,
-                                        boxShadow: 'none'
-                                    }}>
-                                    Kiểm kê ({lstChon.length})
-                                </Button>
-                            </Stack>
+                                    // luôn để trống sau khi chọn để chọn tiếp hàng khác
+                                    value={null}
+                                    inputValue={txtSearch}
+                                    onOpen={() => getListHangHoa(txtSearch)}
+                                    onInputChange={(_, value, reason) => {
+                                        if (reason !== 'input') return;
+                                        setTxtSearch(value);
+                                        getListHangHoa(value);
+                                    }}
+                                    onChange={(_, value) => {
+                                        if (!value) return;
+                                        themHang(value);
+                                        setTxtSearch('');
+                                        getListHangHoa('');
+                                    }}
+                                    noOptionsText={loading ? 'Đang tải...' : 'Không tìm thấy hàng hóa'}
+                                    renderOption={(props, option) => (
+                                        <li {...props} key={option.idDonViQuyDoi}>
+                                            <Box sx={{ width: '100%', py: 0.5 }}>
+                                                <Typography sx={{ fontSize: 14, fontWeight: 700 }}>
+                                                    {option.tenHangHoa}
+                                                </Typography>
+                                                <Stack direction="row" spacing={1.5} sx={{ mt: 0.5, flexWrap: 'wrap' }}>
+                                                    <Typography sx={{ fontSize: 12, color: '#6b7280' }}>
+                                                        Mã: {option.maHangHoa}
+                                                    </Typography>
+                                                    <Typography sx={{ fontSize: 12, color: '#2563eb' }}>
+                                                        Tồn: {option.soLuongTon}
+                                                    </Typography>
+                                                    {lstDong.some((x) => x.id === option.idDonViQuyDoi) && (
+                                                        <Typography sx={{ fontSize: 12, color: '#16a34a' }}>
+                                                            Đã có trong phiếu
+                                                        </Typography>
+                                                    )}
+                                                </Stack>
+                                            </Box>
+                                        </li>
+                                    )}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            size="small"
+                                            placeholder="Tìm hàng hóa cần kiểm kê theo mã hoặc tên"
+                                        />
+                                    )}
+                                />
+                            </Box>
                             <DataGrid
                                 autoHeight
-                                rows={pageData.items}
-                                getRowId={(r) => r.idDonViQuyDoi}
+                                rows={lstDong}
                                 columns={columns}
                                 hideFooter
                                 disableColumnMenu
-                                rowHeight={48}
-                                onRowClick={(p) => doiChon(p.row)}
-                                getRowClassName={(p) => (daChon(p.row.idDonViQuyDoi) ? 'row-chon' : '')}
-                                localeText={{ noRowsLabel: 'Không có hàng hóa nào' }}
+                                disableRowSelectionOnClick
+                                rowHeight={52}
+                                localeText={{ noRowsLabel: 'Tìm và chọn hàng hóa để kiểm kê' }}
                                 sx={{
                                     border: 0,
                                     '& .MuiDataGrid-columnHeaders': { background: '#f8fafc' },
@@ -504,32 +549,9 @@ const Page_them_phieu_kiem_ke = () => {
                                         fontSize: 13,
                                         color: '#4b5563'
                                     },
-                                    '& .MuiDataGrid-cell, & .MuiDataGrid-columnHeader': { outline: 'none !important' },
-                                    '& .MuiDataGrid-row': { cursor: 'pointer' },
-                                    '& .row-chon, & .row-chon:hover': {
-                                        backgroundColor: 'var(--color-bg, #e8f0fe)',
-                                        boxShadow: 'inset 4px 0 0 var(--color-main)'
-                                    }
+                                    '& .MuiDataGrid-cell, & .MuiDataGrid-columnHeader': { outline: 'none !important' }
                                 }}
                             />
-                            <Box sx={{ p: 1 }}>
-                                <CustomTablePagination
-                                    currentPage={paramSearch.currentPage ?? 1}
-                                    rowPerPage={paramSearch.pageSize ?? 10}
-                                    totalRecord={pageData.totalCount}
-                                    totalPage={utils.getTotalPage(pageData.totalCount, paramSearch.pageSize ?? 10)}
-                                    handlePerPageChange={(e: SelectChangeEvent<number>) =>
-                                        setParamSearch({
-                                            ...paramSearch,
-                                            currentPage: 1,
-                                            pageSize: parseInt(e.target.value.toString(), 10)
-                                        })
-                                    }
-                                    handlePageChange={(e: any, value: number) =>
-                                        setParamSearch({ ...paramSearch, currentPage: value })
-                                    }
-                                />
-                            </Box>
                         </Paper>
                     </Grid>
                 </Grid>

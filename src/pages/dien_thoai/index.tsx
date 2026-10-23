@@ -59,7 +59,10 @@ import ActionRowSelect from '../../components/DataGrid/ActionRowSelect';
 import { IList } from '../../services/dto/IList';
 import { ModalChuyenNhom } from '../../components/Dialog/modal_chuyen_nhom';
 import abpCustom from '../../components/abp-custom';
-import ActionRow2Button from '../../components/DataGrid/ActionRow2Button';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
+import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
+import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
+import { useNavigate } from 'react-router-dom';
 import nhomHangHoaStore from '../../stores/nhomHangHoaStore';
 import { AppContext } from '../../services/chi_nhanh/ChiNhanhContext';
 import { CreateNhatKyThaoTacDto } from '../../services/nhat_ky_hoat_dong/dto/CreateNhatKyThaoTacDto';
@@ -72,8 +75,10 @@ import ButtonOnlyIcon from '../../components/Button/ButtonOnlyIcon';
 import bookingStore from '../../stores/bookingStore';
 import CreateOrEditLichHenModal from '../appoinments/components/create-or-edit-lich-hen';
 import suggestStore from '../../stores/suggestStore';
+import MaChungTuLink from '../../components/MaChungTu/MaChungTuLink';
 
 const PageProduct = () => {
+    const navigate = useNavigate();
     const appContext = useContext(AppContext);
     const chiNhanhCurrent = appContext.chinhanhCurrent;
     const [checkAllRow, setCheckAllRow] = useState(false);
@@ -923,9 +928,7 @@ window.onload=function(){
                 flex: 1,
                 renderCell: (params) =>
                     isKhach ? null : params.value ? (
-                        <Box component="span" sx={{ fontWeight: 600, color: 'var(--color-main)' }}>
-                            {params.value}
-                        </Box>
+                        <MaChungTuLink ma={params.value} idLoaiChungTu={4} sx={{ fontWeight: 600 }} />
                     ) : (
                         <Box component="span" sx={{ fontSize: 12, color: '#d97706' }}>
                             Chưa có phiếu nhập
@@ -961,16 +964,25 @@ window.onload=function(){
                 maxWidth: 160,
                 flex: 1,
                 disableColumnMenu: true,
+                // con mắt: mở trang chi tiết máy (thông tin + nhật ký, sửa máy ở trang đó); in tem; xóa
                 renderCell: (params) => (
-                    <ActionRow2Button
-                        sx={{
-                            ml: 1,
-                            width: 16,
-                            color: '#7e7979',
-                            cursor: 'pointer'
-                        }}
-                        handleClickAction={(type: number) => doActionRow(type, params.row)}
-                    />
+                    <Stack spacing={1} direction={'row'}>
+                        <VisibilityOutlinedIcon
+                            titleAccess="Xem chi tiết"
+                            sx={{ fontSize: 18, color: '#7e7979', cursor: 'pointer' }}
+                            onClick={() => navigate(`/dien-thoai-chi-tiet/${params.row.idDonViQuyDoi}`)}
+                        />
+                        <PrintOutlinedIcon
+                            titleAccess="In"
+                            sx={{ width: '16px', color: '#7e7979', cursor: 'pointer' }}
+                            onClick={() => doActionRow(TypeAction.PRINT, params.row)}
+                        />
+                        <DeleteOutlinedIcon
+                            titleAccess="Xóa"
+                            sx={{ fontSize: 18, color: '#7e7979', cursor: 'pointer' }}
+                            onClick={() => doActionRow(TypeAction.DELETE, params.row)}
+                        />
+                    </Stack>
                 )
             }
         ];

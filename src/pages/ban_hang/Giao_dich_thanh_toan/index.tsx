@@ -13,6 +13,7 @@ import { ReactComponent as DownloadIcon } from '../../../images/download.svg';
 import { TextTranslate } from '../../../components/TableLanguage';
 import CustomTablePagination from '../../../components/Pagination/CustomTablePagination';
 import ThongTinHoaDon from '../Hoa_don/ThongTinHoaDon';
+import { useSearchParams } from 'react-router-dom';
 import { AppContext } from '../../../services/chi_nhanh/ChiNhanhContext';
 import { ChiNhanhDto } from '../../../services/chi_nhanh/Dto/chiNhanhDto';
 import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
@@ -83,6 +84,20 @@ const GiaoDichThanhToan: React.FC = () => {
         items: []
     });
     const [rowSelectionModel, setRowSelectionModel] = React.useState<GridRowSelectionModel>([]);
+    // mở thẳng chi tiết 1 hóa đơn qua ?id= (ấn giữ mã hóa đơn ở các danh sách khác)
+    const [searchParams, setSearchParams] = useSearchParams();
+    useEffect(() => {
+        const id = searchParams.get('id');
+        if (!id) return;
+        HoaDonService.GetInforHoaDon_byId(id).then((data) => {
+            const hd = data?.[0];
+            if (!hd) return;
+            setIdHoadonChosing(id);
+            setHoaDon({ ...hd, id } as PageHoaDonDto);
+            setOpenDetail(true);
+        });
+        setSearchParams({}, { replace: true });
+    }, [searchParams]);
     useEffect(() => {
         const invoiceHubConnection = new HubConnectionBuilder()
             .withUrl(process.env.REACT_APP_REMOTE_SERVICE_BASE_URL + 'invoiceHub')

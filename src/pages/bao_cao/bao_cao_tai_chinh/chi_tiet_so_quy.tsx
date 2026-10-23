@@ -19,6 +19,7 @@ import BaoCaoTaiChinhService from '../../../services/bao_cao/bao_cao_tai_chinh/B
 import CustomTablePagination from '../../../components/Pagination/CustomTablePagination';
 import { format } from 'date-fns';
 import utils from '../../../utils/utils';
+import { DanhSachMaChungTu } from '../../../components/MaChungTu/MaChungTuLink';
 
 export default function BaoCaoTaiChinhChiTietSoQuy({ onChangePage, onChangePageSize }: any) {
     const dataFilterContext = useContext(BaoCaoTaiChinhDatataFilterContext);
@@ -209,7 +210,9 @@ export default function BaoCaoTaiChinhChiTietSoQuy({ onChangePage, onChangePageS
                                                 {row?.tenNguoiNopTien}
                                             </TableCell>
                                             <TableCell sx={{ minWidth: 80 }}>
-                                                {utils.Remove_LastComma(row?.maHoaDonLienQuans)}
+                                                <DanhSachMaChungTu
+                                                    ma={utils.Remove_LastComma(row?.maHoaDonLienQuans)}
+                                                />
                                             </TableCell>
                                             <TableCell align="right" className="table-cell-border">
                                                 {new Intl.NumberFormat('vi-VN').format(row?.thu_TienMat ?? 0)}

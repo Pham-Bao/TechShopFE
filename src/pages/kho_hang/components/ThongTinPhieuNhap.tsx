@@ -30,7 +30,9 @@ import { KhachHangDto } from '../../../services/khach-hang/dto/KhachHangDto';
 import { CreateOrEditKhachHangDto } from '../../../services/khach-hang/dto/CreateOrEditKhachHangDto';
 import { TaiKhoanNganHangDto } from '../../../services/so_quy/Dto/TaiKhoanNganHangDto';
 import { HINH_THUC_THANH_TOAN } from '../../../lib/appconst';
+import PaymentsOutlinedIcon from '@mui/icons-material/PaymentsOutlined';
 import { HINH_THUC_NO, PhieuNhapState } from './usePhieuNhap';
+import ModalThanhToanPhieuNhap, { IPhieuCanThanhToan } from './ModalThanhToanPhieuNhap';
 
 const formatMoney = (value: number) => Number(value || 0).toLocaleString('vi-VN');
 
@@ -39,9 +41,19 @@ const formatMoney = (value: number) => Number(value || 0).toLocaleString('vi-VN'
  * In nháp / Lưu tạm (trình duyệt) / Hoàn thành
  */
 const ThongTinPhieuNhap = ({ p }: { p: PhieuNhapState }) => {
-    // sửa phiếu: tổng mới - số đã trả (> 0: trả thêm, < 0: NCC hoàn lại)
-    const chenhLech = p.tongTienHang - p.daThanhToanCu;
     const [anchorNCC, setAnchorNCC] = useState<HTMLElement | null>(null);
+    // sửa phiếu: thanh toán thêm cho nhà cung cấp (null: đóng dialog)
+    const [phieuThanhToan, setPhieuThanhToan] = useState<IPhieuCanThanhToan | null>(null);
+    const moThanhToan = async () => {
+        // còn thay đổi chưa lưu: cập nhật phiếu trước để số còn nợ đúng với phiếu đã lưu
+        if (!(await p.capNhatTruocThanhToan())) return;
+        setPhieuThanhToan({
+            id: p.idPhieu ?? '',
+            maHoaDon: p.maPhieu,
+            tenNhaCungCap: p.khachHang?.tenKhachHang,
+            conNo: p.conNo
+        });
+    };
     const [isShowModalAddNCC, setIsShowModalAddNCC] = useState(false);
     const [newNCC, setNewNCC] = useState<CreateOrEditKhachHangDto>({} as CreateOrEditKhachHangDto);
 
@@ -117,6 +129,14 @@ const ThongTinPhieuNhap = ({ p }: { p: PhieuNhapState }) => {
                     )}
                 </DialogActions>
             </Dialog>
+            <ModalThanhToanPhieuNhap
+                phieu={phieuThanhToan}
+                onClose={() => setPhieuThanhToan(null)}
+                onDaThanhToan={(soTien) => {
+                    p.daThanhToanThem(soTien);
+                    setPhieuThanhToan(null);
+                }}
+            />
             <CreateOrEditCustomerDialog
                 visible={isShowModalAddNCC}
                 onCancel={() => setIsShowModalAddNCC(false)}
@@ -141,8 +161,8 @@ const ThongTinPhieuNhap = ({ p }: { p: PhieuNhapState }) => {
             </Typography>
             {p.laSua && (
                 <Alert severity="warning" sx={{ mb: 2, fontSize: 13 }}>
-                    Đang sửa phiếu đã hoàn thành. Máy đã bán không sửa / xóa được. Tổng tiền thay đổi thì trả thêm hoặc
-                    nhận lại tiền nhà cung cấp ngay bên dưới.
+                    Đang sửa phiếu đã hoàn thành. Máy đã bán sửa được nhưng không xóa khỏi phiếu. Tổng tiền tăng thì ghi
+                    nợ nhà cung cấp (bấm Thanh toán để trả thêm), giảm dưới số đã trả thì nhà cung cấp nợ lại cửa hàng.
                 </Alert>
             )}
 
@@ -212,17 +232,11 @@ const ThongTinPhieuNhap = ({ p }: { p: PhieuNhapState }) => {
                     </Typography>
                 </Stack>
             )}
-            {/* sửa phiếu: chỉ thanh toán khi tổng thay đổi so với số đã trả (tăng: trả thêm, giảm: NCC hoàn lại) */}
-            {(!p.laSua || Math.abs(chenhLech) > 0.000001) && (
+            {/* sửa phiếu: không thu / chi khi cập nhật; còn nợ thì thanh toán thêm bằng nút "Thanh toán" */}
+            {!p.laSua && (
                 <>
                     <Box sx={{ mb: 2 }}>
-                        <Typography sx={{ mb: 1, fontWeight: 600 }}>
-                            {!p.laSua
-                                ? 'Hình thức thanh toán'
-                                : chenhLech > 0
-                                ? `Trả thêm NCC (tăng ${formatMoney(chenhLech)})`
-                                : `NCC hoàn lại (trả dư ${formatMoney(-chenhLech)})`}
-                        </Typography>
+                        <Typography sx={{ mb: 1, fontWeight: 600 }}>Hình thức thanh toán</Typography>
                         <Select
                             id="phieu-nhap-hinh-thuc"
                             fullWidth
@@ -235,24 +249,16 @@ const ThongTinPhieuNhap = ({ p }: { p: PhieuNhapState }) => {
                         </Select>
                     </Box>
                     <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-                        <Typography sx={{ fontWeight: 500, fontSize: 13 }}>
-                            {p.laSua && chenhLech < 0 ? 'Số tiền nhận lại' : 'Số tiền thanh toán'}
-                        </Typography>
+                        <Typography sx={{ fontWeight: 500, fontSize: 13 }}>Số tiền thanh toán</Typography>
                         <TextField
                             id="phieu-nhap-so-tien"
-                            value={formatMoney(p.laSua && chenhLech < 0 ? p.soTienNhanLai : p.soTienThanhToan)}
+                            value={formatMoney(p.soTienThanhToan)}
                             disabled={p.hinhThucThanhToan === HINH_THUC_NO}
                             onChange={(e) => {
                                 const value = Number(e.target.value.replace(/\./g, '').replace(/,/g, '') || 0);
                                 const soTien = Number.isNaN(value) ? 0 : value;
-                                if (!p.laSua) {
-                                    // không trả quá số cần trả; phần còn lại là nợ nhà cung cấp
-                                    p.setSoTienThanhToan(Math.min(soTien, p.tongTienHang));
-                                } else if (chenhLech > 0) {
-                                    p.setSoTienThanhToan(Math.min(soTien, chenhLech));
-                                } else {
-                                    p.setSoTienNhanLai(Math.min(soTien, -chenhLech));
-                                }
+                                // không trả quá số cần trả; phần còn lại là nợ nhà cung cấp
+                                p.setSoTienThanhToan(Math.min(soTien, p.tongTienHang));
                             }}
                             size="small"
                             sx={{ width: 160, '& input': { textAlign: 'right', fontSize: 13, fontWeight: 500 } }}
@@ -271,20 +277,33 @@ const ThongTinPhieuNhap = ({ p }: { p: PhieuNhapState }) => {
                     )}
                 </>
             )}
-            {p.laSua && chenhLech < 0 && chenhLech + p.soTienNhanLai < -0.000001 && (
+            {p.conNo < -0.000001 ? (
                 <Stack direction="row" justifyContent="space-between" sx={{ mb: 2 }}>
-                    <Typography sx={{ fontWeight: 500, fontSize: 13 }}>NCC còn nợ cửa hàng</Typography>
+                    <Typography sx={{ fontWeight: 500, fontSize: 13 }}>NCC nợ lại cửa hàng</Typography>
                     <Typography sx={{ fontWeight: 700, fontSize: 13, color: '#d97706' }}>
-                        {formatMoney(-chenhLech - p.soTienNhanLai)}
+                        {formatMoney(-p.conNo)}
+                    </Typography>
+                </Stack>
+            ) : (
+                <Stack direction="row" justifyContent="space-between" sx={{ mb: 2 }}>
+                    <Typography sx={{ fontWeight: 500, fontSize: 13 }}>Còn nợ nhà cung cấp</Typography>
+                    <Typography sx={{ fontWeight: 700, fontSize: 13, color: p.conNo > 0 ? '#d32f2f' : 'inherit' }}>
+                        {formatMoney(p.conNo)}
                     </Typography>
                 </Stack>
             )}
-            <Stack direction="row" justifyContent="space-between" sx={{ mb: 2 }}>
-                <Typography sx={{ fontWeight: 500, fontSize: 13 }}>Còn nợ nhà cung cấp</Typography>
-                <Typography sx={{ fontWeight: 700, fontSize: 13, color: p.conNo > 0 ? '#d32f2f' : 'inherit' }}>
-                    {formatMoney(p.conNo)}
-                </Typography>
-            </Stack>
+            {p.laSua && p.conNo > 0.000001 && (
+                <Button
+                    fullWidth
+                    variant="outlined"
+                    color="error"
+                    startIcon={<PaymentsOutlinedIcon />}
+                    onClick={moThanhToan}
+                    disabled={p.isSaving}
+                    sx={{ mb: 2, textTransform: 'none', fontWeight: 700 }}>
+                    {p.coThayDoi ? 'Cập nhật & thanh toán' : 'Thanh toán'} {formatMoney(p.conNo)}
+                </Button>
+            )}
 
             <TextField
                 id="phieu-nhap-ghi-chu"

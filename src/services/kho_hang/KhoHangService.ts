@@ -172,6 +172,55 @@ export interface TonKhoItemDto {
     soLuongTon: number;
 }
 
+// tìm chứng từ theo mã (mở phiếu nhập / hóa đơn từ các danh sách)
+export interface ChungTuTheoMaDto {
+    id: string;
+    maHoaDon: string;
+    idLoaiChungTu: number;
+    trangThai?: number;
+    loaiHang?: 'hang-hoa' | 'dien-thoai'; // phiếu nhập
+}
+
+// nhật ký 1 máy điện thoại
+export interface NhatKyChungTuMayDto {
+    idHoaDon: string;
+    maHoaDon: string;
+    ngayLapHoaDon: string;
+    idLoaiChungTu: number;
+    loaiChungTu: string;
+    trangThai?: number;
+    idKhachHang?: string | null;
+    maKhachHang: string;
+    tenKhachHang: string;
+    soTien: number;
+    nguoiTao: string;
+    ghiChu?: string;
+}
+export interface NhatKyThaoTacMayDto {
+    thoiGian: string;
+    loaiNhatKy: number;
+    noiDung: string;
+    noiDungChiTiet?: string;
+    nguoiTao: string;
+}
+export interface NhatKyDienThoaiDto {
+    chungTus: NhatKyChungTuMayDto[];
+    thaoTacs: NhatKyThaoTacMayDto[];
+}
+
+export interface PhieuNhapCuaHangHoaDto {
+    idHangHoa: string;
+    maPhieuNhaps: string[]; // phiếu nhập đã hoàn thành có hàng hóa, mới nhất trước
+}
+
+// thanh toán thêm cho nhà cung cấp theo phiếu nhập đã hoàn thành
+export interface ThanhToanPhieuNhapDto {
+    idPhieuNhap: string;
+    soTien: number;
+    hinhThucThanhToan: number; // 1.Tiền mặt, 2.Chuyển khoản
+    idTaiKhoanNganHang?: string | null;
+}
+
 export interface KiemKeGanNhatDto {
     idHangHoa: string;
     ngayKiemKe: string;
@@ -257,6 +306,32 @@ class KhoHangService {
     };
     GetTonKho = async (idHangHoas: string[], idChiNhanh?: string | null): Promise<TonKhoItemDto[]> => {
         const result = await http.post('api/services/app/KhoHang/GetTonKho', {
+            idHangHoas,
+            idChiNhanh: idChiNhanh || null
+        });
+        return result.data.result ?? [];
+    };
+    GetChungTu_byMa = async (ma: string, id?: string | null): Promise<ChungTuTheoMaDto | null> => {
+        const query = id ? `&id=${id}` : '';
+        const result = await http.get(
+            `api/services/app/KhoHang/GetChungTu_byMa?ma=${encodeURIComponent(ma ?? '')}${query}`
+        );
+        return result.data.result ?? null;
+    };
+    GetNhatKy_DienThoai = async (idDonViQuyDoi: string): Promise<NhatKyDienThoaiDto> => {
+        const result = await http.get(`api/services/app/KhoHang/GetNhatKy_DienThoai?idDonViQuyDoi=${idDonViQuyDoi}`);
+        return result.data.result ?? { chungTus: [], thaoTacs: [] };
+    };
+    // tạo phiếu chi trả thêm nhà cung cấp (tối đa số còn nợ của phiếu)
+    ThanhToanPhieuNhap = async (input: ThanhToanPhieuNhapDto) => {
+        const result = await http.post('api/services/app/KhoHang/ThanhToanPhieuNhap', input);
+        return result.data.success as boolean;
+    };
+    GetPhieuNhap_ofHangHoa = async (
+        idHangHoas: string[],
+        idChiNhanh?: string | null
+    ): Promise<PhieuNhapCuaHangHoaDto[]> => {
+        const result = await http.post('api/services/app/KhoHang/GetPhieuNhap_ofHangHoa', {
             idHangHoas,
             idChiNhanh: idChiNhanh || null
         });

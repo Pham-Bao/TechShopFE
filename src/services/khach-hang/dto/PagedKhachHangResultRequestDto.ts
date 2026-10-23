@@ -13,5 +13,6 @@ export interface PagedKhachHangResultRequestDto extends PagedFilterAndSortedRequ
     tongChiTieuDen?: number;
     gioiTinh?: boolean;
     isUserZalo?: number;
+    chiKhachConNo?: boolean; // chỉ khách / NCC đang nợ cửa hàng
     creationTime?: Date;
 }
