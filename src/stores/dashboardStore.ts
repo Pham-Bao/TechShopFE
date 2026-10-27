@@ -4,6 +4,7 @@ import { DanhSachLichHen } from '../services/dashboard/dto/danhSachLichHen';
 import { ThongKeDoanhThu } from '../services/dashboard/dto/thongKeDoanhThu';
 import { ThongKeLichHen } from '../services/dashboard/dto/thongKeLichHen';
 import { ThongKeSoLuong } from '../services/dashboard/dto/thongKeSoLuong';
+import { ThongKeTongQuan } from '../services/dashboard/dto/thongKeTongQuan';
 import Cookies from 'js-cookie';
 import AppConsts from '../lib/appconst';
 import dashboardService from '../services/dashboard/dashboardService';
@@ -18,6 +19,7 @@ class DashboardStore {
     thongKeDoanhThu!: ThongKeDoanhThu[];
     danhSachDichVuHot!: DanhSachDichVuHot[];
     thongKeSoLuong!: ThongKeSoLuong;
+    thongKeTongQuan!: ThongKeTongQuan;
     dashboardDateType!: string;
     constructor() {
         makeAutoObservable(this);
@@ -38,8 +40,12 @@ class DashboardStore {
         this.getThongKeLichHen(input);
     }
     async getThongKeSoLuong(input: RequestFromToDto) {
-        const result = await dashboardService.thongKeSoLuong(input);
+        const [result, tongQuan] = await Promise.all([
+            dashboardService.thongKeSoLuong(input),
+            dashboardService.thongKeTongQuan(input)
+        ]);
         this.thongKeSoLuong = result;
+        this.thongKeTongQuan = tongQuan;
     }
     async getDanhSachLichHen(input: RequestFromToDto) {
         const result = await dashboardService.danhSachLichHen(input);

@@ -2,6 +2,7 @@ import { PagedResultDto } from '../dto/pagedResultDto';
 import { RequestFromToDto } from '../dto/ParamSearchDto';
 import http from '../httpService';
 import { DanhSachLichHen } from './dto/danhSachLichHen';
+import { ThongKeTongQuan } from './dto/thongKeTongQuan';
 
 class DashboardService {
     public async thongKeSoLuong(input: RequestFromToDto) {
@@ -17,7 +18,13 @@ class DashboardService {
         return response.data.result;
     }
     public async thongKeDoanhThu(input: RequestFromToDto) {
-        const response = await http.post(`api/services/app/Dashboard/ThongKeDoanhThu`, input);
+        // doanh thu theo tháng = tổng phiếu thu theo sổ quỹ
+        const response = await http.post(`api/services/app/Dashboard/ThongKeDoanhThuTheoThu`, input);
+        return response.data.result;
+    }
+    // thẻ số liệu: tổng thu / chi theo sổ quỹ, số máy đang bày bán / đã bán / đang sửa / đã sửa
+    public async thongKeTongQuan(input: RequestFromToDto): Promise<ThongKeTongQuan> {
+        const response = await http.post(`api/services/app/Dashboard/ThongKeTongQuan`, input);
         return response.data.result;
     }
     public async thongKeHotService(input: RequestFromToDto | null) {

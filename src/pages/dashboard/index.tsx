@@ -295,7 +295,7 @@ const Dashboard: React.FC = () => {
                     <div className="ts-card">
                         <div className="ts-card__header">
                             <div>
-                                <Typography className="ts-card__title">Doanh thu</Typography>
+                                <Typography className="ts-card__title">Doanh thu (tổng thu năm nay)</Typography>
                                 <Typography className="ts-dash__revenue">
                                     {new Intl.NumberFormat('vi-VN').format(sumTongTien)}
                                 </Typography>
