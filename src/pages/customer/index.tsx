@@ -66,7 +66,7 @@ import { TypeAction } from '../../lib/appconst';
 import ZaloService from '../../services/zalo/ZaloService';
 import ModalGuiTinNhanZalo from '../zalo/modal_gui_tin_zalo';
 import { TypeErrorImport } from '../../enum/TypeErrorImport';
-import { Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel } from '@mui/material';
+import { Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 
 interface CustomerScreenState {
     selectedColumns: Record<string, boolean>;
@@ -83,7 +83,6 @@ interface CustomerScreenState {
     timeFrom?: Date;
     timeTo?: Date;
     tongChiTieuTu?: number;
-    chiKhachConNo: boolean; // lọc chỉ khách còn nợ cửa hàng
     tongChiTieuDen?: number;
     gioiTinh?: boolean;
     creationTime?: Date;
@@ -140,7 +139,6 @@ class CustomerScreen extends React.Component<any, CustomerScreenState> {
             timeTo: undefined,
             tongChiTieuDen: undefined,
             tongChiTieuTu: undefined,
-            chiKhachConNo: false,
             gioiTinh: undefined,
             creationTime: undefined,
             importShow: false,
@@ -218,7 +216,6 @@ class CustomerScreen extends React.Component<any, CustomerScreenState> {
             gioiTinh: this.state.gioiTinh,
             tongChiTieuDen: this.state.tongChiTieuDen,
             tongChiTieuTu: this.state.tongChiTieuTu,
-            chiKhachConNo: this.state.chiKhachConNo || undefined,
             idChiNhanh: Cookies.get('IdChiNhanh') ?? undefined,
             idNhomKhach: this.state.idNhomKhach == '' ? undefined : this.state.idNhomKhach
         });
@@ -901,26 +898,7 @@ class CustomerScreen extends React.Component<any, CustomerScreenState> {
                                     <Grid item xs={6} sm={6} lg={4}>
                                         <span className="page-title">Danh sách khách hàng</span>
                                     </Grid>
-                                    <Grid item xs={12} sm={12} lg={2} order={{ xs: 3, lg: 3 }}>
-                                        <FormControlLabel
-                                            sx={{ ml: { xs: 0, lg: 1 }, whiteSpace: 'nowrap' }}
-                                            control={
-                                                <Checkbox
-                                                    size="small"
-                                                    checked={this.state.chiKhachConNo}
-                                                    onChange={async (e) => {
-                                                        await this.setState({
-                                                            chiKhachConNo: e.target.checked,
-                                                            currentPage: 1
-                                                        });
-                                                        this.getData();
-                                                    }}
-                                                />
-                                            }
-                                            label="Chỉ đang nợ cửa hàng"
-                                        />
-                                    </Grid>
-                                    <Grid item xs={6} sm={6} lg={6} order={{ xs: 2, lg: 2 }}>
+                                    <Grid item xs={6} sm={6} lg={8} order={{ xs: 2, lg: 2 }}>
                                         <TextField
                                             fullWidth
                                             size="small"

@@ -8,7 +8,7 @@ import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import { DataGrid, GridColDef, GridRowSelectionModel } from '@mui/x-data-grid';
 import { format } from 'date-fns';
 import Cookies from 'js-cookie';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { enqueueSnackbar } from 'notistack';
 import { TextTranslate } from '../../../components/TableLanguage';
 import CustomTablePagination from '../../../components/Pagination/CustomTablePagination';
@@ -59,6 +59,17 @@ const DanhSachPhieuKho: React.FC<Props> = ({ title, idLoaiChungTu, pathTaoMoi, l
     const [phieuChosed, setPhieuChosed] = useState<any>(null);
     const [anchorDateEl, setAnchorDateEl] = useState<HTMLDivElement | null>(null);
     const [txtThoiGian, setTxtThoiGian] = useState('Tất cả');
+    // mở thẳng chi tiết 1 phiếu qua ?id= (từ chi tiết khách hàng), không phụ thuộc bộ lọc của danh sách
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    useEffect(() => {
+        const id = searchParams.get('id');
+        if (!id) return;
+        HoaDonService.GetInforHoaDon_byId(id).then((data) => {
+            if (data?.[0]) setPhieuChosed({ ...data[0], id });
+        });
+        setSearchParams({}, { replace: true });
+    }, [searchParams]);
 
     useEffect(() => {
         setParamSearch((prev) => ({ ...prev, idChiNhanhs: [idChiNhanh], currentPage: 1 }));

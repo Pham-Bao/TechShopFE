@@ -52,8 +52,8 @@ class KhachHangSrore {
         const result = await khachHangService.lichSuDatLich(idKhachHang, input);
         this.lichSuDatLich = result;
     }
-    async getLichSuGiaoDich(idKhachHang: string, input: PagedRequestDto) {
-        const result = await khachHangService.lichSuGiaoDich(idKhachHang, input);
+    async getLichSuGiaoDich(idKhachHang: string, input: PagedRequestDto, nhomChungTu?: number) {
+        const result = await khachHangService.lichSuGiaoDich(idKhachHang, input, nhomChungTu);
         this.lichSuGiaoDich = result;
     }
     async createKhachHangDto() {

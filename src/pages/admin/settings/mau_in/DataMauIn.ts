@@ -143,18 +143,21 @@ class DataMauIn {
         data = data.replaceAll('{NoiDungThu}', this.phieuthu?.noiDungThu ?? '');
         data = data.replaceAll('{TienBangChu}', utils.DocSo(this.phieuthu.tongTienThu));
         if (this.phieuthu.quyHoaDon_ChiTiet !== undefined && this.phieuthu.quyHoaDon_ChiTiet?.length > 0) {
+            // phiếu chung nhiều hóa đơn có nhiều dòng cùng hình thức: cộng tất cả các dòng
+            const tongTien = (lst: QuyChiTietDto[]) =>
+                lst.reduce((sum: number, x: QuyChiTietDto) => sum + (x.tienThu ?? 0), 0);
             const quyTM = this.phieuthu.quyHoaDon_ChiTiet.filter(
                 (x: QuyChiTietDto) => x.hinhThucThanhToan === HINH_THUC_THANH_TOAN.TIEN_MAT
             );
-            const tienMat = quyTM.length > 0 ? quyTM[0].tienThu : 0;
+            const tienMat = tongTien(quyTM);
             const quyCK = this.phieuthu.quyHoaDon_ChiTiet.filter(
                 (x: QuyChiTietDto) => x.hinhThucThanhToan === HINH_THUC_THANH_TOAN.CHUYEN_KHOAN
             );
-            const tienCK = quyCK.length > 0 ? quyCK[0].tienThu : 0;
+            const tienCK = tongTien(quyCK);
             const quyPos = this.phieuthu.quyHoaDon_ChiTiet.filter(
                 (x: QuyChiTietDto) => x.hinhThucThanhToan === HINH_THUC_THANH_TOAN.QUYET_THE
             );
-            const tienPOS = quyPos.length > 0 ? quyPos[0].tienThu : 0;
+            const tienPOS = tongTien(quyPos);
 
             data = data.replaceAll('{TienMat}', new Intl.NumberFormat('vi-VN').format(tienMat));
             data = data.replaceAll('{TienPOS}', new Intl.NumberFormat('vi-VN').format(tienPOS));

@@ -18,6 +18,11 @@ class SoQuyServices {
         const result = await http.post('api/services/app/QuyHoaDon/Create', input);
         return result.data.result;
     };
+    // 1 phiếu thu cho nhiều hóa đơn còn nợ của 1 khách
+    ThuTienNhieuHoaDon = async (input: any): Promise<QuyHoaDonDto> => {
+        const result = await http.post('api/services/app/QuyHoaDon/ThuTienNhieuHoaDon', input);
+        return result.data.result;
+    };
     UpdateQuyHoaDon = async (input: any) => {
         const result = await http.post('api/services/app/QuyHoaDon/UpdateQuyHoaDon', input);
         return result.data.result;

@@ -571,6 +571,14 @@ export default function MainPageThuNgan() {
                                     <Tabs
                                         value={pageThuNgan_LoaiHoaDon}
                                         onChange={changeTabHoaDon}
+                                        TabIndicatorProps={{
+                                            style: {
+                                                backgroundColor:
+                                                    pageThuNgan_LoaiHoaDon === LoaiChungTu.HOA_DON_SUA_CHUA
+                                                        ? '#ed6c02'
+                                                        : '#1976d2'
+                                            }
+                                        }}
                                         aria-label="nav tabs example">
                                         <Tab
                                             label="Hóa đơn bán"
@@ -580,7 +588,9 @@ export default function MainPageThuNgan() {
                                                     abpCustom.isGrandPermission('Pages.HoaDon.Create') &&
                                                     hienThiHoaDonBan
                                                         ? ''
-                                                        : 'none'
+                                                        : 'none',
+                                                color: '#1976d2',
+                                                '&.Mui-selected': { color: '#1976d2', fontWeight: 600 }
                                             }}
                                         />
                                         <Tab
@@ -592,7 +602,9 @@ export default function MainPageThuNgan() {
                                                     abpCustom.isGrandPermission('Pages.GoiDichVu.Create') &&
                                                     hienThiHoaDonSua
                                                         ? ''
-                                                        : 'none'
+                                                        : 'none',
+                                                color: '#ed6c02',
+                                                '&.Mui-selected': { color: '#ed6c02', fontWeight: 600 }
                                             }}
                                         />
                                     </Tabs>

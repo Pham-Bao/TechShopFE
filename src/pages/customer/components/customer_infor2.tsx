@@ -4,6 +4,7 @@ import {
     Avatar,
     Typography,
     Button,
+    IconButton,
     Tab,
     Checkbox,
     TextField,
@@ -56,6 +57,9 @@ import { AppContext } from '../../../services/chi_nhanh/ChiNhanhContext';
 import AppConsts, { DateType, LoaiChungTu } from '../../../lib/appconst';
 import { TrangThaiHoaDon } from '../../../services/ban_hang/HoaDonConst';
 import TabThanhToan from './TabThanhToan';
+import ModalThanhToanNhieuHoaDon from './ModalThanhToanNhieuHoaDon';
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
+import abpCustom from '../../../components/abp-custom';
 
 export interface IScreenCustomerInfor {
     khachHangId?: string;
@@ -65,6 +69,8 @@ export interface IScreenCustomerInfor {
 const CustomerInfor2 = ({ khachHangId, onClose }: IScreenCustomerInfor) => {
     const [tabActive, setTabActive] = useState('1');
     const [isShowEditKhachHang, setIsShowEditKhachHang] = useState(false);
+    const [isShowThanhToan, setIsShowThanhToan] = useState(false);
+    const [lanThanhToan, setLanThanhToan] = useState(0); // tăng sau mỗi lần thanh toán để tải lại bảng
     const [cusEdit, setCusEdit] = useState<ICustomerDetail_FullInfor>({} as ICustomerDetail_FullInfor);
     const [nkyHoatDong, setNKyHoatDong] = useState<HoatDongKhachHang[]>([]);
     const [objAlert, setObjAlert] = useState({ show: false, mes: '', type: 1 });
@@ -318,6 +324,18 @@ const CustomerInfor2 = ({ khachHangId, onClose }: IScreenCustomerInfor) => {
                     } as CreateOrEditKhachHangDto
                 }
             />
+            <ModalThanhToanNhieuHoaDon
+                isShow={isShowThanhToan}
+                idKhachHang={khachHangId}
+                tenKhachHang={cusEdit?.tenKhachHang}
+                onClose={() => setIsShowThanhToan(false)}
+                onOk={() => {
+                    setIsShowThanhToan(false);
+                    setLanThanhToan((x) => x + 1);
+                    getKhachHangInfo();
+                    getNhatKyHoatDong();
+                }}
+            />
             <Grid container paddingTop={2} spacing={1}>
                 <Grid item xs={12} md={3} lg={3} sx={{ position: 'relative' }}>
                     <Stack
@@ -325,6 +343,18 @@ const CustomerInfor2 = ({ khachHangId, onClose }: IScreenCustomerInfor) => {
                         spacing={2}
                         className="page-full"
                         sx={{ border: '1px solid #cccc', borderRadius: '4px' }}>
+                        <Stack direction={'row'} justifyContent={'space-between'} alignItems={'center'}>
+                            <Button
+                                variant="outlined"
+                                size="small"
+                                startIcon={<ArrowBackOutlinedIcon />}
+                                onClick={gotoBack}>
+                                Quay lại
+                            </Button>
+                            <IconButton size="small" title="Thay đổi thông tin" onClick={onShowModalEditCustomer}>
+                                <SettingsOutlinedIcon />
+                            </IconButton>
+                        </Stack>
                         <Stack sx={{ position: 'relative' }}>
                             <Stack direction={'row'} spacing={1.5} alignItems={'center'}>
                                 <Stack position={'relative'}>
@@ -414,9 +444,15 @@ const CustomerInfor2 = ({ khachHangId, onClose }: IScreenCustomerInfor) => {
                                             variant="outlined"
                                             size="small"
                                             fullWidth
-                                            sx={{ borderRadius: '12px', flex: 8 }}
-                                            onClick={onShowModalEditCustomer}>
-                                            Thay đổi thông tin
+                                            sx={{
+                                                borderRadius: '12px',
+                                                flex: 8,
+                                                display: abpCustom.isGrandPermission('Pages.QuyHoaDon.Create')
+                                                    ? ''
+                                                    : 'none'
+                                            }}
+                                            onClick={() => setIsShowThanhToan(true)}>
+                                            Thanh toán hóa đơn
                                         </Button>
                                         {/* <DeleteOutlinedIcon
                                             titleAccess="Xóa khách hàng"
@@ -490,7 +526,7 @@ const CustomerInfor2 = ({ khachHangId, onClose }: IScreenCustomerInfor) => {
                                 </Typography>
                                 <Stack
                                     spacing={1.5}
-                                    sx={{ overflow: 'auto', maxHeight: 'calc(70vh - 335px)', paddingBottom: '16px' }}>
+                                    sx={{ overflow: 'auto', maxHeight: 'calc(70vh - 381px)', paddingBottom: '16px' }}>
                                     {nkyHoatDong?.map((item, index) => (
                                         <Stack key={index} spacing={0.5}>
                                             <Typography
@@ -519,8 +555,18 @@ const CustomerInfor2 = ({ khachHangId, onClose }: IScreenCustomerInfor) => {
                                             gap: 1
                                         }}>
                                         <Tab
-                                            label={cusEdit?.laNhaCungCap ? 'Nhập hàng' : 'Mua hàng'}
+                                            label="Hóa đơn"
                                             value="1"
+                                            sx={{
+                                                padding: '4px 8px',
+                                                fontSize: { xs: '9px', sm: '13px' },
+                                                minWidth: '80px',
+                                                textTransform: 'none'
+                                            }}
+                                        />
+                                        <Tab
+                                            label="Nhập xuất"
+                                            value="4"
                                             sx={{
                                                 padding: '4px 8px',
                                                 fontSize: { xs: '9px', sm: '13px' },
@@ -552,12 +598,6 @@ const CustomerInfor2 = ({ khachHangId, onClose }: IScreenCustomerInfor) => {
                                 </Grid>
                                 <Grid item lg={4}>
                                     <Stack direction={'row'} spacing={1} justifyContent={'end'}>
-                                        <Button
-                                            variant="outlined"
-                                            startIcon={<ArrowBackOutlinedIcon />}
-                                            onClick={gotoBack}>
-                                            Quay lại
-                                        </Button>
                                         <Button variant="outlined" startIcon={<FileUploadOutlinedIcon />}>
                                             Xuất excel
                                         </Button>
@@ -565,13 +605,24 @@ const CustomerInfor2 = ({ khachHangId, onClose }: IScreenCustomerInfor) => {
                                 </Grid>
                             </Grid>
                             <TabPanel value="1" sx={{ padding: 0 }}>
-                                <TabMuaHang khachHangId={khachHangId} />
+                                <TabMuaHang
+                                    key={lanThanhToan}
+                                    khachHangId={khachHangId}
+                                    nhomChungTu={1}
+                                    onDaThayDoi={() => {
+                                        getKhachHangInfo();
+                                        getNhatKyHoatDong();
+                                    }}
+                                />
+                            </TabPanel>
+                            <TabPanel value="4" sx={{ padding: 0 }}>
+                                <TabMuaHang khachHangId={khachHangId} nhomChungTu={2} />
                             </TabPanel>
                             <TabPanel value="2" sx={{ padding: 0 }}>
                                 <TabCuocHen khachHangId={khachHangId} />
                             </TabPanel>
                             <TabPanel value="3" sx={{ padding: 0 }}>
-                                <TabThanhToan khachHangId={khachHangId} />
+                                <TabThanhToan key={lanThanhToan} khachHangId={khachHangId} />
                             </TabPanel>
                         </TabContext>
                     </Stack>

@@ -228,6 +228,19 @@ const PageSoQuy = () => {
         setSelectedRowId(itemSQ?.id);
         setQuyHDOld(itemSQ);
         if (action < TypeAction.DELETE) {
+            // phiếu thu chung nhiều hóa đơn không sửa được
+            const arrMaHD = (itemSQ?.maHoaDonLienQuans ?? '')
+                .split(',')
+                .map((x: string) => x.trim())
+                .filter((x: string) => x !== '');
+            if (new Set(arrMaHD).size > 1) {
+                setObjAlert({
+                    show: true,
+                    type: 2,
+                    mes: 'Phiếu thu này gồm nhiều hóa đơn nên không sửa được. Vui lòng hủy phiếu rồi lập lại.'
+                });
+                return;
+            }
             if (!utils.checkNull(itemSQ?.idBrandname)) {
                 setIsShowModalNapTienBrannName(true);
             } else {

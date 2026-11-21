@@ -15,9 +15,20 @@ import { PagedResultDto } from '../dto/pagedResultDto';
 import { HoatDongKhachHang, ThongTinKhachHangTongHopDto } from './dto/ThongTinKhachHangTongHopDto';
 import { ILichSuDatLich } from './dto/ILichSuDatLich';
 import { LichSuGiaoDich } from './dto/LichSuGiaoDich';
-import { HoaDonCuaKhachHangRequestDto, HoaDonCuaKhachHangResultDto } from './dto/HoaDonCuaKhachHangDto';
+import {
+    HoaDonCuaKhachHangDto,
+    HoaDonCuaKhachHangRequestDto,
+    HoaDonCuaKhachHangResultDto
+} from './dto/HoaDonCuaKhachHangDto';
 
 class KhachHangService {
+    // hóa đơn bán / hóa đơn sửa còn nợ của 1 khách tại 1 chi nhánh
+    public async GetHoaDonConNo_ofKhachHang(idKhachHang: string, idChiNhanh: string): Promise<HoaDonCuaKhachHangDto[]> {
+        const result = await http.get(
+            `api/services/app/KhachHang/GetHoaDonConNo_ofKhachHang?idKhachHang=${idKhachHang}&idChiNhanh=${idChiNhanh}`
+        );
+        return result.data.result;
+    }
     // hóa đơn bán / hóa đơn sửa đã hoàn thành của 1 khách
     public async GetHoaDon_ofKhachHang(input: HoaDonCuaKhachHangRequestDto): Promise<HoaDonCuaKhachHangResultDto> {
         const result = await http.post(`api/services/app/KhachHang/GetHoaDon_ofKhachHang`, input);
@@ -140,8 +151,18 @@ class KhachHangService {
         const response = await http.post('api/services/app/KhachHang/ImportDanhMucKhachHang', input);
         return response.data.result;
     }
-    async lichSuGiaoDich(idKhachHang: string, input: PagedRequestDto): Promise<PagedResultDto<LichSuGiaoDich>> {
-        const response = await http.post(`api/services/app/KhachHang/LichSuGiaoDich?idKhachHang=${idKhachHang}`, input);
+    // nhomChungTu: 1.tab Hóa đơn, 2.tab Nhập xuất
+    async lichSuGiaoDich(
+        idKhachHang: string,
+        input: PagedRequestDto,
+        nhomChungTu?: number
+    ): Promise<PagedResultDto<LichSuGiaoDich>> {
+        const response = await http.post(
+            `api/services/app/KhachHang/LichSuGiaoDich?idKhachHang=${idKhachHang}${
+                nhomChungTu ? `&nhomChungTu=${nhomChungTu}` : ''
+            }`,
+            input
+        );
         return response.data.result;
     }
     async lichSuDatLich(idKhachHang: string, input: PagedRequestDto): Promise<PagedResultDto<ILichSuDatLich>> {
