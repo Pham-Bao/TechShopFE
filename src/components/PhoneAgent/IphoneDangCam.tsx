@@ -4,8 +4,8 @@ import PhoneIphoneIcon from '@mui/icons-material/PhoneIphone';
 
 // PhoneAgent chạy trên chính máy tính đang mở trình duyệt (xem Cài đặt > Lấy máy nhanh)
 const URL_PHONE_AGENT = 'http://localhost:6789/api/iphone/info';
-// chờ sau khi mỗi lần kiểm tra xong (không chồng request): có PhoneAgent 7s, không gọi được PhoneAgent 30s
-const CHO_KHI_CO_AGENT = 7000;
+// chờ sau khi mỗi lần kiểm tra xong (không chồng request): có PhoneAgent 2s, không gọi được PhoneAgent 30s
+const CHO_KHI_CO_AGENT = 2000;
 const CHO_KHI_KHONG_CO_AGENT = 30000;
 const TIMEOUT = 5000;
 
